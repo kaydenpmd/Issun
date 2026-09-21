@@ -169,8 +169,11 @@ jobs:
           EXE="${{ steps.ver.outputs.name }}.exe"
           HASH=$(sha256sum "$EXE")
           HASH=${HASH%% *}
+          # $(...) drops trailing newlines, which takes with it the blank line
+          # that separated the removed trailers from the body.
+          MESSAGE=$(git log -1 --format='%B' HEAD | grep -vE '^(Co-Authored-By|Claude-Session|Signed-off-by): ' || true)
           {
-            git log -1 --format='%B' HEAD | grep -vE '^(Co-Authored-By|Claude-Session|Signed-off-by): ' || true
+            printf '%s\n' "$MESSAGE"
             echo
             echo "---"
             echo

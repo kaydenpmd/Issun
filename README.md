@@ -111,7 +111,8 @@ one folder instead.
    Disable-ScheduledTask -TaskName "Ammy Relay"
    ```
 
-   Disable, don't delete, so you can switch back.
+   Disable, don't delete, so you can switch back. If either command says
+   access is denied, run PowerShell as administrator and try again.
 
 2. **Start Issun** and choose **Settings → Import relay .env...**, then pick the
    `.env` next to `relay.py`. Issun reads the settings `relay.py` read:
@@ -179,6 +180,9 @@ curl -H "X-Relay-Key: <key>" https://<machine>.<tailnet>.ts.net/now-playing
   "links": { "song": "https://music.apple.com/…", "artist": "…", "album": "…" }
 }
 ```
+
+When nothing is playing, or the phone has been quiet for more than 90 s, only
+`playing`, `stale` and `updated_ago` appear.
 
 `GET /now-playing` returns a summary, not the phone's raw push. It never
 triggers a lookup, so nobody can use it to make your PC send requests, and

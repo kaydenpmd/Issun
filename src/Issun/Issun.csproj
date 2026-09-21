@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Issun</RootNamespace>
+    <AssemblyName>Issun</AssemblyName>
+    <!-- WPF's Fluent theme (ThemeMode) is marked experimental in .NET 9. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Issun.Core\Issun.Core.csproj" />
+  </ItemGroup>
+
+</Project>

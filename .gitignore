@@ -1,0 +1,15 @@
+bin/
+obj/
+publish/
+artifacts/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# Runtime state lives in %APPDATA%\Issun and %LOCALAPPDATA%\Issun, never here.
+# These are listed anyway so a relay-era file dropped into the tree for an
+# import test can't be committed by accident.
+.env
+*.log
+art_cache/

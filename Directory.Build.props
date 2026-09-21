@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <!-- The only version number a human sets. CI supplies IssunBuild (a commit
+         count, so it climbs on its own) and IssunCommit (short SHA); local
+         builds report build 0, shown as "dev". Read back by IssunInfo. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <IssunBuild Condition="'$(IssunBuild)' == ''">0</IssunBuild>
+    <IssunCommit Condition="'$(IssunCommit)' == ''">local</IssunCommit>
+    <FileVersion>$(VersionPrefix).$(IssunBuild)</FileVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <Authors>kaydenpmd</Authors>
+    <Product>Issun</Product>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="IssunBuild" Value="$(IssunBuild)" />
+    <AssemblyMetadata Include="IssunCommit" Value="$(IssunCommit)" />
+  </ItemGroup>
+</Project>

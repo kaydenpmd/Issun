@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Everything that isn't UI: the HTTP receiver, Discord IPC, artwork,
+       diagnostics and configuration. Kept out of the WPF project so it can be
+       tested without a window. -->
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <RootNamespace>Issun.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Kestrel. Chosen over HttpListener because http.sys matches on the Host
+         header: a localhost prefix would refuse requests Tailscale Funnel
+         forwards with the public hostname, and a wildcard prefix needs admin. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Issun.Core.Tests" />
+  </ItemGroup>
+
+</Project>

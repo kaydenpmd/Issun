@@ -135,6 +135,9 @@ public sealed class IssunHost : IIssunHost
         try { _autostart.RepairIfMoved(); }
         catch (Exception ex) { Log.Write($"[autostart] could not check the startup entry: {ex.Message}"); }
 
+        // No installer, so the first run adds the Start menu entry one would have.
+        new StartMenuShortcut().Ensure();
+
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var token = _cts.Token;
 

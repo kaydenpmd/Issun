@@ -78,7 +78,13 @@ icon and a Start with Windows switch. No Python, `.env` file or Scheduled Task.
 
 6. **Turn on Start with Windows** in Settings. Issun then starts in the tray
    when you sign in. Closing the window hides it to the tray. To exit, choose
-   **Quit** from the tray icon's menu.
+   **Quit** from the tray icon's menu. To open it again, click the tray icon,
+   or search the Start menu for **Issun**: it adds its own entry the first time
+   it runs.
+
+Put the `.exe` somewhere it will stay before you do step 6. It works from
+Downloads, but Start with Windows and the Start menu entry both point at wherever
+Issun last ran from.
 
 When it's working, the **Phone** row says the phone is checking in, the
 **Discord** row says "Connected as" your name, and your Discord profile shows
@@ -93,6 +99,7 @@ When it's working, the **Phone** row says the phone is checking in, the
 | Phone check-in history | `%LOCALAPPDATA%\Issun\ammy-uptime.log` |
 | Covers uploaded by the phone | `%LOCALAPPDATA%\Issun\art_cache\` |
 | Start with Windows | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `Issun` |
+| Start menu entry | `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Issun.lnk`. Added once; if you delete it, Issun leaves it deleted |
 
 Nothing is written next to the `.exe`. **Diagnostics → Open log folder** opens
 `%LOCALAPPDATA%\Issun`. `settings.json` contains your key in plain text, so don't

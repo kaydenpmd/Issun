@@ -4,11 +4,32 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- For NotifyIcon only: the tray icon. See Tray/TrayIcon.cs for why this
+         rather than a third-party WPF tray package. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Issun</RootNamespace>
     <AssemblyName>Issun</AssemblyName>
-    <!-- WPF's Fluent theme (ThemeMode) is marked experimental in .NET 9. -->
-    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <ApplicationIcon>Assets\issun.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- WPF0001: WPF's Fluent theme (ThemeMode) is marked experimental in .NET 9.
+         WFO0003: the WinForms analyzer wants DPI awareness set through its own
+         Application.SetHighDpiMode, which only exists for WinForms apps. This is
+         a WPF app that borrows one WinForms type, so app.manifest is the right
+         place for it. -->
+    <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWindowsForms adds these as global usings, and then Application,
+         Button, MessageBox, Color, Brush, Point and friends are ambiguous in
+         every WPF file. WinForms types are spelled out where they are used. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\issun.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Issun.Core\Issun.Core.csproj" />

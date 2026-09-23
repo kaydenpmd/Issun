@@ -18,6 +18,7 @@ public sealed class SingleInstance : IDisposable
     private readonly Mutex _mutex;
     private readonly EventWaitHandle _showRequest;
     private RegisteredWaitHandle? _wait;
+    private bool _disposed;
 
     private SingleInstance(Mutex mutex, EventWaitHandle showRequest)
     {
@@ -72,8 +73,12 @@ public sealed class SingleInstance : IDisposable
         }, null, Timeout.Infinite, executeOnlyOnce: false);
     }
 
+    /// <summary>Idempotent: Quit and application exit both call it.</summary>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+        _disposed = true;
         _wait?.Unregister(null);
         try { _mutex.ReleaseMutex(); }
         catch (ApplicationException) { /* not owned by this thread: closing the handle releases it */ }

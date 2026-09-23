@@ -17,9 +17,12 @@ iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel)
 **History:** the modules were built in parallel against `Contracts.cs` on
 21–22 Sept 2026. **Build 23 took over from relay.py on 22 Sept 2026** and is
 partway through the live test — see "The owner's live test" at the end of this
-file for what has and hasn't been checked. The `Ammy Relay` Scheduled Task is
-stopped but still *enabled*, so until item 1 and item 7 of that test are done, a
-reboot brings relay.py back and it takes port 8787 first.
+file for what has and hasn't been checked. The switch was made permanent the same
+evening: Issun lives at `%LOCALAPPDATA%\Programs\Issun\Issun.exe`, starts in the
+tray from the HKCU Run key, and the `Ammy Relay` task is disabled but still
+registered. That keeps rollback to two commands, `Enable-ScheduledTask` (which
+needs an elevated shell, as disabling did) and `Start-ScheduledTask`, once Issun
+has been quit from the tray.
 
 Ammy's CLAUDE.md learned this the hard way, twice: documented state decays in
 whichever direction you are not looking. **Check `git log`, not this file.**
@@ -517,8 +520,10 @@ Record the result here, with the build number.
 
 **Build 23 (`e9b578e`), 22 Sept 2026 — the GitHub release, run from Downloads:**
 
-- 1: **half done.** The task was stopped at 20:42:37; Issun took the port at
-  20:42:47 through its 15 s retry, with no restart. The task is not disabled yet.
+- 1: **passed.** The task was stopped at 20:42:37, and Issun took the port at
+  20:42:47 through its 15 s retry, with no restart. The task was disabled at about
+  21:25. `Disable-ScheduledTask` is refused as "Access is denied" from a normal
+  shell, so it ran through a UAC prompt the owner approved.
 - 2: **passed.** The key came across from `RELAY_SECRET` (32 characters), along with
   the Discord application ID and `PUBLIC_BASE`, plus 176 lines of uptime
   history placed ahead of Issun's own.

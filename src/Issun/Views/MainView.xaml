@@ -36,10 +36,17 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Cover, or a placeholder when there is none. An
-                         ImageBrush rather than an Image so the corners clip. -->
+                         ImageBrush rather than an Image so the corners clip.
+
+                         The hairline is Windows 11's own convention for a
+                         surface edge: a 1 epx stroke inside the edge, following
+                         the corners, in the theme's control stroke colour —
+                         near-black in light mode, near-white in dark, both a few
+                         percent opaque. It is drawn over the art, as Apple Music
+                         draws its own, so a cover the same colour as the card
+                         still has an edge. -->
                     <Grid Width="112" Height="112" VerticalAlignment="Top">
-                        <Border CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondaryBrush}"
-                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Border CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
                             <TextBlock Text="&#xE8D6;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
                                        FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
@@ -51,6 +58,8 @@
                                 <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill" />
                             </Border.Background>
                         </Border>
+                        <Border CornerRadius="6" BorderThickness="1" IsHitTestVisible="False"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" />
                     </Grid>
 
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">

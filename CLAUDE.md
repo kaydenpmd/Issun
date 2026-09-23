@@ -14,12 +14,12 @@ The name is from Ōkami: Issun is the tiny Poncle who travels with Amaterasu,
 iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel) ──▶ Issun, 127.0.0.1:8787 ──named pipe──▶ Discord desktop
 ```
 
-**State when this was written, 21 Sept 2026:** the modules were being built in
-parallel against `Contracts.cs`, and none of it had met a live phone. **The first
-build is unverified until the owner's live test.** Until that test passes,
-relay.py (the `Ammy Relay` Scheduled Task) is still the receiver the owner's
-phone talks to. When the test happens, record it here with the build number and
-what was checked, and turn this paragraph into history.
+**History:** the modules were built in parallel against `Contracts.cs` on
+21–22 Sept 2026. **Build 23 took over from relay.py on 22 Sept 2026** and is
+partway through the live test — see "The owner's live test" at the end of this
+file for what has and hasn't been checked. The `Ammy Relay` Scheduled Task is
+stopped but still *enabled*, so until item 1 and item 7 of that test are done, a
+reboot brings relay.py back and it takes port 8787 first.
 
 Ammy's CLAUDE.md learned this the hard way, twice: documented state decays in
 whichever direction you are not looking. **Check `git log`, not this file.**
@@ -514,3 +514,30 @@ build should cover:
 8. Then a few days of `ammy-uptime.log` continuing the relay-era history.
 
 Record the result here, with the build number.
+
+**Build 23 (`e9b578e`), 22 Sept 2026 — the GitHub release, run from Downloads:**
+
+- 1: **half done.** The task was stopped at 20:42:37; Issun took the port at
+  20:42:47 through its 15 s retry, with no restart. The task is not disabled yet.
+- 2: **passed.** The key came across from `RELAY_SECRET` (32 characters), along with
+  the Discord application ID and `PUBLIC_BASE`, plus 176 lines of uptime
+  history placed ahead of Issun's own.
+- 3: **passed.** Ammy 1.0 (83) checked in at 20:43:00 with its existing key, and
+  `https://ammy.kaydenpmd.net/version` answered `issun 0.1.0 (23)`.
+- 4: **passed on Issun's side.** "EAT YOU UP" went to Discord at 21:15:05, once,
+  with no re-push on the heartbeats that followed and no `[playhead]` lines. The
+  cover came from the exact store-ID lookup, and all three links resolved — the
+  album link with `?i=` stripped. That the card *looks* right in Discord is the
+  owner's to confirm, not this log's.
+- 5–8: not yet.
+
+**Two things the handover taught, for anyone repeating it:**
+
+- **Do anything that touches live state from PowerShell, not from Claude Code's Bash
+  tool.** That shell runs sandboxed. An `.env` import run from it printed success,
+  but its writes to `%APPDATA%` and `%LOCALAPPDATA%` never landed. A log watcher run
+  from it saw a stale copy of `issun.log` and stayed silent while Issun was working.
+- **The order is: Issun open and imported first, then stop the relay.** The first
+  attempt stopped the relay while Issun still had its own freshly generated key.
+  The phone's pushes got 401 for about two minutes, Ammy stopped on "Key
+  Rejected", and it had to be relaunched by hand.

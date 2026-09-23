@@ -1,9 +1,92 @@
-﻿<Application x:Class="Issun.App"
+<Application x:Class="Issun.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Issun"
-             StartupUri="MainWindow.xaml">
+             xmlns:p="clr-namespace:Issun.Presentation"
+             xmlns:v="clr-namespace:Issun.Views"
+             ShutdownMode="OnExplicitShutdown">
+    <!-- No StartupUri: App.OnStartup decides whether there is a window at all
+         (background starts in the tray, a screenshot never opens one).
+         OnExplicitShutdown because closing the window only hides it; Issun
+         keeps receiving from the tray until Quit.
+
+         ThemeMode is set in App.OnStartup rather than here so the theme
+         option can override it before anything is drawn. Brushes below are all
+         DynamicResource: the Fluent dictionary arrives when ThemeMode is set,
+         and swaps when Windows switches between light and dark. -->
     <Application.Resources>
-         
+
+        <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+        <!-- Windows 11 Settings-style card: a slightly lifted layer over Mica. -->
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="2,22,0,8" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+
+        <Style x:Key="RowTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+
+        <Style x:Key="RowDescription" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+
+        <Style x:Key="ErrorText" TargetType="TextBlock" BasedOn="{StaticResource Caption}">
+            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+        </Style>
+
+        <Style x:Key="MonoBlock" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+
+        <!-- The dot beside each status row. DataContext is a StatusLine. -->
+        <Style x:Key="StatusDot" TargetType="Ellipse">
+            <Setter Property="Width" Value="10" />
+            <Setter Property="Height" Value="10" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,6,14,0" />
+            <Setter Property="Fill" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static p:StatusLevel.Good}">
+                    <Setter Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static p:StatusLevel.Warning}">
+                    <Setter Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static p:StatusLevel.Error}">
+                    <Setter Property="Fill" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <BooleanToVisibilityConverter x:Key="Visible" />
+        <v:CollapsedWhenTrue x:Key="Hidden" />
+        <v:VisibleWhenPresent x:Key="Present" />
+
     </Application.Resources>
 </Application>

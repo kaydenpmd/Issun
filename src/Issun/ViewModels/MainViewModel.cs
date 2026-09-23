@@ -108,11 +108,10 @@ public sealed partial class MainViewModel : Observable, IDisposable
         {
             Title = NowPlayingText.Title(track);
             Artist = NowPlayingText.Artist(track);
-            Album = NowPlayingText.Album(track);
         }
         HasTrack = s.Track is not null;
         NothingPlayingDetail = NowPlayingText.NothingPlayingDetail(s);
-        FromAmmy = NowPlayingText.FromAmmy(s.PhoneVersion);
+        SourceVersion = NowPlayingText.SourceVersion(s.PhoneVersion);
         OnDiscord = NowPlayingText.OnDiscord(s);
         UpdateCover(s);
 
@@ -166,14 +165,11 @@ public sealed partial class MainViewModel : Observable, IDisposable
     public string Artist { get => _artist; private set => Set(ref _artist, value); }
     private string _artist = "";
 
-    public string? Album { get => _album; private set => Set(ref _album, value); }
-    private string? _album;
-
     public string NothingPlayingDetail { get => _nothingDetail; private set => Set(ref _nothingDetail, value); }
     private string _nothingDetail = "";
 
-    public string? FromAmmy { get => _fromAmmy; private set => Set(ref _fromAmmy, value); }
-    private string? _fromAmmy;
+    public string? SourceVersion { get => _sourceVersion; private set => Set(ref _sourceVersion, value); }
+    private string? _sourceVersion;
 
     public string? OnDiscord { get => _onDiscord; private set => Set(ref _onDiscord, value); }
     private string? _onDiscord;

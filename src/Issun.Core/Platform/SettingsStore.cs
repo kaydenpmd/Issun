@@ -146,7 +146,7 @@ public sealed class SettingsStore : ISettingsStore
             created = true;
             settings = settings with { Key = KeyGenerator.New() };
             Log.Write($"[config] {FilePath} had no key — generated a new one ({settings.Key.Length} characters). "
-                      + "Ammy needs it in its Key field before it can connect.");
+                      + "Your source needs it before it can connect.");
             TryPersist(settings);
         }
         Log.Write($"[config] settings loaded from {FilePath}");
@@ -185,14 +185,14 @@ public sealed class SettingsStore : ISettingsStore
             // holding it may let go, and the next start can read it after all.
             Log.Write($"[config] WARNING: settings at {FilePath} could not be read ({reason}), and could not be "
                       + $"moved aside either ({ex.Message}). Running this session on a temporary new key "
-                      + $"({fresh.Key.Length} characters) and leaving the file untouched. Ammy will not connect "
+                      + $"({fresh.Key.Length} characters) and leaving the file untouched. Your source will not connect "
                       + "until this is fixed — close anything that has the file open and restart Issun.");
             return fresh;
         }
 
         Log.Write($"[config] WARNING: settings at {FilePath} could not be read ({reason}). Moved it to "
                   + $"{Path.GetFileName(aside)} and started fresh with a new key ({fresh.Key.Length} characters). "
-                  + "Ammy will need the new key in its Key field before it can connect again.");
+                  + "Your source will need the new key before it can connect again.");
         TryPersist(fresh);
         return fresh;
     }

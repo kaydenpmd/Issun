@@ -27,6 +27,30 @@ has been quit from the tray.
 Ammy's CLAUDE.md learned this the hard way, twice: documented state decays in
 whichever direction you are not looking. **Check `git log`, not this file.**
 
+## What Issun is, in anything a user reads
+
+**A Discord receiver for any source, never "Ammy's receiver".** The owner, 23 Sept
+2026: "remove all references to ammy STOP. but don't remove references to
+discord. this is meant for discord." The window, the tray, log notices, the
+README and the Start menu entry say **source**, not Ammy or phone. The Source row
+was the Phone row until then. It is the mirror of Ammy's own rule, where
+user-facing text never names Discord.
+
+Three things still carry the name on purpose, and they stay:
+- the `X-Ammy-Relay` response header, which Ammy checks for by exact name;
+- log lines kept word for word from relay.py, such as `[init] phone reports Ammy …`,
+  which hundreds of parity tests pin;
+- this file and code comments, which explain how the two fit together.
+
+The same day the owner removed three settings from the window and **locked** them:
+the member list always shows the artist, the card never gets an album line, and
+cover matching uses relay.py's 0.35 floor. `IssunHost.Locked()` applies that
+wherever settings enter the app, including load, Apply and import, and the importer
+notes `STATUS_LINE`, `SHOW_ALBUM` and `ART_MIN_SCORE` as not applying. The
+`Settings` record keeps the fields so the relay.py parity tests can still
+exercise the builder's other modes. Don't put them back in the window without
+asking. The check-in history file was renamed `uptime.log` at the same time.
+
 ## Why it exists
 
 Ammy's CLAUDE.md, open work item 1, counted what a stranger needs to run the

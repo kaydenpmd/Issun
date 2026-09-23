@@ -104,7 +104,7 @@ public sealed class StartMenuShortcut
             link.TargetPath = ExePath;
             link.WorkingDirectory = Path.GetDirectoryName(ExePath) ?? "";
             link.IconLocation = ExePath + ",0";
-            link.Description = "Shows what Ammy is playing on Discord";
+            link.Description = "Shows what you're playing on Discord";
             link.Save();
             return 0;
         });

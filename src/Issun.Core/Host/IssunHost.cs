@@ -62,8 +62,10 @@ public sealed class IssunHost : IIssunHost
         Directory.CreateDirectory(Paths.DataDir);
         Directory.CreateDirectory(Paths.ArtCache);
 
+        MoveLegacyUptimeLog();
+
         _store = new SettingsStore(Paths.SettingsFile);
-        _config = new MutableConfig(_store.Current);
+        _config = new MutableConfig(Locked(_store.Current));
 
         _state = new PhoneState();
         _diag = new PhoneDiagnostics();
@@ -150,6 +152,7 @@ public sealed class IssunHost : IIssunHost
 
     public async Task UpdateSettingsAsync(Settings updated)
     {
+        updated = Locked(updated);
         var problem = Validate(updated);
         if (problem is not null)
             throw new ArgumentException(problem);
@@ -159,7 +162,7 @@ public sealed class IssunHost : IIssunHost
         _config.Settings = updated;
 
         if (updated.Key != previous.Key)
-            Log.Write($"[config] key changed ({updated.Key.Length} characters) — Ammy needs the new one");
+            Log.Write($"[config] key changed ({updated.Key.Length} characters) — your source needs the new one");
         if (updated.DiscordClientId != previous.DiscordClientId)
             Log.Write("[config] Discord application ID changed");
 
@@ -335,6 +338,43 @@ public sealed class IssunHost : IIssunHost
             RaiseChanged();
         }
     }
+
+    /// <summary>
+    /// The check-in history used to be ammy-uptime.log. Move it to its new name
+    /// once, before anything appends, so the history carries on in one file.
+    /// Only when the new file doesn't exist yet: never overwrite history.
+    /// </summary>
+    private static void MoveLegacyUptimeLog()
+    {
+        try
+        {
+            if (File.Exists(Paths.LegacyUptimeLog) && !File.Exists(Paths.UptimeLog))
+            {
+                File.Move(Paths.LegacyUptimeLog, Paths.UptimeLog);
+                Log.Write($"[uptime] check-in history renamed to {Path.GetFileName(Paths.UptimeLog)}");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Write($"[uptime] could not rename {Paths.LegacyUptimeLog} to {Path.GetFileName(Paths.UptimeLog)}: {ex.Message}. "
+                      + "New entries go to the new file; the old one is untouched.");
+        }
+    }
+
+    /// <summary>
+    /// Settings the window no longer offers, pinned to the owner's choice
+    /// (23 Sept 2026): Discord's member list shows the artist, the card has no
+    /// album line, and cover matching uses relay.py's default floor. Applied
+    /// wherever settings enter the running app — load, Apply, import — so a
+    /// hand-edited or relay-era settings.json can't turn them back on where
+    /// nobody can see it.
+    /// </summary>
+    private static Settings Locked(Settings s) => s with
+    {
+        StatusLine = "state",
+        ShowAlbum = false,
+        ArtMinScore = new Settings().ArtMinScore,
+    };
 
     private static string? Validate(Settings s)
     {

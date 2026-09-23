@@ -143,7 +143,7 @@ public class TailscaleCliTests
         var status = await Cli(Running(FunnelOff)).ProbeAsync(8787, CancellationToken.None);
 
         Assert.Equal(new TailscaleStatus(true, true, DnsName, false, false,
-            "Funnel is off, so Ammy can't reach Issun from outside your tailnet. Turn it on from Issun, "
+            "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, "
             + "or run: tailscale funnel --bg --https=443 localhost:8787"), status);
     }
 

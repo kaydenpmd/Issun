@@ -78,7 +78,7 @@ public sealed class DemoHost : IIssunHost
         _startPhase = ((startPhase % Script.Length) + Script.Length) % Script.Length;
         _settings = new Settings { DiscordClientId = "123456789012345678", Key = NewKey() };
         _tailscale = new TailscaleStatus(true, true, DemoDnsName, FunnelOn: false, FunnelTargetsPort: false,
-            "Funnel is off, so Ammy can't reach Issun from outside your tailnet. Turn it on from Issun, " +
+            "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, " +
             "or run: tailscale funnel --bg --https=443 localhost:8787");
 
         // Invented releases, except the one-character title: "i" by Kendrick

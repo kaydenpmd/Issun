@@ -21,7 +21,7 @@ public static class StatusText
     public static StatusLine Phone(HostSnapshot s, double now, DateTime nowLocal)
     {
         if (s.LastCheckinAt <= 0)
-            return new("Waiting for Ammy's first push", StatusLevel.Neutral);
+            return new("Waiting for the first push", StatusLevel.Neutral);
 
         // PhoneSilent is the host's verdict (quiet for longer than the 90 s gap
         // threshold), not recomputed here, so the window and the uptime log can
@@ -63,7 +63,7 @@ public static class StatusText
         var fallback =
             !t.Installed ? "Tailscale isn't installed" :
             !t.Running ? "Tailscale isn't running, or this PC isn't signed in" :
-            !t.FunnelOn ? "Funnel is off, so Ammy can't reach this PC" :
+            !t.FunnelOn ? "Funnel is off, so nothing outside your tailnet can reach this PC" :
             string.Format(Inv, "Funnel is on, but not pointed at port {0}", port);
         return new(Present(t.Detail) ?? fallback, StatusLevel.Warning);
     }

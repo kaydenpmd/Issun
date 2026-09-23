@@ -13,12 +13,6 @@ public sealed partial class MainViewModel
     /// <summary>The host's settings when the form was last loaded, to tell "the person edited this" from "the host changed underneath".</summary>
     private Settings? _formBase;
 
-    /// <summary>One item in a drop-down. A class rather than the tuple SettingsForm uses, because WPF binds to properties, not fields.</summary>
-    public sealed record Choice(string Value, string Label);
-
-    public IReadOnlyList<Choice> StatusLineOptions { get; } =
-        SettingsForm.StatusLines.Select(s => new Choice(s.Value, s.Label)).ToList();
-
     public AsyncCommand ApplySettingsCommand { get; private set; } = null!;
     public Command RevertSettingsCommand { get; private set; } = null!;
     public AsyncCommand ImportEnvCommand { get; private set; } = null!;
@@ -91,12 +85,9 @@ public sealed partial class MainViewModel
     private SettingsFields Fields() => new()
     {
         DiscordClientId = _clientId,
-        StatusLine = _statusLine,
-        ShowAlbum = _showAlbum,
         PublicRead = _publicRead,
         Port = _port,
         PublicBase = _publicBase,
-        ArtMinScore = _artMinScore,
     };
 
     private void LoadFields(Settings s)
@@ -106,12 +97,9 @@ public sealed partial class MainViewModel
         try
         {
             ClientId = f.DiscordClientId;
-            StatusLine = f.StatusLine;
-            ShowAlbum = f.ShowAlbum;
             PublicRead = f.PublicRead;
             Port = f.Port;
             PublicBase = f.PublicBase;
-            ArtMinScore = f.ArtMinScore;
         }
         finally
         {
@@ -155,13 +143,6 @@ public sealed partial class MainViewModel
     public string ClientId { get => _clientId; set { if (Set(ref _clientId, value ?? "")) Edited(); } }
     private string _clientId = "";
 
-    /// <summary>"state", "details" or "name" — relay.py's STATUS_LINE values.</summary>
-    public string StatusLine { get => _statusLine; set { if (Set(ref _statusLine, value ?? "state")) Edited(); } }
-    private string _statusLine = "state";
-
-    public bool ShowAlbum { get => _showAlbum; set { if (Set(ref _showAlbum, value)) Edited(); } }
-    private bool _showAlbum;
-
     public bool PublicRead { get => _publicRead; set { if (Set(ref _publicRead, value)) Edited(); } }
     private bool _publicRead;
 
@@ -170,9 +151,6 @@ public sealed partial class MainViewModel
 
     public string PublicBase { get => _publicBase; set { if (Set(ref _publicBase, value ?? "")) Edited(); } }
     private string _publicBase = "";
-
-    public string ArtMinScore { get => _artMinScore; set { if (Set(ref _artMinScore, value ?? "")) Edited(); } }
-    private string _artMinScore = "";
 
     public bool AdvancedExpanded { get => _advancedExpanded; set => Set(ref _advancedExpanded, value); }
     private bool _advancedExpanded;

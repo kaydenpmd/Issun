@@ -161,7 +161,7 @@ public class SettingsStoreTests : IDisposable
 
         var warning = Assert.Single(log.Lines, l => l.StartsWith("[config] WARNING", StringComparison.Ordinal));
         Assert.Contains(Path.GetFileName(aside), warning);
-        Assert.Contains("Ammy will need the new key", warning);
+        Assert.Contains("Your source will need the new key", warning);
         Assert.DoesNotContain(store.Current.Key, warning);
     }
 

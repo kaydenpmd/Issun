@@ -112,15 +112,15 @@ public static class EnvImporter
             settings = settings with { Key = key };
             imported++;
             notes.Add(fromOldName
-                ? $"Key imported from RELAY_SECRET, relay.py's old name for it ({key.Length} characters) — Ammy keeps working without re-pairing."
-                : $"Key imported ({key.Length} characters) — Ammy keeps working without re-pairing.");
+                ? $"Key imported from RELAY_SECRET, relay.py's old name for it ({key.Length} characters) — your source keeps working without re-pairing."
+                : $"Key imported ({key.Length} characters) — your source keeps working without re-pairing.");
             if (!fromOldName && !string.IsNullOrEmpty(relaySecret))
                 notes.Add("RELAY_SECRET ignored — RELAY_KEY is set too, and relay.py preferred it.");
         }
         else
         {
             notes.Add((relayKey is null && relaySecret is null ? "No RELAY_KEY in the .env" : "RELAY_KEY is empty in the .env")
-                      + " — kept Issun's own key. Ammy needs Issun's key in its Key field.");
+                      + " — kept Issun's own key. Your source needs Issun's key.");
         }
 
         // ── RELAY_PORT ──
@@ -169,38 +169,20 @@ public static class EnvImporter
             }
         }
 
-        // ── STATUS_LINE ──
-        // relay.py: .strip().lower(), then looked up in {name, state, details}.
-        // Anything else sent no status_display_type at all, and Discord's
-        // default for that is the application name.
-        if (env.Values.TryGetValue("STATUS_LINE", out var lineRaw))
-        {
-            var statusLine = PyText.Lower(PyText.Strip(lineRaw));
-            imported++;
-            if (statusLine is "name" or "state" or "details")
-            {
-                settings = settings with { StatusLine = statusLine };
-                notes.Add($"Member-list line imported: {statusLine} ({DescribeStatusLine(statusLine)}).");
-            }
-            else
-            {
-                settings = settings with { StatusLine = "name" };
-                notes.Add($"STATUS_LINE={lineRaw} isn't name, state or details. relay.py ignored it, so Discord "
-                          + "showed the app name — imported as name.");
-            }
-        }
+        // ── STATUS_LINE, SHOW_ALBUM, ART_MIN_SCORE ──
+        // Settings relay.py had and Issun's window no longer offers (removed
+        // 23 Sept 2026 at the owner's request): Discord's member list always
+        // shows the artist, the album is never a third line, and cover matching
+        // uses relay.py's default floor. Importing a value for any of them would
+        // set something the person then has no way to see or undo.
+        if (env.Values.ContainsKey("STATUS_LINE"))
+            notes.Add("STATUS_LINE doesn't apply — Issun always shows the artist in Discord's member list. Ignored.");
+        if (env.Values.ContainsKey("SHOW_ALBUM"))
+            notes.Add("SHOW_ALBUM doesn't apply — Issun doesn't show the album on the Discord card. Ignored.");
+        if (env.Values.ContainsKey("ART_MIN_SCORE"))
+            notes.Add("ART_MIN_SCORE doesn't apply — Issun uses a fixed cover-matching threshold. Ignored.");
 
-        // ── SHOW_ALBUM, PUBLIC_READ ──
-        if (env.Values.TryGetValue("SHOW_ALBUM", out var albumRaw))
-        {
-            var on = IsOn(albumRaw);
-            settings = settings with { ShowAlbum = on };
-            imported++;
-            notes.Add((on
-                          ? "Album line imported: on — Discord shows the album as a third line and as the cover's tooltip."
-                          : "Album line imported: off.")
-                      + UnrecognisedSwitch("SHOW_ALBUM", albumRaw));
-        }
+        // ── PUBLIC_READ ──
         if (env.Values.TryGetValue("PUBLIC_READ", out var readRaw))
         {
             var on = IsOn(readRaw);
@@ -210,24 +192,6 @@ public static class EnvImporter
                           ? "Public now-playing feed imported: on — GET /now-playing answers anyone who has the link, with no key."
                           : "Public now-playing feed imported: off.")
                       + UnrecognisedSwitch("PUBLIC_READ", readRaw));
-        }
-
-        // ── ART_MIN_SCORE ──
-        // relay.py: float(os.environ.get("ART_MIN_SCORE", "0.35")). Parsed in the
-        // invariant culture: on a machine whose culture writes 0,35, the
-        // machine's rules would read "0.35" as 35.
-        if (env.Values.TryGetValue("ART_MIN_SCORE", out var scoreRaw))
-        {
-            if (PyText.TryParseFloat(scoreRaw, out var score, out var nonFinite))
-            {
-                settings = settings with { ArtMinScore = score };
-                imported++;
-                notes.Add($"Artwork match floor imported: {Num(score)}.");
-            }
-            else
-            {
-                notes.Add($"ART_MIN_SCORE={scoreRaw} isn't {(nonFinite ? "a usable" : "a")} number — kept {Num(current.ArtMinScore)}.");
-            }
         }
 
         // ── Relay-only paths ──
@@ -292,7 +256,7 @@ public static class EnvImporter
             if ((inFile && saved == fileValue) || (!inFile && saved.Length == 0))
                 continue;
             var consequence = name is "RELAY_KEY" or "RELAY_SECRET"
-                ? "If Ammy's key is refused, pair it again with Issun's key."
+                ? "If your source's key is refused, give it Issun's key again."
                 : "Check that setting in Issun if anything looks different.";
             notes.Add(inFile
                 ? $"{name} is also saved as a Windows environment variable, and relay.py used that instead of the "

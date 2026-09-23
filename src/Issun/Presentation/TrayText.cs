@@ -20,9 +20,9 @@ public static class TrayText
         else if (!s.Server.Listening)
             text = "Issun – not receiving: " + StatusText.Receiver(s.Server).Text;
         else if (s.LastCheckinAt <= 0)
-            text = "Issun – waiting for Ammy";
+            text = "Issun – waiting for the first push";
         else if (s.PhoneSilent)
-            text = $"Issun – Ammy quiet since {TimeText.Moment(s.LastCheckinAt, nowLocal)}";
+            text = $"Issun – source quiet since {TimeText.Moment(s.LastCheckinAt, nowLocal)}";
         else if (s.Discord.State != DiscordLinkState.Connected)
             text = "Issun – Discord: " + StatusText.Discord(s.Discord).Text;
         else

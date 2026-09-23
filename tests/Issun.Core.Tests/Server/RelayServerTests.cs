@@ -593,7 +593,7 @@ public class RelayServerTests
             // A missing key is a different kind from a wrong one, so it gets
             // its own line even inside the wrong key's quiet minute.
             "[http] 401 POST /now-playing: the request carried no key",
-            "[http] 404 POST /: not found — Ammy's Endpoint should end in /now-playing",
+            "[http] 404 POST /: not found — the address should end in /now-playing",
             "[http] 401 GET /status: the request carried no key",
         ];
         lock (lines)

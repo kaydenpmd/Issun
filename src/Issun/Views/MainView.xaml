@@ -66,9 +66,6 @@
                             <TextBlock Text="{Binding Artist}" FontSize="14" Margin="0,2,0,0"
                                        TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <TextBlock Text="{Binding Album}" Style="{StaticResource Caption}"
-                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
-                                       Visibility="{Binding Album, Converter={StaticResource Present}}" />
 
                             <Grid Margin="0,12,0,0" Visibility="{Binding HasProgress, Converter={StaticResource Visible}}">
                                 <Grid.RowDefinitions>
@@ -92,9 +89,9 @@
                         </StackPanel>
 
                         <WrapPanel Margin="0,8,0,0">
-                            <TextBlock Text="{Binding FromAmmy}" Style="{StaticResource Caption}"
+                            <TextBlock Text="{Binding SourceVersion}" Style="{StaticResource Caption}"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                       Visibility="{Binding FromAmmy, Converter={StaticResource Present}}"
+                                       Visibility="{Binding SourceVersion, Converter={StaticResource Present}}"
                                        Margin="0,0,12,0" />
                             <TextBlock Text="{Binding OnDiscord}" Style="{StaticResource Caption}"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
@@ -111,7 +108,7 @@
                 <DockPanel>
                     <Ellipse DataContext="{Binding PhoneStatus}" Style="{StaticResource StatusDot}" />
                     <StackPanel>
-                        <TextBlock Text="Phone" Style="{StaticResource RowTitle}" />
+                        <TextBlock Text="Source" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="{Binding PhoneStatus.Text}" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </DockPanel>
@@ -170,8 +167,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- ───────────── Pair Ammy ───────────── -->
-            <TextBlock Text="Pair Ammy" Style="{StaticResource SectionHeader}" />
+            <!-- ───────────── Connect a source ───────────── -->
+            <TextBlock Text="Connect a source" Style="{StaticResource SectionHeader}" />
 
             <Border Style="{StaticResource Card}"
                     Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
@@ -180,9 +177,9 @@
                     <Button DockPanel.Dock="Right" Content="Got it" Command="{Binding DismissBannerCommand}"
                             VerticalAlignment="Center" Margin="12,0,0,0" />
                     <StackPanel>
-                        <TextBlock Text="Set up Ammy" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
+                        <TextBlock Text="Connect your source" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
                         <TextBlock Style="{StaticResource RowDescription}"
-                                   Text="In Ammy's settings, put these two values into its Endpoint and Key fields, then tap Start." />
+                                   Text="Put these two values into your source's settings: the address it sends to, and its key." />
                     </StackPanel>
                 </DockPanel>
             </Border>
@@ -233,7 +230,7 @@
                             Visibility="{Binding ConfirmingNewKey, Converter={StaticResource Visible}}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource RowTitle}"
-                                       Text="Replace the key? Ammy's pushes will be refused until you put the new key into its Key field." />
+                                       Text="Replace the key? Your source's pushes will be refused until it has the new key." />
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                                 <Button Content="Replace key" Command="{Binding ConfirmNewKeyCommand}"
                                         Style="{DynamicResource AccentButtonStyle}" Margin="0,0,8,0" />
@@ -258,32 +255,6 @@
                         <TextBlock Text="Discord application ID" Style="{StaticResource RowTitle}" />
                         <TextBlock Style="{StaticResource RowDescription}"
                                    Text="From your application in the Discord Developer Portal. Its name is what Discord shows after &quot;Listening to&quot;, so name it after where the music comes from, like Apple Music." />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <ComboBox DockPanel.Dock="Right" Width="140" VerticalAlignment="Center" Margin="12,0,0,0"
-                              ItemsSource="{Binding StatusLineOptions}" DisplayMemberPath="Label" SelectedValuePath="Value"
-                              SelectedValue="{Binding StatusLine}"
-                              AutomationProperties.Name="Member list shows" />
-                    <StackPanel>
-                        <TextBlock Text="Member list shows" Style="{StaticResource RowTitle}" />
-                        <TextBlock Style="{StaticResource RowDescription}"
-                                   Text="The one line Discord's member list shows under your name." />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="0"
-                              IsChecked="{Binding ShowAlbum}" AutomationProperties.Name="Show album" />
-                    <StackPanel>
-                        <TextBlock Text="Show album" Style="{StaticResource RowTitle}" />
-                        <TextBlock Style="{StaticResource RowDescription}"
-                                   Text="Adds the album as a third line on your Discord card. Discord uses the same text for the cover's tooltip, so the two come together." />
                     </StackPanel>
                 </DockPanel>
             </Border>
@@ -328,26 +299,15 @@
                 <Expander.Header>
                     <StackPanel Margin="4,2,0,2">
                         <TextBlock Text="Advanced" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="Public address and cover matching" Style="{StaticResource RowDescription}" />
+                        <TextBlock Text="Public address" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
                 <StackPanel Margin="4,4,0,0">
                     <TextBlock Text="Public address" Style="{StaticResource RowTitle}" />
                     <TextBlock Style="{StaticResource RowDescription}"
-                               Text="Leave empty to use this PC's Tailscale address. Set it if something other than Tailscale Funnel reaches this PC. Discord's servers fetch covers uploaded by Ammy from here." />
+                               Text="Leave empty to use this PC's Tailscale address. Set it if something other than Tailscale Funnel reaches this PC. Discord's servers fetch uploaded covers from here." />
                     <TextBox Margin="0,8,0,0" Text="{Binding PublicBase, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.Name="Public address" />
-
-                    <DockPanel Margin="0,16,0,0">
-                        <TextBox DockPanel.Dock="Right" Width="90" VerticalAlignment="Center" Margin="12,0,0,0"
-                                 Text="{Binding ArtMinScore, UpdateSourceTrigger=PropertyChanged}"
-                                 AutomationProperties.Name="Cover match threshold" />
-                        <StackPanel>
-                            <TextBlock Text="Cover match threshold" Style="{StaticResource RowTitle}" />
-                            <TextBlock Style="{StaticResource RowDescription}"
-                                       Text="Only for songs Ammy can't identify exactly: how close a search result must be, from 0 to 1, before its cover is used. 0.35 unless covers are often wrong." />
-                        </StackPanel>
-                    </DockPanel>
                 </StackPanel>
             </Expander>
 
@@ -402,11 +362,11 @@
                 <Expander.Header>
                     <StackPanel Margin="4,2,0,2">
                         <TextBlock Text="Diagnostics" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="The phone's last report and its check-in history" Style="{StaticResource RowDescription}" />
+                        <TextBlock Text="The source's last report and its check-in history" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
                 <StackPanel Margin="4,4,0,0">
-                    <TextBlock Text="Ammy's last report" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
+                    <TextBlock Text="The source's last report" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding DiagSummary}" Style="{StaticResource MonoBlock}" Margin="0,4,0,0" />
 
                     <TextBlock Text="Check-in history" Style="{StaticResource RowTitle}" FontWeight="SemiBold" Margin="0,16,0,0" />

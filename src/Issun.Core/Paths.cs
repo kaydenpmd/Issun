@@ -22,8 +22,14 @@ public static class Paths
     public static string SettingsFile => Path.Combine(ConfigDir, "settings.json");
     public static string LogFile => Path.Combine(DataDir, "issun.log");
 
-    /// <summary>Same filename relay.py used, so an imported history continues in place.</summary>
-    public static string UptimeLog => Path.Combine(DataDir, "ammy-uptime.log");
+    /// <summary>
+    /// The source's check-in history. Named ammy-uptime.log, relay.py's name for
+    /// it, until 23 Sept 2026; IssunHost moves a file by that name here once.
+    /// </summary>
+    public static string UptimeLog => Path.Combine(DataDir, "uptime.log");
+
+    /// <summary>Where builds before 23 Sept 2026 kept <see cref="UptimeLog"/>.</summary>
+    public static string LegacyUptimeLog => Path.Combine(DataDir, "ammy-uptime.log");
 
     public static string ArtCache => Path.Combine(DataDir, "art_cache");
 }

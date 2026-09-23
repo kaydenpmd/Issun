@@ -347,7 +347,7 @@ public sealed class RelayServer : IRelayServer
         {
             // Before the key check, as in relay.py: a wrong path is a 404 whoever asks.
             _refusals.Note("404 POST",
-                $"[http] 404 POST {RefusalLog.Printable(context.Request.Path.Value)}: not found — Ammy's Endpoint should end in /now-playing");
+                $"[http] 404 POST {RefusalLog.Printable(context.Request.Path.Value)}: not found — the address should end in /now-playing");
             await ReplyAsync(context, 404, "not found");
             return;
         }

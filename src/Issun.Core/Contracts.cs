@@ -241,7 +241,7 @@ public interface IPresenceWorker
 public sealed record ServerStatus(bool Listening, int Port, string? Error);
 
 public sealed class PortInUseException(int port, Exception? inner = null)
-    : Exception($"Port {port} is already in use — is relay.py (the \"Ammy Relay\" task) still running?", inner)
+    : Exception($"Port {port} is already in use — is relay.py still running?", inner)
 {
     public int Port { get; } = port;
 }

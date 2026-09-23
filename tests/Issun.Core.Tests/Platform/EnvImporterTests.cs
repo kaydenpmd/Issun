@@ -61,7 +61,7 @@ public class EnvImporterTests : IDisposable
         Assert.False(result.Settings.ShowAlbum);
         Assert.Contains(result.Notes, n => n.StartsWith("Key imported from RELAY_SECRET", StringComparison.Ordinal)
                                            && n.Contains("(32 characters)", StringComparison.Ordinal)
-                                           && n.Contains("Ammy keeps working without re-pairing", StringComparison.Ordinal));
+                                           && n.Contains("your source keeps working without re-pairing", StringComparison.Ordinal));
         Assert.Contains("SHOW_ALBUM is commented out — ignored, as relay.py ignored it.", result.Notes);
         Assert.Contains("Discord application ID imported (19 digits).", result.Notes);
     }
@@ -88,10 +88,7 @@ public class EnvImporterTests : IDisposable
             Key = "\"quoted-key\"",
             Port = 9000,
             PublicBase = "https://mypc.example-tailnet.ts.net",
-            StatusLine = "details",
-            ShowAlbum = true,
             PublicRead = true,
-            ArtMinScore = 0.5,
         }, result.Settings);
         Assert.Contains("RELAY_SECRET ignored — RELAY_KEY is set too, and relay.py preferred it.", result.Notes);
     }
@@ -109,7 +106,7 @@ public class EnvImporterTests : IDisposable
         var result = Import(env);
 
         Assert.Equal("first=with=equals", result.Settings.Key);
-        Assert.True(result.Settings.ShowAlbum);
+        Assert.False(result.Settings.ShowAlbum);
         Assert.Contains("RELAY_KEY appears more than once — used the first, as relay.py did.", result.Notes);
         Assert.Contains("SHOW_ALBUM appears more than once — used the first, as relay.py did.", result.Notes);
     }
@@ -132,7 +129,7 @@ public class EnvImporterTests : IDisposable
 
         Assert.Equal(Current with { Key = "old-name-key" }, result.Settings);
         Assert.Contains(result.Notes, n => n.StartsWith("Key imported from RELAY_SECRET", StringComparison.Ordinal));
-        Assert.Contains("Album line imported: off. (SHOW_ALBUM=2 isn't 1, true, yes or on, so relay.py read it as off.)", result.Notes);
+        Assert.Contains("SHOW_ALBUM doesn't apply — Issun doesn't show the album on the Discord card. Ignored.", result.Notes);
         Assert.Contains("Public now-playing feed imported: off.", result.Notes);
         Assert.Contains("Line 5 has no '=' and was skipped, as relay.py skipped it.", result.Notes);
         Assert.Contains("Line 6 has nothing before its '=' and was skipped, as relay.py skipped it.", result.Notes);
@@ -160,10 +157,7 @@ public class EnvImporterTests : IDisposable
             DiscordClientId = ClientId,
             Key = "spaced",
             Port = 8788,
-            StatusLine = "name",
-            ShowAlbum = true,
             PublicRead = true,
-            ArtMinScore = 1.0,
         }, result.Settings);
     }
 
@@ -200,23 +194,22 @@ public class EnvImporterTests : IDisposable
     }
 
     [Fact]
-    public void An_unknown_status_line_imports_as_name_which_is_what_discord_showed()
+    public void Settings_the_window_no_longer_offers_are_not_imported()
     {
-        // relay.py sent no status_display_type for an unrecognised value, and
-        // Discord's default for that is the application name.
-        var result = Import(WriteEnv("STATUS_LINE=artist\n"));
+        // Removed 23 Sept 2026: importing them would set something nobody can
+        // see or undo. The host pins them anyway; this keeps the notes honest.
+        var result = Import(WriteEnv("STATUS_LINE=details\nSHOW_ALBUM=1\nART_MIN_SCORE=0.5\n"));
 
-        Assert.Equal("name", result.Settings.StatusLine);
-        Assert.Contains(result.Notes, n => n.StartsWith("STATUS_LINE=artist isn't name, state or details", StringComparison.Ordinal));
+        Assert.Equal(Current, result.Settings);
+        Assert.Contains(result.Notes, n => n.StartsWith("STATUS_LINE doesn't apply", StringComparison.Ordinal));
+        Assert.Contains(result.Notes, n => n.StartsWith("SHOW_ALBUM doesn't apply", StringComparison.Ordinal));
+        Assert.Contains(result.Notes, n => n.StartsWith("ART_MIN_SCORE doesn't apply", StringComparison.Ordinal));
     }
 
     [Theory]
     [InlineData("RELAY_PORT=http\n", "RELAY_PORT=http isn't a port number — kept 8787.")]
     [InlineData("RELAY_PORT=70000\n", "RELAY_PORT=70000 is outside 1–65535 — kept 8787.")]
     [InlineData("RELAY_PORT=0\n", "RELAY_PORT=0 is outside 1–65535 — kept 8787.")]
-    [InlineData("ART_MIN_SCORE=0,5\n", "ART_MIN_SCORE=0,5 isn't a number — kept 0.35.")]
-    [InlineData("ART_MIN_SCORE=nan\n", "ART_MIN_SCORE=nan isn't a usable number — kept 0.35.")]
-    [InlineData("ART_MIN_SCORE=1e400\n", "ART_MIN_SCORE=1e400 isn't a usable number — kept 0.35.")]
     public void Values_relay_py_would_have_crashed_or_misbehaved_on_are_kept_as_they_were(string line, string note)
     {
         var result = Import(WriteEnv(line));
@@ -224,25 +217,6 @@ public class EnvImporterTests : IDisposable
         Assert.Equal(Current, result.Settings);
         Assert.Contains(note, result.Notes);
     }
-
-    [Fact]
-    public void Art_min_score_is_read_in_the_invariant_culture()
-    {
-        var saved = Thread.CurrentThread.CurrentCulture;
-        try
-        {
-            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("fr-FR");
-            var result = Import(WriteEnv("ART_MIN_SCORE=0.45\n"));
-            Assert.Equal(0.45, result.Settings.ArtMinScore);
-            Assert.Contains("Artwork match floor imported: 0.45.", result.Notes);
-        }
-        finally
-        {
-            Thread.CurrentThread.CurrentCulture = saved;
-        }
-    }
-
-    // ───────────── secrets ─────────────
 
     [Fact]
     public void Secrets_never_appear_in_notes_or_the_log()
@@ -255,7 +229,7 @@ public class EnvImporterTests : IDisposable
         var result = Import(env, environment: name => name == "RELAY_KEY" ? "SavedEnvKeySavedEnvKeySavedEnv12" : null);
 
         Assert.Equal(RelayKey, result.Settings.Key);
-        Assert.Contains("Key imported (32 characters) — Ammy keeps working without re-pairing.", result.Notes);
+        Assert.Contains("Key imported (32 characters) — your source keeps working without re-pairing.", result.Notes);
         var everything = string.Join("\n", result.Notes.Concat(log.Lines));
         foreach (var secret in new[] { ClientId, RelayKey, "OldSecretValueOldSecretValue1234", "SavedEnvKeySavedEnvKeySavedEnv12" })
             Assert.DoesNotContain(secret, everything, StringComparison.Ordinal);
@@ -280,7 +254,7 @@ public class EnvImporterTests : IDisposable
 
         Assert.Equal(RelayKey, result.Settings.Key);
         Assert.Contains(result.Notes, n => n.StartsWith("RELAY_KEY is also saved as a Windows environment variable", StringComparison.Ordinal)
-                                           && n.Contains("pair it again with Issun's key", StringComparison.Ordinal));
+                                           && n.Contains("give it Issun's key again", StringComparison.Ordinal));
         Assert.Contains(result.Notes, n => n.StartsWith("PUBLIC_READ isn't in the .env, but it is saved as a Windows environment variable", StringComparison.Ordinal));
         Assert.DoesNotContain(result.Notes, n => n.StartsWith("STATUS_LINE is also saved", StringComparison.Ordinal));
         Assert.DoesNotContain(result.Notes, n => n.StartsWith("RELAY_SECRET", StringComparison.Ordinal));
@@ -329,7 +303,7 @@ public class EnvImporterTests : IDisposable
         var result = Import(WriteEnv("# nothing but a comment\n"));
 
         Assert.Equal(Current, result.Settings);
-        Assert.Contains("No RELAY_KEY in the .env — kept Issun's own key. Ammy needs Issun's key in its Key field.", result.Notes);
+        Assert.Contains("No RELAY_KEY in the .env — kept Issun's own key. Your source needs Issun's key.", result.Notes);
     }
 
     // ───────────── uptime history ─────────────

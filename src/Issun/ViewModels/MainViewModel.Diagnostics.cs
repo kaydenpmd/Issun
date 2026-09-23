@@ -52,7 +52,7 @@ public sealed partial class MainViewModel
     private void RefreshDiagnostics(HostSnapshot s)
     {
         DiagSummary = string.IsNullOrWhiteSpace(s.DiagSummary)
-            ? "Ammy hasn't sent a report yet. Builds before diagnostics were added never do."
+            ? "The source hasn't sent a report yet."
             : s.DiagSummary;
     }
 

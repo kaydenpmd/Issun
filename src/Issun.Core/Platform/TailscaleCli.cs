@@ -264,10 +264,10 @@ public sealed partial class TailscaleCli : ITailscale
                           + "window closes and won't come back after a restart. Turning Funnel on from Issun keeps it running.");
 
         if (ours.FirstOrDefault(r => TargetsIssun(r.Proxy, port)) is { } partial)
-            return (false, $"Funnel sends only {partial.Mount} to Issun, but Ammy needs the whole address. "
+            return (false, $"Funnel sends only {partial.Mount} to Issun, but your source needs the whole address. "
                            + "Turning Funnel on from Issun fixes that.");
         if (toIssun.FirstOrDefault(r => r.Port != 443) is { } otherPort)
-            return (false, $"Funnel publishes Issun on port {Num(otherPort.Port)}, but the address Issun gives Ammy "
+            return (false, $"Funnel publishes Issun on port {Num(otherPort.Port)}, but the address Issun gives your source "
                            + "assumes 443. Turning Funnel on from Issun adds 443.");
         if (ours.FirstOrDefault(r => r.Mount == "/") is { } elsewhere)
             return (false, $"Funnel is on, but it sends this PC's address to {Describe(elsewhere.Proxy)} rather than "
@@ -275,7 +275,7 @@ public sealed partial class TailscaleCli : ITailscale
         if (config.FunnelOn)
             return (false, "Funnel is on for something else on this PC, but not for Issun. Turning Funnel on from Issun adds it.");
 
-        return (false, "Funnel is off, so Ammy can't reach Issun from outside your tailnet. Turn it on from Issun, "
+        return (false, "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, "
                        + $"or run: {command}"
                        + (needsPermission
                            ? " — Tailscale will first give you a link to allow Funnel for your tailnet."

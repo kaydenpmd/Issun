@@ -138,9 +138,9 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
         if (s.Track is { } track)
         {
-            var elapsed = Playhead.Elapsed(track, s.TrackObservedAt, now);
-            var duration = Playhead.Duration(track);
-            Progress = Playhead.Fraction(track, s.TrackObservedAt, now) ?? 0;
+            var elapsed = Playhead.Elapsed(s, now);
+            var duration = Playhead.Duration(s);
+            Progress = Playhead.Fraction(s, now) ?? 0;
             HasProgress = duration is not null && elapsed is not null;
             ElapsedText = elapsed is double e ? TimeText.Clock(e) : "";
             DurationText = duration is double d ? TimeText.Clock(d) : "";

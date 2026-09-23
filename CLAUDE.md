@@ -496,6 +496,33 @@ doesn't support it.
 Windows runner minutes bill at 2× on a private repo and are free on a public
 one.
 
+## Queued work
+
+Asked for by the owner and not yet done. Take the top item unless told otherwise.
+
+1. **"Source version 1.0 (97)" → "Source: Ammy 1.0 (97)"** (asked 23 Sept 2026).
+   The now-playing card's caption should give the source's name and number and
+   drop the word "version": the owner wrote "NO 'VERSION' JUST NAME AND NUMBER".
+   It needs both repos. Ammy sends only `app_version` today, with no name. So:
+   - Ammy: add a field with its name to every push, next to `app_version` in
+     `PresenceRelay.push()`. That's a fact about the sender, so it doesn't break
+     Ammy's receiver-agnostic rule.
+   - Issun: parse the field, keep it beside `PhoneVersion`, and render
+     `Source: <name> <version>` in `NowPlayingText.SourceVersion`. From a source
+     that sends no name, show `Source: <version>`. Add the field to the README's
+     "What a source sends" table.
+2. **Setup wizard and installer** (asked 23 Sept 2026). The owner said it "needs
+   some thinking first", so talk through it before building anything: what it
+   walks through (Discord application ID, Tailscale and Funnel, connecting the
+   source, Start with Windows), what kind of installer, and whether to pair by
+   QR code.
+3. **Review findings still open**, from the 23 Sept review that stopped partway:
+   - a type slip in `settings.json` discards the key;
+   - `Autostart.RepairIfMoved` repoints the Run key at local builds;
+   - a bad `PUBLIC_BASE` in a `.env` fails the whole import;
+   - the uptime verdict problems in `UptimeLog`;
+   - CI builds with the .NET 10 SDK, which needs pinning.
+
 ## Working with the owner
 
 Limited coding experience: comfortable running commands and reading output,

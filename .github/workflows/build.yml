@@ -1,0 +1,211 @@
+name: Build and release Issun
+
+# Every push to main that can change the app is a release: this runs the
+# tests, publishes the single-file Issun.exe, uploads it, and publishes it as a
+# GitHub Release, with no tagging step. That is the rule Ammy has followed
+# since 18 Sept 2026 (see its publish-source.yml), for the same reason: the
+# point is to get a build by pushing, not by remembering a second step.
+#
+# <VersionPrefix> in Directory.Build.props is the only version number a human
+# sets. Bump it there and push, and that push releases under the new number;
+# leave it alone and every push releases another build of the same version,
+# told apart by the build number (a commit count) alone.
+
+on:
+  push:
+    branches: [main]
+    # A README or CLAUDE.md edit cannot change the .exe, and a release per doc
+    # edit would bury the builds that matter. paths-ignore only skips a push
+    # when *every* changed file matches, so a commit touching code and docs
+    # together still builds.
+    paths-ignore:
+      - '**.md'
+  # Kept so a build can be forced by hand. Run from a branch other than main it
+  # builds and uploads but does not release; see the `if:` on the release steps.
+  workflow_dispatch:
+
+permissions:
+  contents: write   # creating the Release and its tag
+
+env:
+  # Without these, a fresh runner's first dotnet command prints a welcome
+  # banner, and the first dotnet command below is the one whose output is
+  # captured as the version number.
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+defaults:
+  run:
+    # Git Bash on a Windows runner. The same shell Ammy's workflows use, so the
+    # version logic reads the same in both repos.
+    shell: bash
+
+jobs:
+  build:
+    # WPF and the tests both need Windows: the autostart tests write a
+    # throwaway key under HKCU and the Discord tests open named pipes. Windows
+    # minutes bill at 2x on a private repo and are free on a public one.
+    runs-on: windows-latest
+
+    steps:
+      # fetch-depth: 0 is load-bearing. The default checkout is shallow, and the
+      # build number below is a commit count; against a shallow clone that
+      # counts 1, and every build would claim to be build 1.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # v5 runs on Node 24 natively. checkout stays on v4, the version Ammy's
+      # workflows have released with.
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 9.0.x
+
+      # Build identity comes from CI, not from anyone remembering to bump a
+      # number. The count of commits reachable from HEAD climbs on its own, and
+      # the short SHA ties an installed .exe back to a commit.
+      #
+      # Ammy used github.run_number for this until 18 Sept 2026, and it broke the
+      # moment another workflow started calling the build: in a reusable
+      # workflow the github context belongs to the caller, so run_number became
+      # a different counter that started again at 1. A commit count doesn't care
+      # which workflow is running. Issun starts on it rather than migrating to it.
+      - name: Work out the version
+        id: ver
+        run: |
+          set -euo pipefail
+
+          # Ammy guards against a shallow clone with a numeric floor, because it
+          # had an older numbering scheme to stay above. Issun has none, so ask
+          # git directly.
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            echo "::error::Shallow clone. The build number is a commit count and would be wrong; check fetch-depth: 0 on the checkout step."
+            exit 1
+          fi
+
+          # Asked of MSBuild rather than scraped out of the XML with a regex, so
+          # this reads the value the build itself will use, wherever and however
+          # the property ends up being defined. dotnet on Windows ends the line
+          # with CRLF; the CR has to go or it lands in the filename.
+          VERSION=$(dotnet msbuild src/Issun/Issun.csproj -getProperty:VersionPrefix)
+          VERSION=${VERSION//$'\r'/}
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Could not read <VersionPrefix> from Directory.Build.props (got '${VERSION}')."
+            exit 1
+          fi
+
+          BUILD=$(git rev-list --count HEAD)
+          SHA=$(git rev-parse --short HEAD)
+          NAME="Issun-${VERSION}-b${BUILD}-${SHA}"
+          {
+            echo "version=${VERSION}"
+            echo "build=${BUILD}"
+            echo "sha=${SHA}"
+            echo "name=${NAME}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building ${NAME}"
+
+      # Before publishing, so a failing test stops the release rather than
+      # shipping beside it.
+      - name: Test
+        run: dotnet test Issun.sln
+
+      # --self-contained: nothing to install first; the .NET runtime is inside.
+      # PublishSingleFile + IncludeNativeLibrariesForSelfExtract: one file. WPF's
+      # native DLLs would otherwise sit beside the .exe; with this they are
+      # bundled and unpacked under %TEMP%\.net on first launch.
+      # EnableCompressionInSingleFile: the bundled assemblies are compressed.
+      # Self-contained WPF plus ASP.NET Core is large; on the scaffold this took
+      # the .exe from 161 MB to 74 MB.
+      #
+      # IssunBuild and IssunCommit feed Directory.Build.props, which stamps them
+      # into assembly metadata for IssunInfo to read back. They are global
+      # properties, so they reach Issun.Core through the project reference, and
+      # Issun.Core is where IssunInfo lives. Checked locally on 21 Sept 2026: the
+      # .exe reported FileVersion 0.1.0.2 and Issun.Core carried the SHA.
+      #
+      # -o publish gives the next line a fixed path instead of one built from
+      # the configuration, framework and runtime identifier. The .pdb files land
+      # there too and are not shipped.
+      - name: Publish the single-file .exe
+        run: |
+          set -euo pipefail
+          dotnet publish src/Issun/Issun.csproj -c Release -r win-x64 --self-contained \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:EnableCompressionInSingleFile=true \
+            -p:IssunBuild=${{ steps.ver.outputs.build }} \
+            -p:IssunCommit=${{ steps.ver.outputs.sha }} \
+            -o publish
+          mv publish/Issun.exe "${{ steps.ver.outputs.name }}.exe"
+          echo "${{ steps.ver.outputs.name }}.exe: $(stat -c%s "${{ steps.ver.outputs.name }}.exe") bytes"
+
+      # archive: false requires upload-artifact v7+. Without it GitHub zips the
+      # upload and a browser download is a zip holding the .exe; with it, the
+      # download is the .exe itself. With archive: false the `name` input is
+      # ignored and the artifact is named after the file, so none is passed.
+      #
+      # Ammy uploads its .ipa a second time with normal archiving, because a
+      # later *job* downloads it and download-artifact unpacks a bare upload (an
+      # .ipa is a zip, so it arrived as Payload/ and no .ipa). Nothing here
+      # downloads the artifact: the Release below is made in this same job from
+      # the file already on disk, so one upload is enough.
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.ver.outputs.name }}.exe
+          archive: false
+          if-no-files-found: error
+
+      # The commit that triggered the build already says what changed, so it
+      # is the release notes. Trailers are for git, not for someone deciding
+      # whether to download.
+      #
+      # The hash is there because the .exe is unsigned: it is the only way to
+      # check that a copy is the one this run built.
+      - name: Write the release notes
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          EXE="${{ steps.ver.outputs.name }}.exe"
+          HASH=$(sha256sum "$EXE")
+          HASH=${HASH%% *}
+          # $(...) drops trailing newlines, which takes with it the blank line
+          # that separated the removed trailers from the body.
+          MESSAGE=$(git log -1 --format='%B' HEAD | grep -vE '^(Co-Authored-By|Claude-Session|Signed-off-by): ' || true)
+          {
+            printf '%s\n' "$MESSAGE"
+            echo
+            echo "---"
+            echo
+            echo "Built from commit ${GITHUB_SHA}."
+            echo
+            echo "SHA-256 of \`${EXE}\`: \`${HASH}\`"
+            echo
+            echo "Issun is not code-signed, so Windows SmartScreen will warn on first run: choose **More info**, then **Run anyway**."
+          } > notes.md
+          echo "--- release notes ---"
+          cat notes.md
+
+      # main only. A branch's commit count can equal one main has already
+      # released, and the release action would then add this .exe to that
+      # existing release instead of failing.
+      #
+      # The tag exists purely so GitHub has somewhere to hang the .exe; nothing
+      # reads it back. target_commitish pins it to the commit that was built:
+      # without it, GitHub creates the tag at main's current tip, which a push
+      # landing during this run will already have moved past.
+      #
+      # 0.x releases are marked pre-release: the first builds had not been run
+      # against a live phone when this was written, and GitHub's "Latest"
+      # badge shouldn't vouch for them. Bumping <VersionPrefix> to 1.0.0 ends it.
+      - name: Create the GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}-b${{ steps.ver.outputs.build }}
+          name: Issun ${{ steps.ver.outputs.version }} (${{ steps.ver.outputs.build }})
+          target_commitish: ${{ github.sha }}
+          body_path: notes.md
+          files: ${{ steps.ver.outputs.name }}.exe
+          fail_on_unmatched_files: true
+          prerelease: ${{ startsWith(steps.ver.outputs.version, '0.') }}

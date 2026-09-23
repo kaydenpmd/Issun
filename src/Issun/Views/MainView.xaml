@@ -141,18 +141,20 @@
                 <StackPanel>
                     <DockPanel>
                         <Ellipse DataContext="{Binding TailscaleStatus}" Style="{StaticResource StatusDot}" />
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <Button Content="Turn on Funnel" Command="{Binding EnableFunnelCommand}"
-                                    Style="{DynamicResource AccentButtonStyle}" Margin="0,0,8,0"
-                                    Visibility="{Binding OfferFunnel, Converter={StaticResource Visible}}" />
-                            <Button Content="Refresh" Command="{Binding RefreshTailscaleCommand}" />
-                        </StackPanel>
                         <StackPanel>
                             <TextBlock Text="Tailscale" Style="{StaticResource RowTitle}" />
                             <TextBlock Text="{Binding TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
-                            <TextBlock Text="Working…" Style="{StaticResource Caption}" Margin="0,4,0,0"
-                                       Visibility="{Binding EnableFunnelCommand.IsRunning, Converter={StaticResource Visible}}" />
-                            <TextBlock Text="{Binding TailscaleError}" Style="{StaticResource ErrorText}" Margin="0,4,0,0"
+                            <!-- Below the text rather than beside it: Tailscale's
+                                 advice can run to a whole command line. -->
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Content="Turn on Funnel" Command="{Binding EnableFunnelCommand}"
+                                        Style="{DynamicResource AccentButtonStyle}" Margin="0,0,8,0"
+                                        Visibility="{Binding OfferFunnel, Converter={StaticResource Visible}}" />
+                                <Button Content="Refresh" Command="{Binding RefreshTailscaleCommand}" Margin="0,0,12,0" />
+                                <TextBlock Text="Working…" Style="{StaticResource Caption}" VerticalAlignment="Center"
+                                           Visibility="{Binding EnableFunnelCommand.IsRunning, Converter={StaticResource Visible}}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding TailscaleError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
                                        Visibility="{Binding TailscaleError, Converter={StaticResource Present}}" />
                         </StackPanel>
                     </DockPanel>
@@ -195,14 +197,9 @@
                     </StackPanel>
                     <StackPanel>
                         <TextBlock Text="Endpoint" Style="{StaticResource RowTitle}" />
-                        <!-- A read-only text box rather than a TextBlock, so the
-                             address can also be selected by hand. -->
-                        <TextBox Text="{Binding EndpointUrl, Mode=OneWay}" IsReadOnly="True"
-                                 FontFamily="{StaticResource MonoFont}" FontSize="12"
-                                 BorderThickness="0" Background="Transparent" Padding="0" Margin="0,2,0,0"
-                                 TextWrapping="Wrap" MinHeight="0"
-                                 Visibility="{Binding HasEndpoint, Converter={StaticResource Visible}}"
-                                 AutomationProperties.Name="Endpoint" />
+                        <TextBlock Text="{Binding EndpointUrl}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
+                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding EndpointUrl}"
+                                   Visibility="{Binding HasEndpoint, Converter={StaticResource Visible}}" />
                         <TextBlock Style="{StaticResource RowDescription}"
                                    Visibility="{Binding HasEndpoint, Converter={StaticResource Hidden}}"
                                    Text="Not known yet. It appears here once Tailscale is running on this PC and Funnel is on — see Tailscale above." />
@@ -224,11 +221,8 @@
                         </StackPanel>
                         <StackPanel>
                             <TextBlock Text="Key" Style="{StaticResource RowTitle}" />
-                            <TextBox Text="{Binding KeyDisplay, Mode=OneWay}" IsReadOnly="True"
-                                     FontFamily="{StaticResource MonoFont}" FontSize="12"
-                                     BorderThickness="0" Background="Transparent" Padding="0" Margin="0,2,0,0"
-                                     TextWrapping="Wrap" MinHeight="0"
-                                     AutomationProperties.Name="Key" />
+<TextBlock Text="{Binding KeyDisplay}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
+                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </DockPanel>
 
@@ -332,12 +326,12 @@
 
             <Expander IsExpanded="{Binding AdvancedExpanded}" Margin="0,0,0,4" HorizontalAlignment="Stretch">
                 <Expander.Header>
-                    <StackPanel Margin="0,2">
+                    <StackPanel Margin="4,2,0,2">
                         <TextBlock Text="Advanced" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="Public address and cover matching" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
-                <StackPanel Margin="0,4,0,0">
+                <StackPanel Margin="4,4,0,0">
                     <TextBlock Text="Public address" Style="{StaticResource RowTitle}" />
                     <TextBlock Style="{StaticResource RowDescription}"
                                Text="Leave empty to use this PC's Tailscale address. Set it if something other than Tailscale Funnel reaches this PC. Discord's servers fetch covers uploaded by Ammy from here." />
@@ -406,12 +400,12 @@
             <!-- ───────────── Diagnostics ───────────── -->
             <Expander IsExpanded="{Binding DiagnosticsExpanded}" Margin="0,22,0,4" HorizontalAlignment="Stretch">
                 <Expander.Header>
-                    <StackPanel Margin="0,2">
+                    <StackPanel Margin="4,2,0,2">
                         <TextBlock Text="Diagnostics" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="The phone's last report and its check-in history" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
-                <StackPanel Margin="0,4,0,0">
+                <StackPanel Margin="4,4,0,0">
                     <TextBlock Text="Ammy's last report" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding DiagSummary}" Style="{StaticResource MonoBlock}" Margin="0,4,0,0" />
 
@@ -428,15 +422,15 @@
             <!-- ───────────── Log ───────────── -->
             <Expander IsExpanded="{Binding LogExpanded}" Margin="0,0,0,4" HorizontalAlignment="Stretch">
                 <Expander.Header>
-                    <StackPanel Margin="0,2">
+                    <StackPanel Margin="4,2,0,2">
                         <TextBlock Text="Log" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="The most recent lines, as they are written" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
-                <StackPanel Margin="0,4,0,0">
+                <StackPanel Margin="4,4,0,0">
                     <TextBox x:Name="LogBox" IsReadOnly="True" Height="320"
                              FontFamily="{StaticResource MonoFont}" FontSize="12"
-                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap" TextAlignment="Left" VerticalScrollBarVisibility="Auto"
                              HorizontalScrollBarVisibility="Disabled"
                              AutomationProperties.Name="Log" />
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">

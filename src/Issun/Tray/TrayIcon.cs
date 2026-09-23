@@ -103,7 +103,7 @@ public sealed class TrayIcon : IDisposable
     {
         try
         {
-            var resource = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/issun.ico"));
+            var resource = Application.GetResourceStream(new Uri("pack://application:,,,/Issun;component/Assets/issun.ico"));
             if (resource is null)
             {
                 Log.Write("[ui] the tray icon image is missing from the build; using the default");

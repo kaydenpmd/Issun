@@ -52,10 +52,12 @@ public partial class App : Application
             return;
         }
 
-        _instance = SingleInstance.TryAcquire(_options.Demo ? "Issun-demo" : "Issun", signalExisting: true);
+        // A second launch by hand means "show me Issun"; a second --background
+        // launch is the sign-in entry firing while Issun already runs, and
+        // popping the window up at the person would be wrong.
+        _instance = SingleInstance.TryAcquire(_options.Demo ? "Issun-demo" : "Issun", signalExisting: !_options.Background);
         if (_instance is null)
         {
-            // Another Issun is running and has been asked to show its window.
             Shutdown(0);
             return;
         }

@@ -28,7 +28,7 @@
 
             <!-- ───────────── Now playing ───────────── -->
             <TextBlock Text="Now playing" Style="{StaticResource SectionHeader}" Margin="2,8,0,8" />
-            <Border Style="{StaticResource Card}" CornerRadius="8" Padding="16">
+            <Border Style="{StaticResource Card}" Padding="16">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -39,26 +39,31 @@
                          ImageBrush rather than an Image so the corners clip.
 
                          The hairline is Windows 11's own convention for a
-                         surface edge: a 1 epx stroke inside the edge, following
-                         the corners, in the theme's control stroke colour —
-                         near-black in light mode, near-white in dark, both a few
-                         percent opaque. It is drawn over the art, as Apple Music
-                         draws its own, so a cover the same colour as the card
-                         still has an edge. -->
+                         surface edge, and every value comes from Windows rather
+                         than from here. Width 1: Microsoft Learn, "Layering and
+                         elevation", gives every surface a stroke width of 1.
+                         Colour: the theme's ControlStrokeColorDefault, #0F000000
+                         in light and #12FFFFFF in dark in WPF's .NET 9 Fluent
+                         theme, the same stroke Windows puts on buttons and combo
+                         boxes. Corners: ControlCornerRadius, 4, which Microsoft
+                         Learn's "Geometry" page gives to in-page elements. It is
+                         drawn over the art, as Apple Music draws its own, so a
+                         cover the same colour as the card still has an edge.
+                         Checked against those sources 23 Sept 2026. -->
                     <Grid Width="112" Height="112" VerticalAlignment="Top">
-                        <Border CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                        <Border CornerRadius="{DynamicResource ControlCornerRadius}" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
                             <TextBlock Text="&#xE8D6;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
                                        FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                        AutomationProperties.Name="No cover" />
                         </Border>
-                        <Border CornerRadius="6"
+                        <Border CornerRadius="{DynamicResource ControlCornerRadius}"
                                 Visibility="{Binding HasCover, Converter={StaticResource Visible}}">
                             <Border.Background>
                                 <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill" />
                             </Border.Background>
                         </Border>
-                        <Border CornerRadius="6" BorderThickness="1" IsHitTestVisible="False"
+                        <Border CornerRadius="{DynamicResource ControlCornerRadius}" BorderThickness="1" IsHitTestVisible="False"
                                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" />
                     </Grid>
 
@@ -168,7 +173,7 @@
                     <!-- What `tailscale funnel` said. On a tailnet that hasn't
                          allowed Funnel yet this is a link to the page that allows
                          it, so links are clickable. -->
-                    <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="4"
+                    <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{DynamicResource ControlCornerRadius}"
                             Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                             Visibility="{Binding FunnelOutput, Converter={StaticResource Present}}">
                         <TextBlock v:LinkTextBlock.Text="{Binding FunnelOutput}" Style="{StaticResource MonoBlock}" />
@@ -234,7 +239,7 @@
 
                     <!-- Replacing the key cuts Ammy off until it has the new one,
                          so it asks first, in place, rather than in a popup. -->
-                    <Border Margin="0,12,0,0" Padding="12,10" CornerRadius="4"
+                    <Border Margin="0,12,0,0" Padding="12,10" CornerRadius="{DynamicResource ControlCornerRadius}"
                             Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
                             Visibility="{Binding ConfirmingNewKey, Converter={StaticResource Visible}}">
                         <StackPanel>

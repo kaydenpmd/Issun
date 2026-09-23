@@ -9,9 +9,10 @@ namespace Issun.Core.Server;
 ///
 /// Nothing in here performs a lookup. A GET must never trigger an outbound
 /// iTunes request, or a public endpoint becomes a way for a stranger to make
-/// this machine issue traffic — so artwork and links come only from
-/// <see cref="IArtworkResolver.CachedArtwork"/> and
-/// <see cref="IArtworkResolver.CachedLinks"/>, or are omitted.
+/// this machine issue traffic — so artwork, links and explicitness come only
+/// from <see cref="IArtworkResolver.CachedArtwork"/>,
+/// <see cref="IArtworkResolver.CachedLinks"/> and
+/// <see cref="IArtworkResolver.CachedExplicit"/>, or are omitted.
 /// </summary>
 internal static class NowPlayingProjection
 {
@@ -64,6 +65,11 @@ internal static class NowPlayingProjection
                     json.Add("links", linkJson);
             }
         }
+
+        // Issun's own, not relay.py's, so it goes last and relay.py's keys keep
+        // their order. Only when true: the window's badge, for a web page.
+        if (TrackText.Explicit(track, artwork))
+            json.Add("explicit", true);
 
         return json.ToString();
     }

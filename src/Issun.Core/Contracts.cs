@@ -118,6 +118,14 @@ public interface IArtworkResolver
     string? CachedArtwork(string storeId);
 
     /// <summary>
+    /// What a store-ID lookup that has already run said about explicitness
+    /// (iTunes' <c>trackExplicitness</c>): true for "explicit", false for
+    /// "cleaned" or "notExplicit", null when it hasn't run, failed, or didn't
+    /// say. Never performs a lookup, and never comes from fuzzy search.
+    /// </summary>
+    bool? CachedExplicit(string storeId);
+
+    /// <summary>
     /// Absolute path for GET /art/&lt;name&gt;, or null unless <paramref name="name"/>
     /// is a .jpg directly inside the art cache and the file exists.
     /// </summary>
@@ -325,6 +333,9 @@ public sealed record HostSnapshot
     public double TrackObservedAt { get; init; }
 
     public string? ArtworkUrl { get; init; }
+
+    /// <summary>Mark <see cref="Track"/> explicit; see <see cref="TrackText.Explicit"/>. False with no track.</summary>
+    public bool Explicit { get; init; }
 
     /// <summary>What Discord is actually showing, per the worker.</summary>
     public DiscordActivity? Activity { get; init; }

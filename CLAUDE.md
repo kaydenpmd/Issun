@@ -360,8 +360,9 @@ the version has its own route.
 
 **A GET never performs a lookup.** `GET /now-playing` is a projection of state,
 never the raw push (which carries ~80 KB of base64 and the whole diag block).
-Its artwork and links come only from `CachedArtwork` / `CachedLinks`. A public
-endpoint must not be a way to make this machine send traffic.
+Its artwork, links and looked-up explicitness come only from `CachedArtwork` /
+`CachedLinks` / `CachedExplicit`. A public endpoint must not be a way to make
+this machine send traffic.
 
 **`/art/` is unauthenticated.** Discord's CDN fetches covers itself and can't
 send a header. Filenames are the first 20 hex characters of
@@ -378,6 +379,18 @@ wildcard prefix needs admin (see the comment in `Issun.Core.csproj`).
 
 **Links only ever come from the exact store-ID lookup.** A near-miss cover is a
 cosmetic annoyance; a link that opens the wrong song is a broken promise.
+
+**So does explicitness, when the source doesn't say** (added 23 Sept 2026, the
+window's "E" after the title). `TrackText.Explicit` takes the push's `explicit`
+first: only a JSON `true` or `false` counts, and `false` beats the catalog.
+Ammy sends only `true`, because iOS's `isExplicitItem` is a plain Bool whose
+`false` also means "unrated". Absent, it falls back to `trackExplicitness` from
+the store-ID lookup, and never to fuzzy search, because the clean and explicit
+editions of a song are separate catalog entries with the same title. Discord's
+activity object has no field for it (checked against Discord's gateway docs
+that day), so the card is unchanged; the badge is the window's and
+`GET /now-playing`'s. A song entry with no `trackExplicitness`, or a word other
+than `explicit` / `cleaned` / `notExplicit`, logs once per lookup.
 
 **The interactive session is load-bearing.** Discord's IPC pipe belongs to the
 signed-in user's session. relay.py's Scheduled Task needed `-LogonType

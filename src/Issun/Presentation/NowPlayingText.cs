@@ -12,6 +12,10 @@ public static class NowPlayingText
     public static string Title(TrackInfo t) => TrackText.Title(t);
     public static string Artist(TrackInfo t) => TrackText.Artist(t);
 
+    /// <summary>The title for a screen reader, which would otherwise read the badge as a stray "E".</summary>
+    public static string SpokenTitle(TrackInfo t, bool isExplicit) =>
+        isExplicit ? $"{Title(t)}, explicit" : Title(t);
+
     /// <summary>What the card says instead of a track, which depends on why there isn't one.</summary>
     public static string NothingPlayingDetail(HostSnapshot s) =>
         s.LastCheckinAt <= 0 ? "Nothing has checked in yet." :

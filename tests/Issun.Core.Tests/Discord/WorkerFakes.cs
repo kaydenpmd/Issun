@@ -190,6 +190,8 @@ internal sealed class FakeResolver : IArtworkResolver
 
     public string? CachedArtwork(string storeId) => null;
 
+    public bool? CachedExplicit(string storeId) => null;
+
     public string? UploadedArtPath(string name) => null;
 }
 

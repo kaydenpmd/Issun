@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Issun.Core.Artwork;
 
 namespace Issun.Core.Tests.Artwork;
@@ -158,6 +159,108 @@ public class ArtworkResolverTests : IDisposable
         Assert.Null(resolver.CachedLinks("46"));
         var line = Assert.Single(capture.Lines);
         Assert.StartsWith("[art] id lookup failed for 46: invalid JSON", line);
+    }
+
+    // ── Explicitness, from the store-ID lookup ──────────────────────────────
+
+    /// <summary>The Kendrick lookup fixture with its one result edited.</summary>
+    private static string KendrickLookupWith(Action<JsonObject> edit)
+    {
+        var root = JsonNode.Parse(Body("lookup-1444846349.json"))!.AsObject();
+        edit(root["results"]![0]!.AsObject());
+        return root.ToJsonString();
+    }
+
+    [Theory]
+    [InlineData("explicit", true)]
+    [InlineData("cleaned", false)]
+    [InlineData("notExplicit", false)]
+    public async Task The_store_id_lookup_records_whether_the_track_is_explicit(string explicitness, bool expected)
+    {
+        var itunes = FakeItunes.Serving(KendrickLookupWith(r => r["trackExplicitness"] = explicitness));
+        using var resolver = Make(itunes);
+        using var capture = Log.Capture();
+
+        // Asking never looks anything up: GET /now-playing asks.
+        Assert.Null(resolver.CachedExplicit(KendrickId));
+        Assert.Equal(0, itunes.Count);
+        await resolver.ArtworkByStoreIdAsync(KendrickId, CancellationToken.None);
+
+        Assert.Equal(expected, resolver.CachedExplicit(KendrickId));
+        Assert.Equal(expected, resolver.CachedExplicit($" {KendrickId} "));
+        Assert.Equal(1, itunes.Count);
+        Assert.Empty(capture.Lines);
+    }
+
+    [Fact]
+    public async Task A_song_that_says_nothing_about_explicitness_is_no_answer_and_says_so()
+    {
+        using var resolver = Make(FakeItunes.Serving(KendrickLookupWith(r => r.Remove("trackExplicitness"))));
+        using var capture = Log.Capture();
+
+        await resolver.ArtworkByStoreIdAsync(KendrickId, CancellationToken.None);
+        await resolver.ArtworkByStoreIdAsync(KendrickId, CancellationToken.None);   // cached: no second line
+
+        Assert.Null(resolver.CachedExplicit(KendrickId));
+        Assert.Equal([$"[art] store id {KendrickId}: no trackExplicitness in the lookup, so not marked explicit"],
+            capture.Lines);
+    }
+
+    [Fact]
+    public async Task An_entry_that_is_not_a_song_goes_without_explicitness_quietly()
+    {
+        // The field is defined for songs. relay.py's hand-made fixtures have no
+        // kind at all, and their log lines are pinned to relay.py's.
+        using var resolver = Make(FakeItunes.Serving(KendrickLookupWith(r =>
+        {
+            r.Remove("trackExplicitness");
+            r.Remove("kind");
+        })));
+        using var capture = Log.Capture();
+
+        await resolver.ArtworkByStoreIdAsync(KendrickId, CancellationToken.None);
+
+        Assert.Null(resolver.CachedExplicit(KendrickId));
+        Assert.Empty(capture.Lines);
+    }
+
+    [Fact]
+    public async Task An_unknown_explicitness_is_logged_and_not_marked()
+    {
+        using var resolver = Make(FakeItunes.Serving(KendrickLookupWith(r => r["trackExplicitness"] = "rated")));
+        using var capture = Log.Capture();
+
+        var (url, _) = await resolver.ArtworkByStoreIdAsync(KendrickId, CancellationToken.None);
+
+        Assert.Equal(KendrickCover, url);   // costs nothing else
+        Assert.Null(resolver.CachedExplicit(KendrickId));
+        Assert.Equal([$"[art] store id {KendrickId}: trackExplicitness \"rated\" not recognised, so not marked explicit"],
+            capture.Lines);
+    }
+
+    [Fact]
+    public async Task A_lookup_with_no_cover_still_says_whether_the_track_is_explicit()
+    {
+        using var resolver = Make(FakeItunes.Serving(KendrickLookupWith(r =>
+        {
+            r.Remove("artworkUrl100");
+            r["trackExplicitness"] = "explicit";
+        })));
+
+        var (url, _) = await resolver.ArtworkByStoreIdAsync(KendrickId, CancellationToken.None);
+
+        Assert.Null(url);
+        Assert.True(resolver.CachedExplicit(KendrickId));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void No_store_id_has_no_explicitness(string? storeId)
+    {
+        using var resolver = Make(FakeItunes.Serving(NoResults));
+        Assert.Null(resolver.CachedExplicit(storeId!));
     }
 
     // ── Resolution order ────────────────────────────────────────────────────

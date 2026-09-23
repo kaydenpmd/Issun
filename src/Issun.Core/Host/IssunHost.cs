@@ -101,6 +101,7 @@ public sealed class IssunHost : IIssunHost
                 Track = track,
                 TrackObservedAt = observedAt,
                 ArtworkUrl = track is null ? null : _worker.CurrentArtworkUrl,
+                Explicit = track is not null && TrackText.Explicit(track, _art),
                 Activity = _worker.Current,
                 Intended = track is null ? null : _worker.Intended,
                 LastCheckinAt = last,

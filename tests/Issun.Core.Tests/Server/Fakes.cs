@@ -62,6 +62,7 @@ internal sealed class FakeArtwork : IArtworkResolver
 
     public ConcurrentDictionary<string, string> Covers { get; } = new();
     public ConcurrentDictionary<string, CatalogLinks> Links { get; } = new();
+    public ConcurrentDictionary<string, bool> Explicit { get; } = new();
 
     /// <summary>name → absolute path, for GET /art.</summary>
     public ConcurrentDictionary<string, string> Files { get; } = new();
@@ -79,6 +80,8 @@ internal sealed class FakeArtwork : IArtworkResolver
     public CatalogLinks? CachedLinks(string storeId) => Links.TryGetValue(storeId, out var links) ? links : null;
 
     public string? CachedArtwork(string storeId) => Covers.TryGetValue(storeId, out var url) ? url : null;
+
+    public bool? CachedExplicit(string storeId) => Explicit.TryGetValue(storeId, out var e) ? e : null;
 
     public string? UploadedArtPath(string name)
     {

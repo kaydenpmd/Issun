@@ -204,6 +204,14 @@ public sealed class ArtworkResolver : IArtworkResolver, IDisposable
             return _byId.Peek(storeId.Trim(), out var hit) ? hit.Artwork : null;
     }
 
+    public bool? CachedExplicit(string storeId)
+    {
+        if (string.IsNullOrWhiteSpace(storeId))
+            return null;
+        lock (_gate)
+            return _byId.Peek(storeId.Trim(), out var hit) ? hit.Explicit : null;
+    }
+
     public string? UploadedArtPath(string name) => _uploads.PathFor(name);
 
     /// <summary>Abandons lookups in flight. The caches stay readable.</summary>
@@ -226,12 +234,13 @@ public sealed class ArtworkResolver : IArtworkResolver, IDisposable
         public bool Stale(double now) => RetryAt is { } at && now >= at;
     }
 
-    /// <summary>What one store-ID lookup found. <see cref="Links"/> can be present without artwork.</summary>
+    /// <summary>What one store-ID lookup found. <see cref="Links"/> and <see cref="Explicit"/> can be present without artwork.</summary>
     private sealed class IdLookup : Lookup
     {
         public string? Artwork { get; init; }
         public string MatchedAlbum { get; init; } = "";
         public CatalogLinks? Links { get; init; }
+        public bool? Explicit { get; init; }
     }
 
     /// <summary>
@@ -335,6 +344,7 @@ public sealed class ArtworkResolver : IArtworkResolver, IDisposable
                 Text(entry, "trackViewUrl"),
                 Text(entry, "artistViewUrl"),
                 AlbumLink(storeId, Text(entry, "collectionViewUrl")));
+            var isExplicit = Explicitness(storeId, entry);
 
             if (Text(entry, "artworkUrl100") is { } artwork)
             {
@@ -343,13 +353,14 @@ public sealed class ArtworkResolver : IArtworkResolver, IDisposable
                     Artwork = Upscale(artwork),
                     MatchedAlbum = Text(entry, "collectionName") ?? "",
                     Links = NullIfEmpty(links),
+                    Explicit = isExplicit,
                 };
             }
 
             // Resolved, but the catalog entry carries no cover. Distinct from
             // "not in catalog" — links still work here.
             Log.Write($"[art] store id {storeId} resolved but has no artwork");
-            return new IdLookup { Links = NullIfEmpty(links) };
+            return new IdLookup { Links = NullIfEmpty(links), Explicit = isExplicit };
         }
         catch (Exception ex) when (!_lifetime.IsCancellationRequested)
         {
@@ -386,6 +397,35 @@ public sealed class ArtworkResolver : IArtworkResolver, IDisposable
 
     private static CatalogLinks? NullIfEmpty(CatalogLinks links) =>
         links.Song is null && links.Artist is null && links.Album is null ? null : links;
+
+    /// <summary>
+    /// trackExplicitness as a flag. "explicit" is true; "cleaned" (the clean
+    /// edit of an explicit song) and "notExplicit" are false. Anything else is
+    /// no answer, and says so in the log: every song Apple has returned here
+    /// carries one of those three words, so a missing field or a new word is
+    /// the badge silently going away for every source that relies on this.
+    /// Once per lookup, since the answer is cached. A missing field is logged
+    /// only on an entry that says it is a song, the kind Apple defines the
+    /// field for; the hand-made fixtures in the relay.py parity tests are
+    /// nothing in particular, and relay.py logged nothing about them.
+    /// </summary>
+    private static bool? Explicitness(string storeId, JsonElement entry)
+    {
+        switch (Text(entry, "trackExplicitness"))
+        {
+            case null:
+                if (Text(entry, "kind") == "song")
+                    Log.Write($"[art] store id {storeId}: no trackExplicitness in the lookup, so not marked explicit");
+                return null;
+            case "explicit":
+                return true;
+            case "cleaned" or "notExplicit":
+                return false;
+            case var other:
+                Log.Write($"[art] store id {storeId}: trackExplicitness \"{other}\" not recognised, so not marked explicit");
+                return null;
+        }
+    }
 
     // ── 2 and 3. Uploaded JPEGs ─────────────────────────────────────────────
 

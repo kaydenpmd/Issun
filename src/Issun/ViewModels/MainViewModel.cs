@@ -108,8 +108,10 @@ public sealed partial class MainViewModel : Observable, IDisposable
         {
             Title = NowPlayingText.Title(track);
             Artist = NowPlayingText.Artist(track);
+            SpokenTitle = NowPlayingText.SpokenTitle(track, s.Explicit);
         }
         HasTrack = s.Track is not null;
+        Explicit = s.Track is not null && s.Explicit;
         NothingPlayingDetail = NowPlayingText.NothingPlayingDetail(s);
         SourceVersion = NowPlayingText.SourceVersion(s.SourceName, s.PhoneVersion);
         OnDiscord = NowPlayingText.OnDiscord(s);
@@ -164,6 +166,14 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
     public string Artist { get => _artist; private set => Set(ref _artist, value); }
     private string _artist = "";
+
+    /// <summary>Show Apple Music's "E" after the title.</summary>
+    public bool Explicit { get => _explicit; private set => Set(ref _explicit, value); }
+    private bool _explicit;
+
+    /// <summary>The title as a screen reader should say it, badge included.</summary>
+    public string SpokenTitle { get => _spokenTitle; private set => Set(ref _spokenTitle, value); }
+    private string _spokenTitle = "";
 
     public string NothingPlayingDetail { get => _nothingDetail; private set => Set(ref _nothingDetail, value); }
     private string _nothingDetail = "";

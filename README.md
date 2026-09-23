@@ -115,6 +115,7 @@ running. Issun answers `204`. All fields are optional apart from `playing`:
 | `title`, `artist`, `album` | The track. |
 | `duration`, `elapsed` | Seconds. A `duration` of 0 means no progress bar, e.g. a live station. |
 | `live` | `true` for a live station. |
+| `explicit` | `true` puts Apple Music's E after the title in Issun's window. Send it only if you know: leave it out and Issun uses what the `store_id` lookup says, while `false` overrides that. Discord has no place for it, so the card doesn't change. |
 | `store_id` | Apple Music catalog ID. Gives the exact cover and clickable links. |
 | `artwork_b64` | Base64 JPEG cover, for tracks with no catalog ID. Needed once per track. |
 | `seq` | Milliseconds since 1970 at sending, so a push that arrives late can't overwrite a newer one. |
@@ -179,16 +180,18 @@ curl -H "X-Relay-Key: <key>" https://<machine>.<tailnet>.ts.net/now-playing
   "title": "…", "artist": "…", "album": "…",
   "duration": 214.0, "elapsed": 61.3,
   "artwork": "https://…",
-  "links": { "song": "https://music.apple.com/…", "artist": "…", "album": "…" }
+  "links": { "song": "https://music.apple.com/…", "artist": "…", "album": "…" },
+  "explicit": true
 }
 ```
 
 When nothing is playing, or the source has been quiet for more than 90 s, only
-`playing`, `stale` and `updated_ago` appear.
+`playing`, `stale` and `updated_ago` appear. `explicit` appears only when it's
+true.
 
 `GET /now-playing` returns a summary, not the raw push. It never triggers a
-lookup, so nobody can use it to make your PC send requests, and artwork and
-links appear only once they're cached. **Public now playing** serves it with no
+lookup, so nobody can use it to make your PC send requests, and artwork, links
+and a looked-up `explicit` appear only once they're cached. **Public now playing** serves it with no
 key and with CORS so a web page can read it. That also means anyone with the
 address can see what you're listening to.
 

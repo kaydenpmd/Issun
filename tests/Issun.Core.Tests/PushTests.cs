@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Issun.Core;
+using Issun.Core.Tests.Server;
 
 namespace Issun.Core.Tests;
 
@@ -62,5 +63,54 @@ public class PushTests
         var clipped = TrackText.Clip(emoji);
         Assert.Equal(128, clipped.EnumerateRunes().Count());
         Assert.Equal(256, clipped.Length);
+    }
+
+    // ── Explicit ────────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    [InlineData("null", null)]
+    [InlineData("\"true\"", null)]   // a string is not an answer, and "false" would be truthy
+    [InlineData("1", null)]
+    public void Explicit_is_a_json_bool_or_no_answer(string value, bool? expected)
+    {
+        var push = Parse($$"""{"playing": true, "title": "T", "explicit": {{value}}}""");
+        Assert.Equal(expected, push.Track!.Explicit);
+    }
+
+    [Fact]
+    public void A_push_that_says_nothing_about_explicitness_leaves_it_unknown()
+    {
+        Assert.Null(Parse("""{"playing": true, "title": "T"}""").Track!.Explicit);
+    }
+
+    [Theory]
+    [InlineData(true, false, true)]      // the source's word beats the catalog's
+    [InlineData(false, true, false)]     // ...in both directions
+    [InlineData(null, true, true)]       // silence falls back to the exact lookup
+    [InlineData(null, false, false)]
+    [InlineData(null, null, false)]      // no lookup yet, or it failed: not marked
+    public void Explicit_takes_the_sources_word_then_the_lookups(bool? pushed, bool? catalog, bool expected)
+    {
+        var artwork = new FakeArtwork();
+        if (catalog is { } answer)
+            artwork.Explicit["42"] = answer;
+
+        Assert.Equal(expected, TrackText.Explicit(new TrackInfo { Title = "T", StoreId = "42", Explicit = pushed }, artwork));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("0")]
+    [InlineData("-1")]
+    public void With_no_usable_store_id_only_the_source_can_say(string? storeId)
+    {
+        var artwork = new FakeArtwork();
+        artwork.Explicit["0"] = true;
+        artwork.Explicit["-1"] = true;
+
+        Assert.False(TrackText.Explicit(new TrackInfo { StoreId = storeId }, artwork));
+        Assert.True(TrackText.Explicit(new TrackInfo { StoreId = storeId, Explicit = true }, artwork));
     }
 }

@@ -33,7 +33,8 @@ public sealed class DemoHost : IIssunHost
 
     private sealed record Phase(Kind Kind, double Length, int Track = -1, bool DiscordDrops = false);
 
-    private sealed record DemoTrack(string Title, string Artist, string Album, double Duration, string? StoreId, string? Cover);
+    private sealed record DemoTrack(string Title, string Artist, string Album, double Duration, string? StoreId, string? Cover,
+        bool Explicit = false);
 
     private static readonly Phase[] Script =
     [
@@ -90,8 +91,10 @@ public sealed class DemoHost : IIssunHost
                 DemoCovers.Create(Color.FromRgb(242, 228, 200), Color.FromRgb(222, 196, 160), Color.FromRgb(196, 48, 44), 1)),
             new("i", "Kendrick Lamar", "i - Single", 231, "1440000002",
                 DemoCovers.Create(Color.FromRgb(214, 226, 236), Color.FromRgb(160, 180, 200), Color.FromRgb(236, 238, 240), 2)),
+            // Explicit, so the demo shows the "E" after a title.
             new("Brush Gods", "The Celestial Envoys", "Nippon Suite", 243, "1440000003",
-                DemoCovers.Create(Color.FromRgb(232, 220, 236), Color.FromRgb(120, 92, 140), Color.FromRgb(250, 214, 120), 3)),
+                DemoCovers.Create(Color.FromRgb(232, 220, 236), Color.FromRgb(120, 92, 140), Color.FromRgb(250, 214, 120), 3),
+                Explicit: true),
             // No cover and no catalog ID, with a title long enough to wrap: the
             // placeholder and the two-line clamp both need something to draw.
             new("A Title Long Enough to Need Two Lines, Because Some Releases Carry Every Remix Credit in It (Extended Mix)",
@@ -342,6 +345,8 @@ public sealed class DemoHost : IIssunHost
                 Duration = track.Duration,
                 Elapsed = _observedElapsed,
                 StoreId = track.StoreId,
+                // As Ammy sends it: true or nothing.
+                Explicit = track.Explicit ? true : null,
             };
             // Built whether or not Discord is "connected", as the real worker
             // does, with the real builder's truncation of each end.
@@ -371,6 +376,7 @@ public sealed class DemoHost : IIssunHost
             Track = info,
             TrackObservedAt = _observedAt,
             ArtworkUrl = track?.Cover,
+            Explicit = track?.Explicit ?? false,
             Activity = activity,
             Intended = intended,
             LastCheckinAt = _lastCheckin,

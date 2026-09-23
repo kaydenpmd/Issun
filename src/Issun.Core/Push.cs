@@ -25,6 +25,14 @@ public sealed record TrackInfo
 
     /// <summary>~80 KB of JPEG, sent once per track rather than on every heartbeat.</summary>
     public string? ArtworkB64 { get; init; }
+
+    /// <summary>
+    /// The source's word on whether the track is explicit; null when it said
+    /// nothing. Ammy sends <c>explicit: true</c> and never false: iOS answers
+    /// with a plain yes or no, and its no covers an unrated track as well as a
+    /// clean one. Read it through <see cref="TrackText.Explicit"/>.
+    /// </summary>
+    public bool? Explicit { get; init; }
 }
 
 /// <summary>One POST /now-playing body, parsed defensively.</summary>
@@ -71,9 +79,24 @@ public sealed class NowPlayingPush
                 Elapsed = Number(body["elapsed"]),
                 StoreId = Str(body["store_id"])?.Trim(),
                 ArtworkB64 = Str(body["artwork_b64"]),
+                Explicit = Bool(body["explicit"]),
             } : null,
         };
     }
+
+    /// <summary>
+    /// A JSON true or false; null for anything else, absence included. Stricter
+    /// than <see cref="Truthy"/> on purpose: relay.py never read this field, so
+    /// there is no Python behaviour to match, and "false" is truthy.
+    /// </summary>
+    public static bool? Bool(JsonNode? node) => node is JsonValue v
+        ? v.GetValueKind() switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            _ => null,
+        }
+        : null;
 
     /// <summary>Python's bool() over a JSON value.</summary>
     public static bool Truthy(JsonNode? node) => node switch
@@ -136,6 +159,17 @@ public static class TrackText
     /// <summary>The store ID worth looking up, or null. "0" is what local files report; "-1" is never valid.</summary>
     public static string? StoreId(TrackInfo t) =>
         t.StoreId?.Trim() is { Length: > 0 } id && id != "0" && id != "-1" ? id : null;
+
+    /// <summary>
+    /// Whether to mark the track explicit, as Apple Music's "E" does. The
+    /// source's own word first; when it said nothing, what the exact store-ID
+    /// lookup found, once that has run. Never fuzzy search: the clean and
+    /// explicit versions of a song are separate catalog entries with the same
+    /// title, which is exactly the near miss a fuzzy match makes. Never
+    /// performs a lookup, so GET /now-playing can use it.
+    /// </summary>
+    public static bool Explicit(TrackInfo t, IArtworkResolver artwork) =>
+        t.Explicit ?? (StoreId(t) is { } id ? artwork.CachedExplicit(id) : null) ?? false;
 
     /// <summary>Python's <c>s[:max]</c>, which counts code points rather than UTF-16 units.</summary>
     public static string Clip(string s, int max = MaxField)

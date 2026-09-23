@@ -195,6 +195,36 @@ public class ProjectionTests
     }
 
     [Fact]
+    public void Explicit_comes_last_and_only_when_true()
+    {
+        // Issun's own key, not relay.py's, so it follows relay.py's keys rather
+        // than falling among them.
+        static NowPlayingPush Push(string json) => NowPlayingPush.Parse(JsonNode.Parse(json)!.AsObject());
+        var phone = new FakePhoneState();
+        var artwork = new FakeArtwork();
+
+        phone.Set(Push("""{"playing": true, "title": "T", "explicit": true}""").Track, Now - 1);
+        Assert.Equal(
+            """{"playing": true, "stale": false, "updated_ago": 1.0, "title": "T", "explicit": true}""",
+            NowPlayingProjection.Json(phone, artwork, Now));
+
+        // A source that says nothing gets the cached lookup's answer...
+        artwork.Covers["42"] = "https://example.invalid/42.jpg";
+        artwork.Explicit["42"] = true;
+        phone.Set(Push("""{"playing": true, "title": "T", "store_id": "42"}""").Track, Now - 1);
+        Assert.Equal(
+            """{"playing": true, "stale": false, "updated_ago": 1.0, "title": "T", "artwork": "https://example.invalid/42.jpg", "explicit": true}""",
+            NowPlayingProjection.Json(phone, artwork, Now));
+
+        // ...and a clean one leaves the key out rather than writing false.
+        artwork.Explicit["42"] = false;
+        Assert.Equal(
+            """{"playing": true, "stale": false, "updated_ago": 1.0, "title": "T", "artwork": "https://example.invalid/42.jpg"}""",
+            NowPlayingProjection.Json(phone, artwork, Now));
+        Assert.Equal(0, artwork.ResolveCalls);
+    }
+
+    [Fact]
     public void Non_finite_numbers_are_left_out_rather_than_written_as_bare_tokens()
     {
         var phone = new FakePhoneState();

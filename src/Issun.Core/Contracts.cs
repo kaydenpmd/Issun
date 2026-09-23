@@ -55,6 +55,9 @@ public interface IPhoneDiagnostics
     /// <summary>The Ammy build reported by app_version, clipped to 32 chars; "unknown" until one arrives.</summary>
     string PhoneVersion { get; }
 
+    /// <summary>What the source calls itself, from app_name; null until one sends it.</summary>
+    string? SourceName { get; }
+
     /// <summary>The most recent diag snapshot; null before the first.</summary>
     JsonObject? Latest { get; }
 
@@ -335,6 +338,9 @@ public sealed record HostSnapshot
     public bool PhoneSilent { get; init; }
 
     public string PhoneVersion { get; init; } = "unknown";
+
+    /// <summary>What the source calls itself, e.g. "Ammy"; null when it sends no name.</summary>
+    public string? SourceName { get; init; }
     public string DiagSummary { get; init; } = "";
 
     public DiscordStatus Discord { get; init; } = new(DiscordLinkState.Disconnected, null, null);

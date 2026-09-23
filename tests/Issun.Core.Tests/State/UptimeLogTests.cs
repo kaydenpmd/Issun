@@ -9,6 +9,7 @@ namespace Issun.Core.Tests.State;
 internal sealed class FakeDiagnostics : IPhoneDiagnostics
 {
     public string PhoneVersion { get; set; } = "unknown";
+    public string? SourceName { get; set; }
     public JsonObject? Latest { get; set; }
     public double LatestAt { get; set; }
     public string SummaryText { get; set; } = "no diagnostics (app build predates them)";

@@ -78,6 +78,34 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
         get { lock (_gate) return _version; }
     }
 
+    // What the source calls itself (app_name), for the window's "Source: Ammy
+    // 1.0 (97)". Null until a source sends one; older Ammy builds don't.
+    private string? _name;
+
+    public string? SourceName
+    {
+        get { lock (_gate) return _name; }
+    }
+
+    /// <summary>
+    /// The source's name from <c>app_name</c>: a non-empty JSON string, clipped
+    /// to 32 code points like the version. Anything else is ignored, so a
+    /// source that sends no name keeps showing only its version.
+    /// </summary>
+    internal void RecordName(JsonNode? value)
+    {
+        if (value is not JsonValue v || v.GetValueKind() != System.Text.Json.JsonValueKind.String)
+            return;
+        string raw;
+        try { raw = v.GetValue<string>(); }
+        catch (InvalidOperationException) { return; }
+        var text = PyText.Clip(raw.Trim(), 32);
+        if (text.Length == 0)
+            return;
+        lock (_gate)
+            _name = text;
+    }
+
     /// <summary>
     /// A copy of the latest snapshot, so a caller can't mutate the stored one
     /// or read it while another thread replaces it. An empty object reads as

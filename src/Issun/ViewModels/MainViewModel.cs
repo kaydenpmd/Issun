@@ -111,7 +111,7 @@ public sealed partial class MainViewModel : Observable, IDisposable
         }
         HasTrack = s.Track is not null;
         NothingPlayingDetail = NowPlayingText.NothingPlayingDetail(s);
-        SourceVersion = NowPlayingText.SourceVersion(s.PhoneVersion);
+        SourceVersion = NowPlayingText.SourceVersion(s.SourceName, s.PhoneVersion);
         OnDiscord = NowPlayingText.OnDiscord(s);
         UpdateCover(s);
 

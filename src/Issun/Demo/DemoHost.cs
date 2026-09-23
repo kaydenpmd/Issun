@@ -376,6 +376,7 @@ public sealed class DemoHost : IIssunHost
             LastCheckinAt = _lastCheckin,
             PhoneSilent = phase.Kind == Kind.PhoneQuiet,
             PhoneVersion = PhoneBuild,
+            SourceName = "Demo Player",
             DiagSummary = Diag(_lastCheckin),
             Discord = discord,
             Server = new ServerStatus(true, _settings.Port, null),

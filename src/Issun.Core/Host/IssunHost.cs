@@ -106,6 +106,7 @@ public sealed class IssunHost : IIssunHost
                 LastCheckinAt = last,
                 PhoneSilent = last > 0 && now - last > Timing.GapThreshold,
                 PhoneVersion = _diag.PhoneVersion,
+                SourceName = _diag.SourceName,
                 DiagSummary = _diag.Latest is null ? "" : _diag.Summary(),
                 Discord = _worker.Status,
                 Server = _server.Status,

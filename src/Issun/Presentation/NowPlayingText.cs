@@ -18,9 +18,15 @@ public static class NowPlayingText
         s.PhoneSilent ? "The source has gone quiet." :
         "The source is checking in, but nothing is playing.";
 
-    /// <summary>"Source version 1.0 (80)", or null before the source has said which build it is.</summary>
-    public static string? SourceVersion(string phoneVersion) =>
-        string.IsNullOrWhiteSpace(phoneVersion) || phoneVersion == "unknown" ? null : $"Source version {phoneVersion}";
+    /// <summary>
+    /// "Source: Ammy 1.0 (97)" — the source's name and number, no "version"
+    /// (the owner's wording, 23 Sept 2026). "Source: 1.0 (97)" from a source
+    /// that sends no name; null before it has said which build it is.
+    /// </summary>
+    public static string? SourceVersion(string? sourceName, string phoneVersion) =>
+        string.IsNullOrWhiteSpace(phoneVersion) || phoneVersion == "unknown" ? null
+        : string.IsNullOrWhiteSpace(sourceName) ? $"Source: {phoneVersion}"
+        : $"Source: {sourceName} {phoneVersion}";
 
     /// <summary>Whether Discord is showing something, in a few words; null when there is nothing worth saying.</summary>
     public static string? OnDiscord(HostSnapshot s) =>

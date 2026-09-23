@@ -39,6 +39,7 @@ public sealed class CheckinProcessor : ICheckinProcessor
             var previous = _state.LastCheckinAt;
 
             _diag.RecordVersion(push.Raw["app_version"]);
+            _diag.RecordName(push.Raw["app_name"]);
             // The raw node rather than push.Diag: record_phone_diag took whatever
             // json.loads produced, and the log's rendering of it depends on that.
             var diag = _diag.RecordDiag(push.Raw["diag"], now);

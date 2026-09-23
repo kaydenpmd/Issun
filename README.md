@@ -118,7 +118,8 @@ running. Issun answers `204`. All fields are optional apart from `playing`:
 | `store_id` | Apple Music catalog ID. Gives the exact cover and clickable links. |
 | `artwork_b64` | Base64 JPEG cover, for tracks with no catalog ID. Needed once per track. |
 | `seq` | Milliseconds since 1970 at sending, so a push that arrives late can't overwrite a newer one. |
-| `app_version`, `diag` | The source's version and a self-report, recorded for diagnostics. |
+| `app_name`, `app_version` | The source's name and version, e.g. `"1.0 (97)"`. The window shows them as "Source: <name> 1.0 (97)". |
+| `diag` | A self-report from the source, recorded for diagnostics. |
 
 Without a `store_id` or `artwork_b64`, Issun looks the cover up by title and
 artist, which is usually right but not always.

@@ -46,11 +46,22 @@ public class ParityTests
             Assert.NotNull(push.Track);
 
             using var capture = Log.Capture();
-            var built = builder.Build(push.Track!, step["observed_at"]!.GetValue<double>(), Art(step["art"]), Links(step["links"]));
+            var links = Links(step["links"]);
+            var built = builder.Build(push.Track!, step["observed_at"]!.GetValue<double>(), Art(step["art"]), links);
 
-            var expected = Activity(step["expected"]!.AsObject());
+            // The one deliberate difference from relay.py: it clipped a link over
+            // 256 characters, which breaks it, and Issun shortens or drops it
+            // instead (see LinkFit). Everything else must still match exactly.
+            var relayExpected = Activity(step["expected"]!.AsObject());
+            var expected = relayExpected with
+            {
+                DetailsUrl = Fitted(links?.Song, relayExpected.DetailsUrl),
+                StateUrl = Fitted(links?.Artist, relayExpected.StateUrl),
+                LargeUrl = Fitted(links?.Album, relayExpected.LargeUrl),
+            };
             Assert.True(expected == built, $"step {index}: expected {expected}, built {built}");
-            Assert.Equal(Strings(step["logs"]), capture.Lines);
+            Assert.Equal(Strings(step["logs"]),
+                capture.Lines.Where(l => !l.StartsWith("[rpc] dropped the ") && !l.StartsWith("[rpc] shortened the ")));
         }
     }
 
@@ -131,6 +142,12 @@ public class ParityTests
         for (var cp = 0; cp <= 0x10FFFF; cp++)
             Assert.True(python.Contains(cp) == PyText.IsSpace(cp), $"U+{cp:X4}");
     }
+
+    /// <summary>relay.py's value for a link, unless the link was too long for it to survive clipping.</summary>
+    private static string? Fitted(string? input, string? relayValue) =>
+        relayValue is not null && input is { Length: > ActivityBuilder.MaxUrl }
+            ? LinkFit.For(input, ActivityBuilder.MaxUrl)
+            : relayValue;
 
     internal static DiscordActivity Activity(JsonObject o) => new()
     {

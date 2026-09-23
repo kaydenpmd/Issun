@@ -22,7 +22,7 @@ public sealed class ActivityBuilder : IActivityBuilder
     /// </summary>
     public const int Listening = 2;
 
-    /// <summary>relay.py clipped every link to this many characters.</summary>
+    /// <summary>Discord's limit on a link's length. relay.py clipped to it; see <see cref="LinkFit"/> for why Issun doesn't.</summary>
     public const int MaxUrl = 256;
 
     // Timestamps within this many seconds of each other are the same timestamp.
@@ -47,6 +47,25 @@ public sealed class ActivityBuilder : IActivityBuilder
     public ActivityBuilder(IConfig config)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
+    }
+
+    private readonly FirstSeen _linkNoticeSeen = new();
+
+    /// <summary>
+    /// A link that fits Discord, or null. Shortening and dropping are each
+    /// logged once per link: the activity is rebuilt every second, and a
+    /// missing link with no line saying why is this project's recurring bug.
+    /// </summary>
+    private string? Fit(string url, string label)
+    {
+        var fitted = LinkFit.For(url, MaxUrl);
+        if (fitted != url && _linkNoticeSeen.Add(url))
+        {
+            Log.Write(fitted is null
+                ? $"[rpc] dropped the {label} link: {url.Length} characters, over Discord's {MaxUrl}, and no shorter form of it is known to work"
+                : $"[rpc] shortened the {label} link from {url.Length} to {fitted.Length} characters to fit Discord's {MaxUrl}");
+        }
+        return fitted;
     }
 
     /// <summary>
@@ -84,8 +103,8 @@ public sealed class ActivityBuilder : IActivityBuilder
 
         // Clickable text and artwork. Discord opens details_url from the title
         // line, state_url from the artist line and large_url from the cover.
-        var detailsUrl = links?.Song is { Length: > 0 } song ? TrackText.Clip(song, MaxUrl) : null;
-        var stateUrl = links?.Artist is { Length: > 0 } artistUrl ? TrackText.Clip(artistUrl, MaxUrl) : null;
+        var detailsUrl = links?.Song is { Length: > 0 } song ? Fit(song, "song") : null;
+        var stateUrl = links?.Artist is { Length: > 0 } artistUrl ? Fit(artistUrl, "artist") : null;
 
         string? largeImage = null, largeUrl = null, largeText = null;
         if (art.Url is { Length: > 0 } cover)
@@ -94,7 +113,7 @@ public sealed class ActivityBuilder : IActivityBuilder
 
             // A link on the cover only makes sense when there's a cover to click.
             if (links?.Album is { Length: > 0 } albumUrl)
-                largeUrl = TrackText.Clip(albumUrl, MaxUrl);
+                largeUrl = Fit(albumUrl, "album");
 
             // large_text is both the cover's tooltip and a visible third line on
             // the card — one field, two places, and Discord won't separate them.

@@ -111,6 +111,9 @@ public sealed class PresenceWorker : IPresenceWorker
 
     public DiscordActivity? Current => Volatile.Read(ref _current);
 
+    public DiscordActivity? Intended => Volatile.Read(ref _intended);
+    private DiscordActivity? _intended;
+
     public string? CurrentArtworkUrl => Volatile.Read(ref _artworkUrl);
 
     public async Task RunAsync(CancellationToken ct)
@@ -172,6 +175,7 @@ public sealed class PresenceWorker : IPresenceWorker
         await KeepConnectedAsync(clientId, ct).ConfigureAwait(false);
 
         var payload = await ObserveAsync(ct).ConfigureAwait(false);
+        SetIntended(payload);
 
         if (_client is not null
             && _builder.MateriallyDifferent(payload, _lastIntended)
@@ -466,6 +470,18 @@ public sealed class PresenceWorker : IPresenceWorker
     private void SetCurrent(DiscordActivity? activity)
     {
         if (Interlocked.Exchange(ref _current, activity) != activity)
+            RaiseChanged();
+    }
+
+    /// <summary>
+    /// Rebuilt every tick, but value-equal between pushes because the playhead
+    /// anchor holds still, so Changed fires only when something the window
+    /// shows actually moved.
+    /// </summary>
+    private void SetIntended(DiscordActivity? activity)
+    {
+        var previous = Interlocked.Exchange(ref _intended, activity);
+        if (!Equals(previous, activity))
             RaiseChanged();
     }
 

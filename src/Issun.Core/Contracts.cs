@@ -227,6 +227,14 @@ public interface IPresenceWorker
     DiscordActivity? Current { get; }
 
     /// <summary>
+    /// The activity built for the current track on the last tick, whether or not
+    /// Discord is connected; null when nothing is playing. The window reads its
+    /// Start and End, so it shows the numbers Discord shows with Discord open or
+    /// closed — one source of truth, not a second calculation for the closed case.
+    /// </summary>
+    DiscordActivity? Intended { get; }
+
+    /// <summary>
     /// Cover for the phone's current track, resolved even while Discord is
     /// unavailable so the window can show it. Null when none.
     /// </summary>
@@ -317,6 +325,9 @@ public sealed record HostSnapshot
 
     /// <summary>What Discord is actually showing, per the worker.</summary>
     public DiscordActivity? Activity { get; init; }
+
+    /// <summary>What Issun built for the current track, Discord open or not; see <see cref="IPresenceWorker.Intended"/>.</summary>
+    public DiscordActivity? Intended { get; init; }
 
     public double LastCheckinAt { get; init; }
 

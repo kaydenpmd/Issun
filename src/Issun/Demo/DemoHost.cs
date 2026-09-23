@@ -331,7 +331,7 @@ public sealed class DemoHost : IIssunHost
         }
 
         TrackInfo? info = null;
-        DiscordActivity? activity = null;
+        DiscordActivity? intended = null;
         if (track is not null)
         {
             info = new TrackInfo
@@ -343,21 +343,21 @@ public sealed class DemoHost : IIssunHost
                 Elapsed = _observedElapsed,
                 StoreId = track.StoreId,
             };
-            if (discord.State == DiscordLinkState.Connected)
+            // Built whether or not Discord is "connected", as the real worker
+            // does, with the real builder's truncation of each end.
+            var anchor = _observedAt - _observedElapsed;
+            intended = new DiscordActivity
             {
-                var start = (long)Math.Round(_observedAt - _observedElapsed);
-                activity = new DiscordActivity
-                {
-                    Details = track.Title.Length < 2 ? track.Title + "⁠" : track.Title,
-                    State = track.Artist,
-                    Type = 2,
-                    StatusDisplayType = 1,
-                    Start = start,
-                    End = start + (long)track.Duration,
-                    LargeImage = track.Cover is null ? null : "demo-cover",
-                };
-            }
+                Details = track.Title.Length < 2 ? track.Title + "⁠" : track.Title,
+                State = track.Artist,
+                Type = 2,
+                StatusDisplayType = 1,
+                Start = (long)Math.Truncate(anchor),
+                End = (long)Math.Truncate(anchor + track.Duration),
+                LargeImage = track.Cover is null ? null : "demo-cover",
+            };
         }
+        var activity = discord.State == DiscordLinkState.Connected ? intended : null;
 
         var label = activity?.Details;
         if (label != _activityWas)
@@ -372,6 +372,7 @@ public sealed class DemoHost : IIssunHost
             TrackObservedAt = _observedAt,
             ArtworkUrl = track?.Cover,
             Activity = activity,
+            Intended = intended,
             LastCheckinAt = _lastCheckin,
             PhoneSilent = phase.Kind == Kind.PhoneQuiet,
             PhoneVersion = PhoneBuild,

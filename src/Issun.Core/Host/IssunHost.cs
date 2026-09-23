@@ -102,6 +102,7 @@ public sealed class IssunHost : IIssunHost
                 TrackObservedAt = observedAt,
                 ArtworkUrl = track is null ? null : _worker.CurrentArtworkUrl,
                 Activity = _worker.Current,
+                Intended = track is null ? null : _worker.Intended,
                 LastCheckinAt = last,
                 PhoneSilent = last > 0 && now - last > Timing.GapThreshold,
                 PhoneVersion = _diag.PhoneVersion,

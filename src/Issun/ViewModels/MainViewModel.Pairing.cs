@@ -57,14 +57,22 @@ public sealed partial class MainViewModel
             KeyMessage = $"Couldn't make a new key: {ex.Message}. The old key still works.";
         });
 
-        DismissBannerCommand = new Command(() => ShowFirstRunBanner = false);
-        _showFirstRunBanner = _host.FirstRun;
+        DismissBannerCommand = new Command(() =>
+        {
+            _bannerDismissed = true;
+            ShowFirstRunBanner = false;
+        });
     }
+
+    private bool _bannerDismissed;
 
     private void RefreshPairing(HostSnapshot s)
     {
         EndpointUrl = s.EndpointUrl;
         Key = _host.Settings.Key;
+        // Read on every refresh rather than once: the host may only learn that
+        // this is a first run while starting.
+        ShowFirstRunBanner = _host.FirstRun && !_bannerDismissed;
     }
 
     /// <summary>What goes in Ammy's Endpoint field; null until Tailscale (or a manual public address) says what this PC is called.</summary>

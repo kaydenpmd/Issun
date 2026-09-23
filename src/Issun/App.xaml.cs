@@ -20,7 +20,7 @@ namespace Issun;
 /// </summary>
 public partial class App : Application
 {
-    private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
+    private const int StopTimeoutSeconds = 5;
 
     private StartupOptions _options = new();
     private SingleInstance? _instance;
@@ -43,15 +43,55 @@ public partial class App : Application
         };
         CrashHandlers.Install(this, quiet: _options.ScreenshotPath is not null);
 
-        if (_options.ScreenshotPath is not null)
+        // Until the tray icon exists, an exception here would leave a process
+        // with no window, no icon and no way to quit it — running, invisible,
+        // and holding the single-instance lock so the next launch does nothing
+        // either. So startup failures end the process, loudly.
+        try
         {
-            // Unattended and invisible: no single-instance check (it must work
-            // beside a running Issun), no log file, no tray, no window.
-            var code = await Screenshot.RunAsync(HostFactory.Create(e.Args), _options, Dispatcher);
-            Shutdown(code);
+            if (_options.ScreenshotPath is not null)
+            {
+                // Unattended and invisible: no single-instance check (it must
+                // work beside a running Issun), no log file, no tray, no window.
+                Shutdown(await Screenshot.RunAsync(HostFactory.Create(e.Args), _options, Dispatcher));
+                return;
+            }
+            if (!Start(e.Args))
+                return;
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"[ui] Issun couldn't start: {CrashHandlers.Describe(ex)}");
+            if (_options.ScreenshotPath is null)
+            {
+                var details = Log.FilePath is { } log ? $"\n\nThe details are in {log}." : "";
+                MessageBox.Show($"Issun couldn't start.\n\n{ex.Message}{details}",
+                    "Issun", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            _tray?.Dispose();
+            await StopHostAsync();
+            Shutdown(1);
             return;
         }
 
+        try
+        {
+            await _host!.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            // The window stays up (or comes up) so the person can see why and
+            // change the setting that caused it — a port already in use, most
+            // likely, while relay.py is still running.
+            Log.Write($"[ui] Issun couldn't start: {CrashHandlers.Describe(ex)}");
+            _vm!.ReportStartupFailure(ex);
+            ShowMainWindow();
+        }
+    }
+
+    /// <summary>Everything up to starting the host. False when another Issun is already running.</summary>
+    private bool Start(string[] args)
+    {
         // A second launch by hand means "show me Issun"; a second --background
         // launch is the sign-in entry firing while Issun already runs, and
         // popping the window up at the person would be wrong.
@@ -59,7 +99,7 @@ public partial class App : Application
         if (_instance is null)
         {
             Shutdown(0);
-            return;
+            return false;
         }
 
         // The demo must not write into the real data folder, so its lines stay
@@ -70,7 +110,7 @@ public partial class App : Application
         foreach (var problem in _options.Problems)
             Log.Write($"[ui] ignoring the command line: {problem}");
 
-        _host = HostFactory.Create(e.Args);
+        _host = HostFactory.Create(args);
         _uiState = UiState.Load(_host.DataFolder);
         _vm = new MainViewModel(_host, Dispatcher);
         _tray = new TrayIcon(_vm, ShowMainWindow, () => _ = QuitAsync());
@@ -78,21 +118,7 @@ public partial class App : Application
 
         if (!_options.Background)
             ShowMainWindow();
-
-        try
-        {
-            await _host.StartAsync();
-        }
-        catch (Exception ex)
-        {
-            // The window stays up (or the tray does) so the person can see why
-            // and change the setting that caused it — a port already in use,
-            // most likely, while relay.py is still running.
-            Log.Write($"[ui] Issun couldn't start: {CrashHandlers.Describe(ex)}");
-            _vm.ReportStartupFailure(ex);
-            if (_options.Background)
-                ShowMainWindow();
-        }
+        return true;
     }
 
     private void ShowMainWindow()
@@ -154,11 +180,11 @@ public partial class App : Application
         _host = null;
         try
         {
-            await Task.Run(() => host.DisposeAsync().AsTask()).WaitAsync(StopTimeout);
+            await Task.Run(() => host.DisposeAsync().AsTask()).WaitAsync(TimeSpan.FromSeconds(StopTimeoutSeconds));
         }
         catch (TimeoutException)
         {
-            Log.Write($"[ui] still stopping after {StopTimeout.TotalSeconds:0}s; closing anyway");
+            Log.Write($"[ui] still stopping after {StopTimeoutSeconds}s; closing anyway");
         }
         catch (Exception ex)
         {

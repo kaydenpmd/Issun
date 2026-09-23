@@ -20,7 +20,6 @@ public static class HostFactory
         if (options.UsesDemoHost)
             return new DemoHost(startPhase: options.DemoPhase);
 
-        // Integration: return the real IssunHost here unless --demo.
-        return new DemoHost(startPhase: options.DemoPhase);
+        return new Core.Host.IssunHost();
     }
 }

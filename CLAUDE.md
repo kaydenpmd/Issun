@@ -592,7 +592,22 @@ Record the result here, with the build number.
   cover came from the exact store-ID lookup, and all three links resolved — the
   album link with `?i=` stripped. That the card *looks* right in Discord is the
   owner's to confirm, not this log's.
-- 5–8: not yet.
+- 5, 6 and 8: not yet.
+
+**Build 34 (`ce2d501`), 23 Sept 2026 — the reboot:**
+
+- 7: **passed.** Issun logged `Windows is shutting down; stopping` at 15:25:43
+  and stopped cleanly. Windows booted at 15:26:53, and the owner signed in over
+  Remote Desktop at 15:27. Issun started in the tray from the Run key at
+  15:29:56, then took 8787 and connected to Discord at 15:29:57, with no retries.
+- **Tailscale did not come back with it.** It reported `NoState` when Issun
+  started, the tray app `tailscale-ipn` wasn't running at 15:31, and Funnel
+  wasn't ready again until 18:20:20, almost three hours later. Anything using
+  the Funnel address was cut off for that long. `ammy.kaydenpmd.net` (cloudflared,
+  which runs as a service) answered `issun 0.1.0 (34)` at 15:31. Worth finding
+  out why the tray app didn't start at sign-in before counting on Funnel after
+  a reboot.
+- No push from the phone had arrived by 02:51 the next morning.
 
 **Two things the handover taught, for anyone repeating it:**
 

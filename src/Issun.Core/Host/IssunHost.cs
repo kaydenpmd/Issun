@@ -25,6 +25,28 @@ public sealed class IssunHost : IIssunHost
     private static readonly TimeSpan TailscaleInterval = TimeSpan.FromMinutes(10);
 
     /// <summary>
+    /// How soon to look again while Tailscale is installed but not connected.
+    /// At sign-in Issun can start minutes before Tailscale does: on 24 Sept
+    /// 2026 it probed at 03:13:45 and saw NoState, Tailscale connected at
+    /// 03:18:26, and the window went on saying it wasn't connected until the
+    /// owner pressed Refresh, with the next scheduled look still three minutes
+    /// off. A probe of a Tailscale that isn't running is one
+    /// <c>tailscale status --json</c>, and TailscaleCli logs only what changed,
+    /// so looking often costs little and says nothing until there's news.
+    /// </summary>
+    internal static readonly TimeSpan TailscaleWaitingInterval = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// When to probe Tailscale next: soon while it's installed and not yet
+    /// connected, the usual interval otherwise. Keyed on the connection, not on
+    /// Funnel, so a PC that leaves Funnel off on purpose isn't probed every
+    /// fifteen seconds forever; turning Funnel on from the window refreshes by
+    /// itself.
+    /// </summary>
+    internal static TimeSpan NextTailscaleProbe(TailscaleStatus? status) =>
+        status is { Installed: true, Running: false } ? TailscaleWaitingInterval : TailscaleInterval;
+
+    /// <summary>
     /// Nudges the window even when nothing arrives, so "quiet since" and the
     /// idle timeout show up without waiting for an event that a silent phone
     /// will never send.
@@ -277,7 +299,7 @@ public sealed class IssunHost : IIssunHost
 
     private async Task BackgroundAsync(CancellationToken ct)
     {
-        var nextTailscale = DateTime.UtcNow + TailscaleInterval;
+        var nextTailscale = DateTime.UtcNow + NextTailscaleProbe(_tailscaleStatus);
         var nextPortTry = DateTime.UtcNow + PortRetryInterval;
 
         while (!ct.IsCancellationRequested)
@@ -295,7 +317,7 @@ public sealed class IssunHost : IIssunHost
                 if (DateTime.UtcNow >= nextTailscale)
                 {
                     await RefreshTailscaleAsync();
-                    nextTailscale = DateTime.UtcNow + TailscaleInterval;
+                    nextTailscale = DateTime.UtcNow + NextTailscaleProbe(_tailscaleStatus);
                 }
 
                 RaiseChanged();

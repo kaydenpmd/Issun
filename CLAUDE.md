@@ -609,6 +609,33 @@ Record the result here, with the build number.
   a reboot.
 - No push from the phone had arrived by 02:51 the next morning.
 
+**What that turned out to be, 24 Sept 2026:**
+
+- **Funnel was broken from outside, not just late.** Tailscale connected at
+  18:20, but check-host.net probes from Los Angeles, Dallas, Atlanta, Miami and
+  New York all had the connection dropped mid-handshake, and the phone saw
+  "Secure Connection Failed". Meanwhile `tailscale funnel status` said "Funnel
+  on" and the PC reached its own address fine. That matches Tailscale bug
+  [#21114](https://github.com/tailscale/tailscale/issues/21114) on 1.102.3
+  (Funnel stops serving after a control-plane reconnect). Restarting the
+  Tailscale service didn't clear it. Updating to 1.102.4, which asked for a
+  reboot, did: all three probed cities got through at 03:18:43, and the phone
+  checked in at 03:19:09.
+- **Don't test Funnel from this PC.** Lookups of its own ts.net name are
+  answered by Tailscale with the tailnet address, even when another DNS server
+  is named, and forcing a request through Funnel's public addresses from here
+  failed even after Funnel worked. check-host.net is what agreed with the phone.
+- **Why Tailscale waited:** it wasn't running unattended, so it connected only
+  once its tray app started, and Windows starts that from the common Startup
+  folder after the Run-key apps, one at a time. On the 03:08 boot: Discord
+  03:09:40, Issun 03:13:43, the tray app and a connected Tailscale 03:18:26. The
+  owner has since turned on **Run unattended** (`ForceDaemon: true`), so
+  Tailscale connects at boot without waiting for sign-in or the tray.
+- **Issun showed "not connected" after Tailscale had connected**, until the
+  owner pressed Refresh, because it re-read Tailscale only every 10 minutes.
+  `IssunHost.NextTailscaleProbe` now looks every 15 s while Tailscale is
+  installed but not connected.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

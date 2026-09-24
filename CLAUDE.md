@@ -647,6 +647,17 @@ Record the result here, with the build number.
   `IssunHost.NextTailscaleProbe` now looks every 15 s while Tailscale is
   installed but not connected.
 
+**Updating the installed copy** (build 34 to 38, 24 Sept 2026, about 5 s of
+downtime): download the release asset with `gh release download`, check its
+SHA-256 against the release notes, `Stop-Process -Force` the running Issun,
+copy the new `.exe` over `%LOCALAPPDATA%\Programs\Issun\Issun.exe` (the Run key
+points at that path, so autostart needs no change), then start it with
+`--background`. **Closing the window doesn't quit it**: `CloseMainWindow()`
+only hides Issun to the tray, so the file stays locked and the copy fails. A
+second launch while it runs just shows the running copy's window and exits.
+Keep the previous build beside it (`Issun.exe.b34.bak`) for rollback. Run all of
+it from PowerShell outside the sandbox, as below.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

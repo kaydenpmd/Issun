@@ -514,6 +514,34 @@ public class PresenceWorkerTests
     }
 
     [Fact]
+    public async Task A_new_track_with_the_same_cover_still_tells_the_window()
+    {
+        // The next song from the same album has the same cover URL, but its
+        // lookup settles whether the window's title gets an E. With Discord
+        // closed, this Changed is the only prompt the window gets before its
+        // five-second heartbeat.
+        await using var rig = new Rig();
+        rig.Discord.OnConnect = _ => throw new DiscordUnavailableException(DiscordIpcClient.NotFoundMessage);
+        rig.Resolver.Answer = _ => new ArtworkResult("https://art.example/album.jpg", "Album", ArtworkSource.StoreId);
+        var changes = 0;
+        rig.Worker.Changed += () => Interlocked.Increment(ref changes);
+        rig.PlayNow(Titled("First"));
+        rig.Start();
+        await Until(() => rig.Worker.CurrentArtworkUrl is not null, "the first track's cover");
+        await rig.Ticks(3);
+
+        var settled = Volatile.Read(ref changes);
+        await rig.Ticks(3);
+        Assert.Equal(settled, Volatile.Read(ref changes));   // the same track again says nothing
+
+        rig.PlayNow(Titled("Second"));
+        await rig.Ticks(3);
+
+        Assert.Equal("https://art.example/album.jpg", rig.Worker.CurrentArtworkUrl);
+        Assert.True(Volatile.Read(ref changes) > settled, "no Changed after the second track resolved");
+    }
+
+    [Fact]
     public async Task An_unexpected_error_is_logged_and_the_worker_keeps_going()
     {
         await using var rig = new Rig();

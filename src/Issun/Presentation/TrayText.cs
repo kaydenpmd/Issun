@@ -26,7 +26,7 @@ public static class TrayText
         else if (s.Discord.State != DiscordLinkState.Connected)
             text = "Issun – Discord: " + StatusText.Discord(s.Discord).Text;
         else
-            text = "Issun – nothing playing";
+            text = "Issun – not playing";
         return Clip(text);
     }
 

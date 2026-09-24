@@ -51,6 +51,13 @@ notes `STATUS_LINE`, `SHOW_ALBUM` and `ART_MIN_SCORE` as not applying. The
 exercise the builder's other modes. Don't put them back in the window without
 asking. The check-in history file was renamed `uptime.log` at the same time.
 
+On 24 Sept 2026 the owner had the window's **progress bar removed**, along with
+the plumbing that existed only to feed it (`HostSnapshot.Intended` and
+`TrackObservedAt`, `IPresenceWorker.Intended`, the window's `Playhead`).
+Discord's card keeps its bar; that comes from `ActivityBuilder`'s timestamps
+and is untouched. The same day the card's "Nothing playing" became "Not
+playing". Don't bring the window's bar back without asking.
+
 ## Why it exists
 
 Ammy's CLAUDE.md, open work item 1, counted what a stranger needs to run the
@@ -166,7 +173,7 @@ dotnet run --project src/Issun -- --demo
 
 - `--background`: start in the tray with no window. The autostart entry passes
   it.
-- `--demo`: `HostFactory` returns `DemoHost`, a fake whose track, progress and
+- `--demo`: `HostFactory` returns `DemoHost`, a fake whose track and
   statuses change over time. It must not write into the real data folder.
 - `--screenshot <png>` (with `--demo`): renders the window offscreen to a PNG
   after layout, then exits. **This is how a session looks at the UI**: render,
@@ -381,7 +388,11 @@ wildcard prefix needs admin (see the comment in `Issun.Core.csproj`).
 cosmetic annoyance; a link that opens the wrong song is a broken promise.
 
 **So does explicitness, when the source doesn't say** (added 23 Sept 2026, the
-window's "E" after the title). `TrackText.Explicit` takes the push's `explicit`
+window's "E" after the title). The E is a typed 🅴 (U+1F174) after a space, in
+the title's own colour (`NowPlayingText.CardTitle`). WPF's font fallback draws
+it with Segoe UI Symbol, seen rendering on 24 Sept 2026. (Yu Gothic and a few
+other Japanese fonts have the character too; fallback picks Segoe UI Symbol.) It replaced a hand-drawn badge the owner asked to
+have rolled back as more complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`
 first: only a JSON `true` or `false` counts, and `false` beats the catalog.
 Ammy sends only `true`, because iOS's `isExplicitItem` is a plain Bool whose
 `false` also means "unrated". Absent, it falls back to `trackExplicitness` from

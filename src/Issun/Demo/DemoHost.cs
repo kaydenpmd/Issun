@@ -281,7 +281,8 @@ public sealed class DemoHost : IIssunHost
         {
             case Kind.Play:
                 // Start each song half a minute from its end, so the demo moves
-                // through tracks quickly while showing real-looking lengths.
+                // through tracks quickly while what it builds for Discord keeps
+                // real-looking lengths.
                 _startElapsed = Math.Max(0, _tracks[phase.Track].Duration - phase.Length - 4);
                 CheckIn(now, lines);
                 break;
@@ -348,8 +349,8 @@ public sealed class DemoHost : IIssunHost
                 // As Ammy sends it: true or nothing.
                 Explicit = track.Explicit ? true : null,
             };
-            // Built whether or not Discord is "connected", as the real worker
-            // does, with the real builder's truncation of each end.
+            // What Discord would be sent, with the real builder's truncation of
+            // each end.
             var anchor = _observedAt - _observedElapsed;
             intended = new DiscordActivity
             {
@@ -374,11 +375,9 @@ public sealed class DemoHost : IIssunHost
         _snapshot = new HostSnapshot
         {
             Track = info,
-            TrackObservedAt = _observedAt,
             ArtworkUrl = track?.Cover,
             Explicit = track?.Explicit ?? false,
             Activity = activity,
-            Intended = intended,
             LastCheckinAt = _lastCheckin,
             PhoneSilent = phase.Kind == Kind.PhoneQuiet,
             PhoneVersion = PhoneBuild,

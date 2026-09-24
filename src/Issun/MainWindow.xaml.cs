@@ -14,8 +14,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = vm;
 
-        // The clock-driven text (progress, "last push 12s ago") only ticks
-        // while the window can be seen.
+        // The clock-driven text ("last push 12s ago") only ticks while the
+        // window can be seen.
         IsVisibleChanged += (_, _) => vm.SetWindowVisible(IsVisible && WindowState != WindowState.Minimized);
         StateChanged += (_, _) => vm.SetWindowVisible(IsVisible && WindowState != WindowState.Minimized);
     }

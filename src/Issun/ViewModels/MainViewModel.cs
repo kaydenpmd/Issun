@@ -42,9 +42,8 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
         _refresh = new Coalescer(dispatcher, RefreshInterval, "window refresh", Refresh);
 
-        // The progress bar and "last push 12s ago" move between pushes. The
-        // phone reports once every thirty seconds; the window ticks every one,
-        // extrapolating from the reading's arrival time (see Presentation.Playhead).
+        // "Last push 12s ago" moves between pushes, which arrive once every
+        // thirty seconds, so the window ticks every one.
         _ticker = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromSeconds(1) };
         _ticker.Tick += (_, _) => Tick();
 
@@ -106,12 +105,10 @@ public sealed partial class MainViewModel : Observable, IDisposable
         // ── Now playing ──
         if (s.Track is { } track)
         {
-            Title = NowPlayingText.Title(track);
+            Title = NowPlayingText.CardTitle(track, s.Explicit);
             Artist = NowPlayingText.Artist(track);
-            SpokenTitle = NowPlayingText.SpokenTitle(track, s.Explicit);
         }
         HasTrack = s.Track is not null;
-        Explicit = s.Track is not null && s.Explicit;
         NothingPlayingDetail = NowPlayingText.NothingPlayingDetail(s);
         SourceVersion = NowPlayingText.SourceVersion(s.SourceName, s.PhoneVersion);
         OnDiscord = NowPlayingText.OnDiscord(s);
@@ -138,20 +135,6 @@ public sealed partial class MainViewModel : Observable, IDisposable
         var now = _clock.Now;
         var nowLocal = DateTime.Now;
 
-        if (s.Track is { } track)
-        {
-            var elapsed = Playhead.Elapsed(s, now);
-            var duration = Playhead.Duration(s);
-            Progress = Playhead.Fraction(s, now) ?? 0;
-            HasProgress = duration is not null && elapsed is not null;
-            ElapsedText = elapsed is double e ? TimeText.Clock(e) : "";
-            DurationText = duration is double d ? TimeText.Clock(d) : "";
-        }
-        else
-        {
-            HasProgress = false;
-        }
-
         PhoneStatus = StatusText.Phone(s, now, nowLocal);
         TrayTooltip = TrayText.Tooltip(s, nowLocal);
     }
@@ -167,14 +150,6 @@ public sealed partial class MainViewModel : Observable, IDisposable
     public string Artist { get => _artist; private set => Set(ref _artist, value); }
     private string _artist = "";
 
-    /// <summary>Show Apple Music's "E" after the title.</summary>
-    public bool Explicit { get => _explicit; private set => Set(ref _explicit, value); }
-    private bool _explicit;
-
-    /// <summary>The title as a screen reader should say it, badge included.</summary>
-    public string SpokenTitle { get => _spokenTitle; private set => Set(ref _spokenTitle, value); }
-    private string _spokenTitle = "";
-
     public string NothingPlayingDetail { get => _nothingDetail; private set => Set(ref _nothingDetail, value); }
     private string _nothingDetail = "";
 
@@ -183,18 +158,6 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
     public string? OnDiscord { get => _onDiscord; private set => Set(ref _onDiscord, value); }
     private string? _onDiscord;
-
-    public double Progress { get => _progress; private set => Set(ref _progress, value); }
-    private double _progress;
-
-    public bool HasProgress { get => _hasProgress; private set => Set(ref _hasProgress, value); }
-    private bool _hasProgress;
-
-    public string ElapsedText { get => _elapsedText; private set => Set(ref _elapsedText, value); }
-    private string _elapsedText = "";
-
-    public string DurationText { get => _durationText; private set => Set(ref _durationText, value); }
-    private string _durationText = "";
 
     public ImageSource? Cover
     {
@@ -218,7 +181,7 @@ public sealed partial class MainViewModel : Observable, IDisposable
     private void UpdateCover(HostSnapshot s)
     {
         // A cover belongs to a track: once the phone stops playing, the last
-        // one must not linger on a card that says "Nothing playing".
+        // one must not linger on a card that says "Not playing".
         var url = s.Track is not null && s.ArtworkUrl is { Length: > 0 } art
             ? CoverUrl.ForWindow(art, s.PublicBase, s.Server.Port)
             : null;

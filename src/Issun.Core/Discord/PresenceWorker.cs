@@ -69,6 +69,7 @@ public sealed class PresenceWorker : IPresenceWorker
     private DiscordStatus _status = new(DiscordLinkState.Disconnected, null, null);
     private DiscordActivity? _current;
     private string? _artworkUrl;
+    private string? _resolvedFor;
     private int _running;
 
     // Owned by the loop.
@@ -110,9 +111,6 @@ public sealed class PresenceWorker : IPresenceWorker
     public DiscordStatus Status => Volatile.Read(ref _status);
 
     public DiscordActivity? Current => Volatile.Read(ref _current);
-
-    public DiscordActivity? Intended => Volatile.Read(ref _intended);
-    private DiscordActivity? _intended;
 
     public string? CurrentArtworkUrl => Volatile.Read(ref _artworkUrl);
 
@@ -175,7 +173,6 @@ public sealed class PresenceWorker : IPresenceWorker
         await KeepConnectedAsync(clientId, ct).ConfigureAwait(false);
 
         var payload = await ObserveAsync(ct).ConfigureAwait(false);
-        SetIntended(payload);
 
         if (_client is not null
             && _builder.MateriallyDifferent(payload, _lastIntended)
@@ -354,7 +351,7 @@ public sealed class PresenceWorker : IPresenceWorker
         }
 
         var art = await _resolver.ResolveAsync(track, ct).ConfigureAwait(false);
-        SetArtwork(art.Url);
+        SetArtwork(art.Url, TrackText.Key(track));
 
         // Links only ever come from an exact store-ID lookup. A near-miss cover
         // is cosmetic; a link that opens the wrong song is a broken promise.
@@ -474,20 +471,19 @@ public sealed class PresenceWorker : IPresenceWorker
     }
 
     /// <summary>
-    /// Rebuilt every tick, but value-equal between pushes because the playhead
-    /// anchor holds still, so Changed fires only when something the window
-    /// shows actually moved.
+    /// The cover for the current track, and which track that answer was for.
+    /// Changed fires when either moves. The next song from the same album keeps
+    /// the same cover URL, but its lookup has just settled something else the
+    /// window shows, whether the title gets an E, and with Discord closed
+    /// nothing else would tell the window before its five-second heartbeat.
     /// </summary>
-    private void SetIntended(DiscordActivity? activity)
+    private void SetArtwork(string? url, string? resolvedFor = null)
     {
-        var previous = Interlocked.Exchange(ref _intended, activity);
-        if (!Equals(previous, activity))
-            RaiseChanged();
-    }
-
-    private void SetArtwork(string? url)
-    {
-        if (Interlocked.Exchange(ref _artworkUrl, url) != url)
+        var urlChanged = Interlocked.Exchange(ref _artworkUrl, url) != url;
+        // Only this loop reads or writes it, so no fence.
+        var trackChanged = !string.Equals(_resolvedFor, resolvedFor, StringComparison.Ordinal);
+        _resolvedFor = resolvedFor;
+        if (urlChanged || trackChanged)
             RaiseChanged();
     }
 

@@ -229,21 +229,13 @@ public sealed record DiscordStatus(DiscordLinkState State, string? User, string?
 
 public interface IPresenceWorker
 {
-    /// <summary>Raised on the worker's thread whenever Status, Current or CurrentArtworkUrl changes.</summary>
+    /// <summary>Raised on the worker's thread whenever Status, Current or CurrentArtworkUrl changes, or a new track's artwork lookup completes.</summary>
     event Action? Changed;
 
     DiscordStatus Status { get; }
 
     /// <summary>The activity Discord last accepted; null when cleared or never set.</summary>
     DiscordActivity? Current { get; }
-
-    /// <summary>
-    /// The activity built for the current track on the last tick, whether or not
-    /// Discord is connected; null when nothing is playing. The window reads its
-    /// Start and End, so it shows the numbers Discord shows with Discord open or
-    /// closed — one source of truth, not a second calculation for the closed case.
-    /// </summary>
-    DiscordActivity? Intended { get; }
 
     /// <summary>
     /// Cover for the phone's current track, resolved even while Discord is
@@ -329,9 +321,6 @@ public sealed record HostSnapshot
     /// <summary>The phone's current track; null when it isn't playing or has gone quiet past the idle timeout.</summary>
     public TrackInfo? Track { get; init; }
 
-    /// <summary>When that reading arrived. Elapsed now ≈ Track.Elapsed + (now − this), capped at Duration.</summary>
-    public double TrackObservedAt { get; init; }
-
     public string? ArtworkUrl { get; init; }
 
     /// <summary>Mark <see cref="Track"/> explicit; see <see cref="TrackText.Explicit"/>. False with no track.</summary>
@@ -339,9 +328,6 @@ public sealed record HostSnapshot
 
     /// <summary>What Discord is actually showing, per the worker.</summary>
     public DiscordActivity? Activity { get; init; }
-
-    /// <summary>What Issun built for the current track, Discord open or not; see <see cref="IPresenceWorker.Intended"/>.</summary>
-    public DiscordActivity? Intended { get; init; }
 
     public double LastCheckinAt { get; init; }
 

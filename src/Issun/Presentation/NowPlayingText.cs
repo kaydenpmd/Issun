@@ -12,9 +12,14 @@ public static class NowPlayingText
     public static string Title(TrackInfo t) => TrackText.Title(t);
     public static string Artist(TrackInfo t) => TrackText.Artist(t);
 
-    /// <summary>The title for a screen reader, which would otherwise read the badge as a stray "E".</summary>
-    public static string SpokenTitle(TrackInfo t, bool isExplicit) =>
-        isExplicit ? $"{Title(t)}, explicit" : Title(t);
+    /// <summary>
+    /// The card's title: with 🅴 (U+1F174) after a space when the track is
+    /// explicit, typed rather than drawn, the way Apple's Now Playing puts its
+    /// E after the title in the title's own colour. WPF's font fallback draws
+    /// it with Segoe UI Symbol (seen 24 Sept 2026). The tray keeps <see cref="Title"/>.
+    /// </summary>
+    public static string CardTitle(TrackInfo t, bool isExplicit) =>
+        isExplicit ? $"{Title(t)} \U0001F174" : Title(t);
 
     /// <summary>What the card says instead of a track, which depends on why there isn't one.</summary>
     public static string NothingPlayingDetail(HostSnapshot s) =>

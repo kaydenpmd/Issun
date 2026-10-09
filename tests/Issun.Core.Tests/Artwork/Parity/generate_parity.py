@@ -5,19 +5,39 @@ artwork tests, computed by relay.py itself.
     python path/to/generate_parity.py [path/to/relay.py]
 
 Run it from a scratch folder, not from here: importing relay.py creates
-./art_cache in the current directory. The relay path defaults to the Ammy
-repo's bridge/relay.py. The test project does not depend on Python; this only
-exists so the committed numbers can be regenerated and checked.
+./art_cache in the current directory. relay.py is gone from the Ammy repo (the
+owner retired it on 25 Sept 2026), so with no path given this takes it from git
+history, at the last commit that changed it (RELAY_COMMIT below). The test project does not depend on
+Python; this only exists so the committed numbers can be regenerated and checked.
 
 The iTunes responses in fixtures/ were captured from itunes.apple.com in
 September 2026 with the same urlencode'd URLs relay.py builds.
 """
-import base64, binascii, contextlib, difflib, hashlib, importlib.util, io, json, os, platform, random, sys, unicodedata
+import atexit, base64, binascii, contextlib, difflib, hashlib, importlib.util, io, json, os, platform, random, shutil, subprocess, sys, tempfile, unicodedata
 import urllib.parse, urllib.request
+
+# The last Ammy commit to change bridge/relay.py (relay 1.9.0), before the
+# folder was deleted.
+AMMY_REPO = r"C:\Users\links\Repos\Ammy"
+RELAY_COMMIT = "3b7875c"
+
+
+def relay_from_history():
+    # stdout only, so a failing `git show` prints its own reason.
+    source = subprocess.run(
+        ["git", "-C", AMMY_REPO, "show", f"{RELAY_COMMIT}:bridge/relay.py"],
+        check=True, stdout=subprocess.PIPE).stdout
+    folder = tempfile.mkdtemp(prefix="relay-py-")
+    atexit.register(shutil.rmtree, folder, ignore_errors=True)
+    path = os.path.join(folder, "relay.py")
+    with open(path, "wb") as f:
+        f.write(source)
+    return path
+
 
 sys.dont_write_bytecode = True
 sys.stdout.reconfigure(errors="backslashreplace")
-RELAY = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\links\Repos\Ammy\bridge\relay.py"
+RELAY = sys.argv[1] if len(sys.argv) > 1 else relay_from_history()
 spec = importlib.util.spec_from_file_location("relay", RELAY)
 relay = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(relay)

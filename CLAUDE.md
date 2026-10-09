@@ -3,9 +3,9 @@
 **Issun** is the Windows receiver for **Ammy**. Ammy (iOS, `C:\Users\links\Repos\Ammy`)
 reads Apple Music's now-playing state and POSTs it as JSON to an HTTPS endpoint;
 Issun receives it on `127.0.0.1:8787` behind Tailscale Funnel and sets Discord
-Rich Presence through the Discord desktop app's local IPC pipe. It replaces
-`bridge/relay.py` from the Ammy repo and is meant to keep every behaviour
-relay.py has, including the fixes that cost days to find.
+Rich Presence through the Discord desktop app's local IPC pipe. It replaced
+relay.py, the Python relay that lived in the Ammy repo's `bridge/` folder, and
+keeps every behaviour relay.py had, including the fixes that cost days to find.
 
 The name is from Ōkami: Issun is the tiny Poncle who travels with Amaterasu,
 "Ammy", and does the talking she can't. That is this app's whole job.
@@ -15,14 +15,24 @@ iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel)
 ```
 
 **History:** the modules were built in parallel against `Contracts.cs` on
-21–22 Sept 2026. **Build 23 took over from relay.py on 22 Sept 2026** and is
-partway through the live test — see "The owner's live test" at the end of this
-file for what has and hasn't been checked. The switch was made permanent the same
-evening: Issun lives at `%LOCALAPPDATA%\Programs\Issun\Issun.exe`, starts in the
-tray from the HKCU Run key, and the `Ammy Relay` task is disabled but still
-registered. That keeps rollback to two commands, `Enable-ScheduledTask` (which
-needs an elevated shell, as disabling did) and `Start-ScheduledTask`, once Issun
-has been quit from the tray.
+21–22 Sept 2026. **Issun took over from relay.py on 22 Sept 2026** (build 23).
+The installed copy has been updated since, and the live test is still partway
+through — see "The owner's live test" at the end of this file for what has and
+hasn't been checked, and on which build. The switch was made permanent the same
+evening: Issun lives at `%LOCALAPPDATA%\Programs\Issun\Issun.exe` and starts in
+the tray from the HKCU Run key.
+
+**There is no rollback, since 25 Sept 2026.** The owner: "kill relay.py it's
+obsolete". The Ammy repo's `bridge/` folder was deleted (committed 9 Oct 2026),
+and the last relay.py stays in its history: `git -C C:\Users\links\Repos\Ammy
+show 3b7875c:bridge/relay.py`. The same day the owner decided to move off the
+old Cloudflare tunnel address "in favor of tailscale. need to live among the
+people", so Tailscale Funnel is to be the only way in. On 9 Oct 2026 that was
+not yet true: the `cloudflared` service still ran, and Issun's Public address
+setting still held the old address, imported from relay.py's `.env`, which
+overrides the Tailscale name for the window's endpoint and for uploaded-cover
+URLs. Ammy's CLAUDE.md ("Funnel is the only endpoint") has the steps left,
+which are the owner's to take.
 
 Ammy's CLAUDE.md learned this the hard way, twice: documented state decays in
 whichever direction you are not looking. **Check `git log`, not this file.**
@@ -57,6 +67,10 @@ the plumbing that existed only to feed it (`HostSnapshot.Intended` and
 Discord's card keeps its bar; that comes from `ActivityBuilder`'s timestamps
 and is untouched. The same day the card's "Nothing playing" became "Not
 playing". Don't bring the window's bar back without asking.
+
+The card's source line is the source's name and number, e.g. `Source: Ammy 1.0
+(97)`, from the push's `app_name` (`IPhoneDiagnostics.SourceName`). No word
+"version": the owner, 23 Sept 2026, "NO 'VERSION' JUST NAME AND NUMBER".
 
 ## Why it exists
 
@@ -153,9 +167,11 @@ replace it.
   from running relay.py's own functions and are committed into the tests as
   literals, so the tests have no Python dependency. To generate more, work from a
   scratch folder, since importing relay.py creates `./art_cache` in the current
-  directory. Load the Ammy repo's copy with
-  `importlib.util.spec_from_file_location("relay", r"C:\Users\links\Repos\Ammy\bridge\relay.py")`,
-  and stub `artwork_by_store_id`, `store_uploaded_artwork`,
+  directory. relay.py is only in the Ammy repo's history now: both
+  `generate_parity.py` scripts extract it from commit `3b7875c` by default, and
+  for anything else, `git -C C:\Users\links\Repos\Ammy show
+  3b7875c:bridge/relay.py > relay.py` in the scratch folder. Load it with
+  `importlib.util.spec_from_file_location`, and stub `artwork_by_store_id`, `store_uploaded_artwork`,
   `existing_uploaded_artwork`, `artwork_url` and `catalog_links` on the module
   so nothing touches the network. pypresence 4.6.2 is installed for Python 3.14.
 - **`Contracts.cs` is shared by every module.** Change it deliberately and
@@ -205,8 +221,12 @@ The owner's receiver is live on this machine. These are hard limits:
   and `.ts.net`) in code, tests, fixtures, logs or commit messages. Fixtures say
   `example-tailnet`. When a secret has to be checked, print its `.Length`, never
   the value.
-- **Don't stop or start the `Ammy Relay` task**, and don't change Tailscale
-  state, unless the owner asks.
+- **Never enable or start the `Ammy Relay` task.** It was still registered,
+  disabled, on 9 Oct 2026, beside relay.py's loose copy in
+  `C:\Users\links\Python Scripts`, and there is no rollback: starting it would
+  put a second receiver on 8787. Unregistering it or deleting that folder is the
+  owner's call.
+- **Don't change Tailscale or `cloudflared` state** unless the owner asks.
 
 ## Telling builds apart
 
@@ -255,7 +275,7 @@ it, and moving it must not lose anything.
 |---|---|---|
 | Settings | `%APPDATA%\Issun\settings.json` | Roams with the profile. Holds the key in plain text. |
 | Log | `%LOCALAPPDATA%\Issun\issun.log` | relay.log's successor. Moves to `.old` past 5 MB; relay.log grew forever. |
-| Uptime log | `%LOCALAPPDATA%\Issun\ammy-uptime.log` | Same filename as relay.py's, so an imported history continues in place. |
+| Uptime log | `%LOCALAPPDATA%\Issun\uptime.log` | Named `ammy-uptime.log` until 23 Sept 2026; `IssunHost` renames an old one once, never over an existing file. Import merges relay.py's `ammy-uptime.log` into it, placed before Issun's own lines. |
 | Uploaded covers | `%LOCALAPPDATA%\Issun\art_cache\` | 60 newest kept. |
 | Autostart | `HKCU\...\CurrentVersion\Run`, value `Issun` | `"<exe>" --background`. |
 
@@ -263,7 +283,7 @@ it, and moving it must not lose anything.
 
 **Settings.** `SettingsStore` writes atomically (a temp file in the same folder,
 then replace). A missing file means first run: a fresh key, saved, and
-`FirstRun` set so the window shows the Pair Ammy banner. An existing file with
+`FirstRun` set so the window shows the Connect your source banner. An existing file with
 an empty key gets one generated. A corrupt file is moved aside to
 `settings.json.bad-<yyyyMMddHHmmss>`, not overwritten, and the log says loudly
 that Ammy will need the new key.
@@ -283,15 +303,15 @@ MagicDNS name, which becomes `PublicBase` unless Settings overrides it) and
 `tailscale funnel status --json`, and changes nothing unless the owner clicks
 **Turn on Funnel**.
 
-**relay.py's folder is untouched.** On the owner's PC the running relay is a
-loose copy at `C:\Users\links\Python Scripts\relay.py`, with `.env`, `relay.log`,
-`ammy-uptime.log` and `art_cache\` beside it. Import reads the `.env` and copies
-the uptime history. It never writes there.
+**Import never writes to relay.py's folder.** It reads the `.env` it is pointed
+at and copies the `ammy-uptime.log` beside it, and leaves both where they were.
 
 ## relay.py's gotchas, preserved, and where they live now
 
-Each of these cost real time in the Ammy project. Ammy's CLAUDE.md, "Gotchas
-already paid for", has the full stories; this is where each one landed.
+Each of these cost real time in the Ammy project. Until 9 Oct 2026 the full
+stories were in Ammy's CLAUDE.md, "Gotchas already paid for" (`git -C
+C:\Users\links\Repos\Ammy show 20ab199:CLAUDE.md`). Ammy's file now points
+here, so this section is the record.
 
 **The playhead anchor is paired with the push's arrival time, never the current
 time.** The project's most expensive bug, invisible on inspection because every
@@ -302,8 +322,12 @@ Discord's bar falls behind and snaps back. That was the rubberbanding (relay
 1.2.1). `IActivityBuilder.Build(track, observedAt, ...)` takes `observedAt`
 from `IPhoneState.Get()`'s `UpdatedAt`. **Never pass it the clock.** There is a
 regression test: thirty builds with the same `observedAt` while the clock
-advances must produce an identical `Start`. Diagnosis tip carried over: a
-constant drift is a clock, not a measurement.
+advances must produce an identical `Start`. Diagnosis tip carried over: the
+giveaway was `[playhead] re-anchored +10.0s` repeating with *identical* drift,
+and a constant drift is a clock, not a measurement. `MateriallyDifferent` still
+treats `Start`/`End` within 2 s as equal (`ActivityBuilder.TimestampTolerance`);
+with a correct anchor that is belt-and-braces, since the anchor doesn't move
+between pushes at all.
 
 The `Playhead` forward-correction rule ("prefer the reading that implies the
 song is further along") has never fired against real data. It is insurance.
@@ -320,7 +344,9 @@ connection, retries once with the optional extras stripped, then records the
 *intended* payload as sent so the next tick doesn't re-send a refused payload
 forever. A lost connection is logged, disposed, and waited on (`LostDelay`,
 1 s; never spin) before reconnecting. **Don't collapse those two catch clauses
-back together.**
+back together.** It took an hour to diagnose in relay.py because it printed
+`[rpc] <title>` only after a push succeeded, so the one track Discord refused
+was the only one with no line. Log the refusal itself, as `PresenceWorker` does.
 
 **Two characters minimum.** Discord refuses `details` or `state` shorter than
 two characters. `DiscordText` pads with U+2060 WORD JOINER (invisible, but it
@@ -452,11 +478,15 @@ this file.
   diag (capturing the previous `app_uptime_s` at that moment), apply the `seq`
   rule, stamp the check-in, and note any gap. relay.py didn't. On 14 Sept 2026 a
   near-simultaneous second push logged the same 38-minute gap twice, the second
-  time as `app restarted 3358s -> 3359s — it died`, which was wrong. That closes
-  "A relay bug, still open" in Ammy's CLAUDE.md for Issun. relay.py still has
-  it, and the wrong line stays in the imported history.
-- **A relaunch supersedes the old `seq`.** A push whose `app_uptime_s` went
-  backwards comes from a new app process and wins, whatever `seq` came before.
+  time as `app restarted 3358s -> 3359s — it died`, which was wrong. Ammy's
+  CLAUDE.md records it as "One wrong line in the history, from a relay.py bug
+  Issun fixed". relay.py never got the fix, and the wrong line stays in the
+  imported history.
+- **A relaunch supersedes the old `seq`.** A push whose `app_uptime_s` fell
+  further than its `seq` did, by more than `SameProcessSlack` (5 s), comes from
+  a new app process and wins. Uptime merely going backwards isn't enough: a
+  request overtaken in flight comes from the same process, sampled a moment
+  earlier, and applying it would be exactly the late push `seq` exists to drop.
   Sessions are keyed and superseded, never stacked (Ammy item 7).
 - **A phone clock that jumps back is not a race.** In-flight pushes are
   milliseconds apart. A `seq` more than 60 s older than the last one means the
@@ -479,8 +509,9 @@ this file.
   ID, saying in the Discord row what to set.
 - **Settings apply live.** The key is read per request, a new client ID
   reconnects Discord, and a new port restarts the receiver.
-- **A taken port is a status, not a traceback.** `PortInUseException` names the
-  likely culprit, relay.py's `Ammy Relay` task, and the window shows it.
+- **A taken port is a status, not a traceback.** `PortInUseException` asks
+  whether relay.py is still running, the likely culprit for anyone moving over
+  from it, and the window shows it.
 
 ## CI and releases
 
@@ -502,32 +533,26 @@ and the SmartScreen instructions.
 - `workflow_dispatch` from any branch other than `main` builds and uploads but
   doesn't release, because a branch's commit count can collide with one main has
   already used.
-- 0.x releases are marked pre-release, because nobody had run one against a
-  live phone. Bumping `<VersionPrefix>` to 1.0.0 ends that.
+- 0.x releases are marked pre-release. That was set because nobody had run one
+  against a live phone; builds 23, 34 and 38 have since, but the live test is
+  still unfinished (items 5, 6 and 8). Bumping `<VersionPrefix>` to 1.0.0 ends
+  the pre-release marking.
 
-**What has and hasn't been proven, 21 Sept 2026.** The repo had no GitHub remote
-yet, so the workflow has never run on GitHub. Its shell steps were executed
-locally in Git Bash against the scaffold, with a stand-in `GITHUB_OUTPUT`, and
-passed. The shallow-clone guard was checked against a `--depth 1` clone and
-failed as intended. The YAML parses. The four `uses:` steps (checkout,
-setup-dotnet, upload-artifact v7, action-gh-release v2) have not run. **The first
-push is the first real test; read the run.** On the scaffold, the published
-`.exe` was 74 MB compressed (161 MB without `EnableCompressionInSingleFile`),
-FileVersion `0.1.0.2`, and `Issun.Core` carried the SHA, so the CI properties do
-reach `IssunInfo` through the project reference. Trimming is not an option: WPF
-doesn't support it.
+**CI has run on GitHub since the first push.** `gh run list -R kaydenpmd/Issun`
+shows the runs and `gh release list -R kaydenpmd/Issun` the releases; read the
+run after a push rather than assuming it passed. The shallow-clone guard was
+checked against a `--depth 1` clone on 21 Sept 2026 and failed as intended. On
+the scaffold, the published `.exe` was 74 MB compressed (161 MB without
+`EnableCompressionInSingleFile`), FileVersion `0.1.0.2`, and `Issun.Core`
+carried the SHA, so the CI properties do reach `IssunInfo` through the project
+reference. Trimming is not an option: WPF doesn't support it.
 
-Windows runner minutes bill at 2× on a private repo and are free on a public
-one.
+The repo is public, which keeps Windows runner minutes free; they bill at 2× on
+a private repo.
 
 ## Queued work
 
 Asked for by the owner and not yet done. Take the top item unless told otherwise.
-
-Done since the list began: "Source version 1.0 (97)" became "Source: Ammy
-1.0 (97)" (23 Sept 2026). Ammy sends `app_name`, Issun keeps it as
-`IPhoneDiagnostics.SourceName`, and the card drops the word "version", as the
-owner asked: "NO 'VERSION' JUST NAME AND NUMBER".
 
 1. **Setup wizard and installer** (asked 23 Sept 2026). The owner said it "needs
    some thinking first", so talk through it before building anything: what it
@@ -554,11 +579,13 @@ can do the better (to an extent lol)". Run the commands, commit, verify with a
 real check, and bundle the obvious adjacent work into the same turn rather than
 proposing it item by item. The hedge is real. Anything that reaches outside the
 repo or is hard to undo gets confirmed first: deleting, spending money, or
-touching the live setup (the `Ammy Relay` task, Tailscale Funnel, port 8787,
-`C:\Users\links\Python Scripts`). **Creating the GitHub repo and the first push
-are the owner's call**: there is no remote yet, and a public repo publishes the
-code and, through CI, a release. Once it exists, pushing to `main` is routine, as
-it is in Ammy.
+touching the live setup (Tailscale Funnel, port 8787, the installed Issun, the
+`cloudflared` service, the disabled `Ammy Relay` task, `C:\Users\links\Python
+Scripts`). The
+GitHub repo is `kaydenpmd/Issun`, public, and
+pushing to `main` is routine, as it is in Ammy. Remember that a push is also a
+release: every push to `main` that changes more than Markdown publishes the
+`.exe`.
 
 **Git is Claude's to run.** A Claude Code session has a real shell on the owner's
 Windows machine, so `git status`, `add`, `commit`, `log` and `push` all work
@@ -583,7 +610,7 @@ build should cover:
 5. A skip updates presence.
 6. A pause clears it.
 7. A reboot brings Issun back in the tray and it reaches Discord.
-8. Then a few days of `ammy-uptime.log` continuing the relay-era history.
+8. Then a few days of `uptime.log` continuing the relay-era history.
 
 Record the result here, with the build number.
 
@@ -597,7 +624,7 @@ Record the result here, with the build number.
   the Discord application ID and `PUBLIC_BASE`, plus 176 lines of uptime
   history placed ahead of Issun's own.
 - 3: **passed.** Ammy 1.0 (83) checked in at 20:43:00 with its existing key, and
-  `https://ammy.kaydenpmd.net/version` answered `issun 0.1.0 (23)`.
+  `/version` on the old Cloudflare tunnel address answered `issun 0.1.0 (23)`.
 - 4: **passed on Issun's side.** "EAT YOU UP" went to Discord at 21:15:05, once,
   with no re-push on the heartbeats that followed and no `[playhead]` lines. The
   cover came from the exact store-ID lookup, and all three links resolved — the
@@ -614,10 +641,8 @@ Record the result here, with the build number.
 - **Tailscale did not come back with it.** It reported `NoState` when Issun
   started, the tray app `tailscale-ipn` wasn't running at 15:31, and Funnel
   wasn't ready again until 18:20:20, almost three hours later. Anything using
-  the Funnel address was cut off for that long. `ammy.kaydenpmd.net` (cloudflared,
-  which runs as a service) answered `issun 0.1.0 (34)` at 15:31. Worth finding
-  out why the tray app didn't start at sign-in before counting on Funnel after
-  a reboot.
+  the Funnel address was cut off for that long. The old Cloudflare tunnel
+  address, served by a Windows service, answered `issun 0.1.0 (34)` at 15:31.
 - No push from the phone had arrived by 02:51 the next morning.
 
 **What that turned out to be, 24 Sept 2026:**

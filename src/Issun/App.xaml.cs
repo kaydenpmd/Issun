@@ -149,7 +149,7 @@ public partial class App : Application
         if (_uiState is { TrayHintShown: false })
         {
             _tray?.ShowHint("Issun is still running",
-                "It keeps passing Ammy's music on to Discord from here. Right-click this icon to quit.");
+                "It keeps passing your music on to Discord from here. Right-click this icon to quit.");
             _uiState.MarkTrayHintShown();
         }
     }

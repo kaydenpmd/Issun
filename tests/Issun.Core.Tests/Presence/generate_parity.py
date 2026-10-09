@@ -11,19 +11,42 @@ relay.py imports it.
 
 relay.py creates its art cache and uptime log relative to the working
 directory when imported, so this runs from a throwaway temp folder.
+
+relay.py is gone from the Ammy repo (the owner retired it on 25 Sept 2026), so
+with no path given this takes it from git history, at the last commit that
+changed it (RELAY_COMMIT below), and writes it into the temp folder.
 """
 import importlib.util
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TARGET = os.path.join(HERE, "ParityData.cs")
-RELAY = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\links\Repos\Ammy\bridge\relay.py"
+# The last Ammy commit to change bridge/relay.py (relay 1.9.0), before the
+# folder was deleted.
+AMMY_REPO = r"C:\Users\links\Repos\Ammy"
+RELAY_COMMIT = "3b7875c"
 
 WORK = tempfile.mkdtemp(prefix="issun-parity-")
+
+
+def relay_from_history():
+    # stdout only, so a failing `git show` prints its own reason.
+    source = subprocess.run(
+        ["git", "-C", AMMY_REPO, "show", f"{RELAY_COMMIT}:bridge/relay.py"],
+        check=True, stdout=subprocess.PIPE).stdout
+    path = os.path.join(WORK, "relay.py")
+    with open(path, "wb") as f:
+        f.write(source)
+    return path
+
+
+RELAY = sys.argv[1] if len(sys.argv) > 1 else relay_from_history()
+
 os.chdir(WORK)
 os.environ["ART_DIR"] = os.path.join(WORK, "art_cache")
 os.environ["UPTIME_LOG"] = os.path.join(WORK, "uptime.log")

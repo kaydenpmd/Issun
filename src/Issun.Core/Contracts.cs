@@ -4,8 +4,10 @@ namespace Issun.Core;
 
 // The seams between Issun's modules. Each module implements its interfaces in
 // its own folder under src/Issun.Core; the host (IssunHost) wires them
-// together. Behaviour is ported from bridge/relay.py in the Ammy repo, and the
-// doc comments below name the relay.py function each member replaces.
+// together. Behaviour is ported from relay.py, which lived in the Ammy repo's
+// bridge/ folder until the owner retired it on 25 Sept 2026 (last changed at
+// commit 3b7875c), and the doc comments below name the relay.py function each
+// member replaces.
 //
 // Every implementation must be thread-safe: HTTP requests arrive on Kestrel's
 // threads, the presence worker runs on its own loop, and the window reads
@@ -20,7 +22,7 @@ public interface IPhoneState
     /// the phone said it isn't playing) and when that reading *arrived*. That
     /// arrival time is the <c>observed_at</c> the playhead anchors to — never
     /// the current time. See "The playhead anchor is paired with the push's
-    /// arrival time" in Ammy's CLAUDE.md; it was the project's most expensive bug.
+    /// arrival time" in this repo's CLAUDE.md; it was the project's most expensive bug.
     /// </summary>
     (TrackInfo? Track, double UpdatedAt) Get();
 
@@ -177,7 +179,7 @@ public sealed class DiscordHandshakeException(int code, string message) : Discor
 /// Discord answered SET_ACTIVITY with an ERROR. The connection is fine; this
 /// payload was refused. **Not a dead socket** — tearing the connection down
 /// re-sends the same payload forever. See "A rejected payload is not a dead
-/// socket" in Ammy's CLAUDE.md.
+/// socket" in this repo's CLAUDE.md.
 /// </summary>
 public sealed class DiscordRejectedException(int code, string message) : DiscordException(message)
 {

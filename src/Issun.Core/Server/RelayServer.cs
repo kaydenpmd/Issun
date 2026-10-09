@@ -86,7 +86,7 @@ public sealed class RelayServer : IRelayServer
     /// first, so a port change is one call. Port 0 takes any free port, and
     /// <see cref="Status"/> reports the one bound — tests use that.
     /// </summary>
-    /// <exception cref="PortInUseException">Something else holds the port — usually relay.py, still running as the "Ammy Relay" task.</exception>
+    /// <exception cref="PortInUseException">Something else holds the port — relay.py, for anyone still running it, or any other local server.</exception>
     public async Task StartAsync(int port, CancellationToken ct)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(port);

@@ -48,9 +48,9 @@ public sealed partial class MainViewModel
             var key = await _host.RegenerateKeyAsync();
             ConfirmingNewKey = false;
             Key = key;
-            // Shown, because the next thing the person does is type it into Ammy.
+            // Shown, because the next thing the person does is type it into the source.
             KeyShown = true;
-            KeyMessage = "New key made. Ammy's pushes are refused until its Key field has this one.";
+            KeyMessage = "New key made. Your source's pushes are refused until it has this key too.";
         }, ex =>
         {
             ConfirmingNewKey = false;

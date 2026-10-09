@@ -13,3 +13,7 @@ TestResults/
 .env
 *.log
 art_cache/
+
+# Python bytecode, from compiling or running the parity generators in tests/
+__pycache__/
+*.py[cod]

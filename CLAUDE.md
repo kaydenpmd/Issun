@@ -16,7 +16,11 @@ iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel)
 
 **History:** the modules were built in parallel against `Contracts.cs` on
 21–22 Sept 2026. **Issun took over from relay.py on 22 Sept 2026** (build 23).
-The installed copy has been updated since, and the live test is still partway
+The installed copy was last updated to build 38, on 24 Sept 2026. Builds 40 and
+41 (9 Oct) are released but not installed: Claude offered to install 41 that
+day and had no answer by 27 Oct, so the installed tray hint and new-key notice
+still name Ammy. Check `/version` against `gh release list -R kaydenpmd/Issun`
+before assuming the installed copy runs this code. The live test is still partway
 through — see "The owner's live test" at the end of this file for what has and
 hasn't been checked, and on which build. The switch was made permanent the same
 evening: Issun lives at `%LOCALAPPDATA%\Programs\Issun\Issun.exe` and starts in
@@ -27,8 +31,8 @@ obsolete". The Ammy repo's `bridge/` folder was deleted (committed 9 Oct 2026),
 and the last relay.py stays in its history: `git -C C:\Users\links\Repos\Ammy
 show 3b7875c:bridge/relay.py`. The same day the owner decided to move off the
 old Cloudflare tunnel address "in favor of tailscale. need to live among the
-people", so Tailscale Funnel is to be the only way in. On 9 Oct 2026 that was
-not yet true: the `cloudflared` service still ran, and Issun's Public address
+people", so Tailscale Funnel is to be the only way in. On 9 Oct 2026, and
+still on 27 Oct, that was not yet true: the `cloudflared` service still ran, and Issun's Public address
 setting still held the old address, imported from relay.py's `.env`, which
 overrides the Tailscale name for the window's endpoint and for uploaded-cover
 URLs. Ammy's CLAUDE.md ("Funnel is the only endpoint") has the steps left,
@@ -222,7 +226,7 @@ The owner's receiver is live on this machine. These are hard limits:
   `example-tailnet`. When a secret has to be checked, print its `.Length`, never
   the value.
 - **Never enable or start the `Ammy Relay` task.** It was still registered,
-  disabled, on 9 Oct 2026, beside relay.py's loose copy in
+  disabled, on 27 Oct 2026, beside relay.py's loose copy in
   `C:\Users\links\Python Scripts`, and there is no rollback: starting it would
   put a second receiver on 8787. Unregistering it or deleting that folder is the
   owner's call.
@@ -286,7 +290,8 @@ then replace). A missing file means first run: a fresh key, saved, and
 `FirstRun` set so the window shows the Connect your source banner. An existing file with
 an empty key gets one generated. A corrupt file is moved aside to
 `settings.json.bad-<yyyyMMddHHmmss>`, not overwritten, and the log says loudly
-that Ammy will need the new key.
+that the source will need the new key ("Your source will need the new key
+before it can connect again.").
 
 **The key** is 32 characters of `[A-Za-z0-9]`: typeable on a phone keyboard,
 and the same length as the relay-era key. Log lines give its length, never its
@@ -405,7 +410,8 @@ directly inside `art_cache`. Uploaded art needs a public base URL, because
 Discord's CDN cannot reach 127.0.0.1: the Settings override, else
 `https://<tailscale dns name>`.
 
-**127.0.0.1 only.** The tunnel is the sole ingress. Kestrel rather than
+**127.0.0.1 only.** Only a tunnel reaches it: Tailscale Funnel, and, until the
+owner removes it, the old `cloudflared` tunnel (see the top of this file). Kestrel rather than
 `HttpListener`, because http.sys matches on the Host header: a `localhost`
 prefix refuses the requests Funnel forwards with the public hostname, and a
 wildcard prefix needs admin (see the comment in `Issun.Core.csproj`).

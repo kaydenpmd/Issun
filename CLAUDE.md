@@ -16,10 +16,9 @@ iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel)
 
 **History:** the modules were built in parallel against `Contracts.cs` on
 21–22 Sept 2026. **Issun took over from relay.py on 22 Sept 2026** (build 23).
-The installed copy was last updated to build 38, on 24 Sept 2026. Builds 40 and
-41 (9 Oct) are released but not installed: Claude offered to install 41 that
-day and had no answer by 27 Oct, so the installed tray hint and new-key notice
-still name Ammy. Check `/version` against `gh release list -R kaydenpmd/Issun`
+The installed copy is build 43, updated from build 38 on 29 Oct 2026 at the
+owner's yes, so it has the new icon, and its tray hint and new-key notice no
+longer name Ammy. Check `/version` against `gh release list -R kaydenpmd/Issun`
 before assuming the installed copy runs this code. The live test is still partway
 through — see "The owner's live test" at the end of this file for what has and
 hasn't been checked, and on which build. The switch was made permanent the same
@@ -691,6 +690,13 @@ only hides Issun to the tray, so the file stays locked and the copy fails. A
 second launch while it runs just shows the running copy's window and exits.
 Keep the previous build beside it (`Issun.exe.b34.bak`) for rollback. Run all of
 it from PowerShell outside the sandbox, as below.
+
+**29 Oct 2026, build 38 to 43 (about 3 s down): the copy failed on a locked
+file**, even after `Stop-Process -Force` and `Wait-Process`, and the restart
+brought back build 38. What worked was renaming the running `Issun.exe` to
+`Issun.exe.b38.bak` first (Windows lets a running `.exe` be renamed, though not
+overwritten), copying the new one in, then stopping and restarting. The rename
+is the backup too, so do it in that order from the start.
 
 **Two things the handover taught, for anyone repeating it:**
 

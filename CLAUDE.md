@@ -44,10 +44,17 @@ whichever direction you are not looking. **Check `git log`, not this file.**
 
 **A Discord receiver for any source, never "Ammy's receiver".** The owner, 23 Sept
 2026: "remove all references to ammy STOP. but don't remove references to
-discord. this is meant for discord." The window, the tray, log notices and the
-Start menu entry say **source**, not Ammy or phone. The Source row
-was the Phone row until then. It is the mirror of Ammy's own rule, where
-user-facing text never names Discord.
+discord. this is meant for discord." The window, the tray and log notices say
+**source**, not Ammy or phone. The Source row was the Phone row until then. It
+is the mirror of Ammy's own rule, where user-facing text never names Discord.
+
+Since 3 Nov 2026 Issun gives the Start menu entry no description (public text
+is the owner's to write). Earlier builds gave it one, and an entry was then
+only rewritten when the .exe moved, so the owner's own still had the first,
+"Shows what Ammy is playing on Discord". A run now takes the old ones off
+(`StartMenuShortcut.OldDescriptions`), changing nothing else in the entry, and
+leaves any other description alone. The owner's entry loses its old one the
+first time the installed copy is a build with this change.
 
 Three things still carry the name on purpose, and they stay:
 - the `X-Ammy-Relay` response header, which Ammy checks for by exact name;

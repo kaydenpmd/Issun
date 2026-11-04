@@ -50,9 +50,21 @@ public sealed class StartMenuShortcut
     public string ExePath { get; }
 
     /// <summary>
-    /// Adds the entry on first run, repoints it if Issun has moved, and otherwise
-    /// leaves it alone. Never throws: a Start menu problem is logged, not allowed
-    /// to stop the receiver from starting.
+    /// What earlier builds put in the entry's description, which Windows shows
+    /// when the pointer rests on the entry. The entry has none now. A run takes
+    /// these off an existing entry; a description the person wrote stays.
+    /// </summary>
+    internal static readonly string[] OldDescriptions =
+    [
+        "Shows what Ammy is playing on Discord",
+        "Shows what you're playing on Discord",
+    ];
+
+    /// <summary>
+    /// Adds the entry on first run, repoints it if Issun has moved, takes off a
+    /// description an earlier build gave it, and otherwise leaves it alone. Never
+    /// throws: a Start menu problem is logged, not allowed to stop the receiver
+    /// from starting.
     /// </summary>
     public void Ensure()
     {
@@ -78,6 +90,11 @@ public sealed class StartMenuShortcut
                     Write();
                     Log.Write($"[startmenu] the Start menu entry opened {target ?? "nothing"}; it now opens {ExePath}");
                 }
+                else if (IsOldDescription(ReadDescription(ShortcutPath)))
+                {
+                    ClearDescription();
+                    Log.Write("[startmenu] took the old description off the Start menu entry");
+                }
                 return;
             }
 
@@ -98,13 +115,30 @@ public sealed class StartMenuShortcut
     internal static string? ReadTarget(string shortcutPath) =>
         WithShortcut(shortcutPath, link => (string?)link.TargetPath is { Length: > 0 } t ? t : null);
 
+    /// <summary>An existing shortcut's description, or null if it has none.</summary>
+    internal static string? ReadDescription(string shortcutPath) =>
+        WithShortcut(shortcutPath, link => (string?)link.Description is { Length: > 0 } d ? d : null);
+
+    private static bool IsOldDescription(string? description) =>
+        description is not null && Array.IndexOf(OldDescriptions, description) >= 0;
+
     private void Write() =>
         WithShortcut(ShortcutPath, link =>
         {
             link.TargetPath = ExePath;
             link.WorkingDirectory = Path.GetDirectoryName(ExePath) ?? "";
             link.IconLocation = ExePath + ",0";
-            link.Description = "Shows what you're playing on Discord";
+            if (IsOldDescription((string?)link.Description))
+                link.Description = "";
+            link.Save();
+            return 0;
+        });
+
+    // Only the description: an icon or Start-in folder the person chose stays.
+    private void ClearDescription() =>
+        WithShortcut(ShortcutPath, link =>
+        {
+            link.Description = "";
             link.Save();
             return 0;
         });

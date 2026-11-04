@@ -16,9 +16,10 @@ iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel)
 
 **History:** the modules were built in parallel against `Contracts.cs` on
 21–22 Sept 2026. **Issun took over from relay.py on 22 Sept 2026** (build 23).
-The installed copy is build 43, updated from build 38 on 29 Oct 2026 at the
-owner's yes, so it has the new icon, and its tray hint and new-key notice no
-longer name Ammy. Check `/version` against `gh release list -R kaydenpmd/Issun`
+The installed copy is build 46, updated from build 43 on 3 Nov 2026 at the
+owner's yes. Build 43 brought the new icon, and a tray hint and new-key notice
+that no longer name Ammy; build 46 took the old description off the Start menu
+entry. Check `/version` against `gh release list -R kaydenpmd/Issun`
 before assuming the installed copy runs this code. The live test is still partway
 through — see "The owner's live test" at the end of this file for what has and
 hasn't been checked, and on which build. The switch was made permanent the same
@@ -53,8 +54,8 @@ is the owner's to write). Earlier builds gave it one, and an entry was then
 only rewritten when the .exe moved, so the owner's own still had the first,
 "Shows what Ammy is playing on Discord". A run now takes the old ones off
 (`StartMenuShortcut.OldDescriptions`), changing nothing else in the entry, and
-leaves any other description alone. The owner's entry loses its old one the
-first time the installed copy is a build with this change.
+leaves any other description alone. The owner's entry lost its old one on
+3 Nov 2026, the first time build 46 started.
 
 Three things still carry the name on purpose, and they stay:
 - the `X-Ammy-Relay` response header, which Ammy checks for by exact name;
@@ -705,6 +706,12 @@ brought back build 38. What worked was renaming the running `Issun.exe` to
 `Issun.exe.b38.bak` first (Windows lets a running `.exe` be renamed, though not
 overwritten), copying the new one in, then stopping and restarting. The rename
 is the backup too, so do it in that order from the start.
+
+**3 Nov 2026, build 43 to 46 (a few seconds down): that order worked first
+time**, from PowerShell outside the sandbox: download and check the SHA-256,
+rename the running `Issun.exe` to `Issun.exe.b43.bak`, copy the new one in and
+check its hash, `Stop-Process -Force`, start it with `--background`, then ask
+`/version`, which answered `issun 0.1.0 (46)`.
 
 **Two things the handover taught, for anyone repeating it:**
 

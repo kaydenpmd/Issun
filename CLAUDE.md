@@ -44,8 +44,8 @@ whichever direction you are not looking. **Check `git log`, not this file.**
 
 **A Discord receiver for any source, never "Ammy's receiver".** The owner, 23 Sept
 2026: "remove all references to ammy STOP. but don't remove references to
-discord. this is meant for discord." The window, the tray, log notices, the
-README and the Start menu entry say **source**, not Ammy or phone. The Source row
+discord. this is meant for discord." The window, the tray, log notices and the
+Start menu entry say **source**, not Ammy or phone. The Source row
 was the Phone row until then. It is the mirror of Ammy's own rule, where
 user-facing text never names Discord.
 
@@ -104,7 +104,8 @@ Ammy's user-facing copy is receiver-agnostic on purpose. It is a sender that
 POSTs to whatever endpoint the user chooses, built to pair with Issun and usable
 with anything, and naming Discord there has had to be undone once already (see
 Ammy's CLAUDE.md, "What Ammy is"). Issun is the opposite case: it *is* the
-Discord receiver, so its window, README and release notes name Discord plainly.
+Discord receiver, so its window and release notes name Discord plainly. The
+README is only the name since 3 Nov 2026: public text is the owner's to write.
 
 The rule runs one way. **Don't let Issun's framing leak back into Ammy's**
 listing, landing page, permission strings or UI. And the Discord application

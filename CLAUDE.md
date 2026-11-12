@@ -762,6 +762,13 @@ rename the running `Issun.exe` to `Issun.exe.b43.bak`, copy the new one in and
 check its hash, `Stop-Process -Force`, start it with `--background`, then ask
 `/version`, which answered `issun 0.1.0 (46)`.
 
+**11 Nov 2026, build 46 to 48 (4.1 s down): the same order, as one PowerShell
+script**, with build 46 kept as `Issun.exe.b46.bak`. If the copy or its hash
+check failed, the script was to delete the copy and rename the backup back
+before stopping anything. `/version` answered `issun 0.1.0 (48)`; Discord
+reconnected and the phone's next push (Ammy 1.0 (167)) landed within 2 s of
+the start.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

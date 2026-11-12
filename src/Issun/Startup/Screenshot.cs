@@ -63,6 +63,20 @@ public static class Screenshot
             var bitmap = new RenderTargetBitmap(pixelsWide, pixelsHigh, 96 * Scale, 96 * Scale, PixelFormats.Pbgra32);
             bitmap.Render(page);
 
+            // A locked or disconnected session renders nothing: every pixel
+            // comes back transparent, and a blank PNG would pass for a picture
+            // of the window. Seen 12 Nov 2026 with the PC at its lock screen.
+            var pixels = new byte[pixelsWide * pixelsHigh * 4];
+            bitmap.CopyPixels(pixels, pixelsWide * 4, 0);
+            var drawn = false;
+            for (var i = 3; i < pixels.Length; i += 4)
+            {
+                if (pixels[i] != 0) { drawn = true; break; }
+            }
+            if (!drawn)
+                throw new InvalidOperationException(
+                    "the render came out blank (every pixel transparent). WPF draws nothing while Windows is locked or the session is disconnected; unlock the PC and try again.");
+
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);

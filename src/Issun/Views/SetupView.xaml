@@ -156,31 +156,6 @@
                                Visibility="{Binding TailscaleError, Converter={StaticResource Present}}" />
                 </StackPanel>
 
-                <!-- ───────────── 2b. An address of their own ─────────────
-                     Reached only by the Tailscale page's Skip (the owner,
-                     12 Nov 2026), for people who reach Issun some other way.
-                     Next saves what's typed, or moves on if nothing is. The
-                     field is Settings' Public address. Its words are theirs. -->
-                <StackPanel Visibility="{Binding OnAddressPage, Converter={StaticResource Visible}}">
-                    <TextBlock Text="[text]" Style="{StaticResource MainInstruction}" />
-                    <TextBlock Text="[text]" Style="{StaticResource PageBody}" />
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <DockPanel>
-                                <TextBox DockPanel.Dock="Right" Width="260" VerticalAlignment="Center" Margin="12,0,0,0"
-                                         Text="{Binding PublicAddress, UpdateSourceTrigger=PropertyChanged}"
-                                         AutomationProperties.Name="Public address" />
-                                <StackPanel>
-                                    <TextBlock Text="[text]" Style="{StaticResource RowTitle}" />
-                                    <TextBlock Text="[text]" Style="{StaticResource RowDescription}" />
-                                </StackPanel>
-                            </DockPanel>
-                            <TextBlock Text="{Binding AddressProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
-                                       Visibility="{Binding AddressProblem, Converter={StaticResource Present}}" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
                 <!-- ───────────── 3. Start with Windows ───────────── -->
                 <StackPanel Visibility="{Binding OnStartPage, Converter={StaticResource Visible}}">
                     <TextBlock Text="Launch Issun on startup?" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
@@ -208,12 +183,18 @@
                             <DockPanel>
                                 <Button DockPanel.Dock="Right" Content="{Binding ToggleQrLabel}" Command="{Binding ToggleQrCommand}"
                                         VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="64" />
+                                <!-- Shows once the endpoint is edited, as Ammy's Restart
+                                     does for an edited field; applies the field and
+                                     redraws the code. The owner's words go here. -->
+                                <Button DockPanel.Dock="Right" Content="[text]" Command="{Binding ReloadQrCommand}"
+                                        VerticalAlignment="Center" Margin="12,0,0,0" AutomationProperties.AutomationId="ReloadQr"
+                                        Visibility="{Binding ShowReload, Converter={StaticResource Visible}}" />
                                 <TextBlock Text="QR code" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
                             </DockPanel>
                             <Image Source="{Binding Qr}" Width="200" Height="200" Margin="0,12,0,0" HorizontalAlignment="Left"
                                    RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True" ClipToBounds="True"
                                    AutomationProperties.Name="QR code with the address and key"
-                                   Visibility="{Binding HasEndpoint, Converter={StaticResource Visible}}">
+                                   Visibility="{Binding HasQr, Converter={StaticResource Visible}}">
                                 <Image.Effect>
                                     <BlurEffect Radius="{Binding QrBlur}" KernelType="Gaussian" />
                                 </Image.Effect>
@@ -221,17 +202,19 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- The endpoint: filled from Tailscale, editable either way. -->
                     <Border Style="{StaticResource Card}">
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="Copy" Command="{Binding CopyEndpointCommand}"
-                                    VerticalAlignment="Center" Margin="12,0,0,0" AutomationProperties.Name="Copy endpoint" />
-                            <StackPanel>
-                                <TextBlock Text="Endpoint" Style="{StaticResource RowTitle}" />
-                                <TextBlock Text="{Binding EndpointUrl}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
-                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding EndpointUrl}"
-                                           Visibility="{Binding HasEndpoint, Converter={StaticResource Visible}}" />
-                            </StackPanel>
-                        </DockPanel>
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Copy" Command="{Binding CopyEndpointCommand}"
+                                        VerticalAlignment="Center" Margin="12,0,0,0" AutomationProperties.Name="Copy endpoint" />
+                                <TextBlock Text="Endpoint" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBox Text="{Binding EndpointText, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0"
+                                     FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Endpoint" />
+                            <TextBlock Text="{Binding EndpointProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
+                                       Visibility="{Binding EndpointProblem, Converter={StaticResource Present}}" />
+                        </StackPanel>
                     </Border>
 
                     <Border Style="{StaticResource Card}">
@@ -240,6 +223,9 @@
                                 <Button Content="{Binding ToggleKeyLabel}" Command="{Binding ToggleKeyCommand}" Margin="0,0,8,0"
                                         MinWidth="64" AutomationProperties.Name="Show or hide key" />
                                 <Button Content="Copy" Command="{Binding CopyKeyCommand}" AutomationProperties.Name="Copy key" />
+                                <!-- Makes a new key at once; the owner's words go here. -->
+                                <Button Content="[text]" Command="{Binding NewKeyCommand}" Margin="8,0,0,0"
+                                        AutomationProperties.AutomationId="NewKey" />
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Text="Key" Style="{StaticResource RowTitle}" />
@@ -249,6 +235,8 @@
                                         <BlurEffect Radius="{Binding KeyBlur}" KernelType="Gaussian" />
                                     </TextBlock.Effect>
                                 </TextBlock>
+                                <TextBlock Text="{Binding KeyProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
+                                           Visibility="{Binding KeyProblem, Converter={StaticResource Present}}" />
                             </StackPanel>
                         </DockPanel>
                     </Border>

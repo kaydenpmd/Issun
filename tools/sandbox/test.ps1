@@ -168,18 +168,19 @@ if ($Step -in @("all","first")) {
     Click $w "Next" | Out-Null; Start-Sleep 4
     Expect "Next stays on the Tailscale page without Tailscale" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
     Dump $w "page 1 after Next"; Shot "setup-page-1-refused" $w
-    ClickId $w "Skip" | Out-Null; Start-Sleep 2
-    Expect "Skip leads to the address page" (OnPage $w "Public address")
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3
+    Expect "Skip leads to Connect your source" (OnPage $w "Connect your source")
     Dump $w "page 2"; Shot "setup-page-2" $w
+    $show = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Show")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
+    Expect "a QR code with only the key can be shown" ($show -and $show.Current.IsEnabled)
     Click $w "Next" | Out-Null; Start-Sleep 2
-    Expect "an empty address page moves on" (OnPage $w "Launch Issun on startup?")
-    Dump $w "page 3"; Shot "setup-page-3" $w
+    Expect "Next leads to Start with Windows" (OnPage $w "Launch Issun on startup?")
     Click $w "Back" | Out-Null; Start-Sleep 1
-    Expect "Back returns to the address page" (OnPage $w "Public address")
+    Expect "Back returns to Connect your source" (OnPage $w "Connect your source")
     Click $w "Next" | Out-Null; Start-Sleep 2
-    Click $w "Next" | Out-Null; Start-Sleep 2
-    Dump $w "page 4"; Shot "setup-page-4" $w
-    if (Click $w "Show") { Start-Sleep 1; Shot "setup-page-3-shown" $w }
+    Dump $w "page 3"; Shot "setup-page-3" $w
     Click $w "Close" | Out-Null
     Start-Sleep 3
     Expect "setup window closed by Close" (-not (FindWindow "Set up Issun" 1))
@@ -293,41 +294,44 @@ if ($Step -eq "tailscale") {
 }
 # A first run that types an address of its own on the Tailscale page, as
 # someone without Tailscale would, then checks the source page uses it.
+# A first run that skips Tailscale, types an endpoint of its own on Connect your
+# source, reloads the QR code, and makes a new key.
 if ($Step -eq "address") {
-    Say "##### first run with an address of its own"
+    Say "##### first run with an endpoint of its own"
     Start-Process $download.FullName
     $w = FindWindow "Set up Issun" 90
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
     Start-Sleep 3
-    Click $w "Next" | Out-Null
-    Start-Sleep 3
-    ClickId $w "Skip" | Out-Null
-    Start-Sleep 2
-    $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Public address")))
-    if (-not $box) { Say "FAIL no address field"; exit 1 }
+    Click $w "Next" | Out-Null; Start-Sleep 3
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3
+    $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))))
+    if (-not $box) { Say "FAIL no endpoint field"; exit 1 }
     $value = $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    $reload = New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "ReloadQr")
+    $r = $w.FindFirst($Tree::Descendants, $reload)
+    Expect "no reload button before an edit" (-not $r -or $r.Current.IsOffscreen)
     $value.SetValue("http://not-https.example.com")
-    Click $w "Next" | Out-Null
-    Start-Sleep 2
-    Expect "an http address is refused and the page stays" (OnPage $w "Public address")
-    Dump $w "after an http address"
-    Shot "address-rejected" $w
-    $value.SetValue("issun-test.example.com/now-playing/")
-    Start-Sleep 2
-    Dump $w "after a good address"
-    Shot "address-typed" $w
-    Click $w "Next" | Out-Null; Start-Sleep 2; Click $w "Next" | Out-Null; Start-Sleep 3
-    Dump $w "source page"
-    $all = $w.FindAll($Tree::Descendants, [System.Windows.Automation.Condition]::TrueCondition) | ForEach-Object { $_.Current.Name }
-    Expect "endpoint shows the typed address" ($all -contains "https://issun-test.example.com/now-playing")
-    $show = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
-        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Show")),
-        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
-    Expect "QR code can be shown" ($show -and $show.Current.IsEnabled)
-    if ($show) { Click $w "Show" | Out-Null; Start-Sleep 1 }
-    Shot "address-source-page" $w
+    Start-Sleep 1
+    $r = $w.FindFirst($Tree::Descendants, $reload)
+    Expect "an edit shows the reload button" ($r -and -not $r.Current.IsOffscreen)
+    ClickId $w "ReloadQr" | Out-Null; Start-Sleep 2
+    Dump $w "after an http endpoint"; Shot "endpoint-rejected" $w
+    Expect "an http endpoint isn't saved" (-not ((Get-Content "$env:APPDATA\Issun\settings.json" -Raw | ConvertFrom-Json).publicBase))
+    $value.SetValue("issun-test.example.com")
+    ClickId $w "ReloadQr" | Out-Null; Start-Sleep 2
+    Expect "the field shows the full endpoint" ($value.Current.Value -eq "https://issun-test.example.com/now-playing")
+    $r = $w.FindFirst($Tree::Descendants, $reload)
+    Expect "the reload button goes once applied" (-not $r -or $r.Current.IsOffscreen)
     $sj = Get-Content "$env:APPDATA\Issun\settings.json" -Raw | ConvertFrom-Json
     Expect "saved as Settings' public address" ($sj.publicBase -eq "https://issun-test.example.com")
+    $oldKey = $sj.key
+    ClickId $w "NewKey" | Out-Null; Start-Sleep 2
+    $sj = Get-Content "$env:APPDATA\Issun\settings.json" -Raw | ConvertFrom-Json
+    Expect "the new-key button makes a new key" ($sj.key -and $sj.key -ne $oldKey)
+    Click $w "Show" | Out-Null; Start-Sleep 1
+    Dump $w "endpoint applied"; Shot "endpoint-applied" $w
     SaveLogs "address"
 }
 Say "##### done ($Step)"

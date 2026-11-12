@@ -16,12 +16,19 @@ namespace Issun.Presentation;
 /// </summary>
 public static class PairingCode
 {
-    public static string Payload(string endpoint, string key) =>
+    /// <summary>
+    /// Either value may be left out (the owner, 12 Nov 2026): a code with only
+    /// the key, or only the endpoint, fills in just that field and leaves the
+    /// source's other one as it was.
+    /// </summary>
+    public static string Payload(string? endpoint, string? key) =>
         JsonSerializer.Serialize(new PairingPayload(endpoint, key));
 
     private sealed record PairingPayload(
-        [property: System.Text.Json.Serialization.JsonPropertyName("endpoint")] string Endpoint,
-        [property: System.Text.Json.Serialization.JsonPropertyName("key")] string Key);
+        [property: System.Text.Json.Serialization.JsonPropertyName("endpoint"),
+                   System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Endpoint,
+        [property: System.Text.Json.Serialization.JsonPropertyName("key"),
+                   System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Key);
 
     /// <summary>
     /// Black on white with the standard four-module quiet zone, whatever the

@@ -7,17 +7,18 @@ using Issun.Threading;
 
 namespace Issun.ViewModels;
 
-public enum SetupPage { Discord = 0, Tailscale = 1, Address = 2, StartWithWindows = 3, Source = 4 }
+public enum SetupPage { Discord = 0, Tailscale = 1, Source = 2, StartWithWindows = 3 }
 
 /// <summary>
-/// The setup window: four pages, each one live, and a fifth for an address of
-/// one's own, reached only through the Tailscale page's Skip. Nothing but that
-/// address waits for Next to be applied. The Discord application ID connects as soon as it looks like one,
+/// The setup window: four pages, each one live. Connect your source comes
+/// straight after Tailscale (the owner, 12 Nov 2026), and its endpoint is a
+/// field: filled from Tailscale when it has an address, editable either way,
+/// and applied by the QR code's reload button or on leaving the page. The Discord application ID connects as soon as it looks like one,
 /// the Tailscale buttons act when clicked, Start with Windows applies when
 /// ticked, and the last page watches for the source's first push. So every page
 /// shows the real state of what it set up. Next moves on, except that on the
-/// Tailscale page it first checks Tailscale has an address for this PC, and
-/// on the address page it saves what's typed.
+/// Tailscale page it first checks Tailscale has an address for this PC with
+/// Funnel on; Skip moves on without that check.
 ///
 /// The structure is Microsoft's wizard guidance, read 11 Nov 2026 and saved in
 /// the design-research library (microsoft/windows-setup-wizards): no welcome
@@ -54,23 +55,20 @@ public sealed class SetupViewModel : Observable, IDisposable
             _applyId.Stop();
             _ = ApplyClientIdAsync();
         };
-        _address = host.Settings.PublicBase;
 
         EndpointCopied = new Flash(dispatcher);
         KeyCopied = new Flash(dispatcher);
 
-        BackCommand = new Command(() => Go(Previous(_page)), () => _page > SetupPage.Discord);
+        BackCommand = new Command(() => Go(_page - 1), () => _page > SetupPage.Discord);
         NextCommand = new AsyncCommand("setup: next", NextAsync, ex =>
         {
             Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
             if (_page == SetupPage.Tailscale) TailscaleError = $"[text] {ex.Message}";
-            else if (_page == SetupPage.Address) AddressProblem = $"[text] {ex.Message}";
-        }, () => _page < SetupPage.Source);
+        }, () => _page < SetupPage.StartWithWindows);
         SkipCommand = new Command(() =>
         {
-            Log.Write("[setup] skipped Tailscale for an address of their own");
-            _viaSkip = true;
-            Go(SetupPage.Address);
+            Log.Write("[setup] skipped the Tailscale check");
+            Go(SetupPage.Source);
         });
         CloseCommand = new Command(() => CloseRequested?.Invoke());
         OpenPortalCommand = new Command(() => Open(DeveloperPortal, "the Discord Developer Portal"));
@@ -117,9 +115,28 @@ public sealed class SetupViewModel : Observable, IDisposable
 
         CopyEndpointCommand = new AsyncCommand("setup: copy endpoint", async () =>
         {
-            if (EndpointUrl is { } url)
+            if (_endpointText.Trim() is { Length: > 0 } url)
                 EndpointCopied.Show(await DesktopShell.CopyAsync(url, "endpoint") ? "Copied" : "Couldn't copy — try again");
-        }, _ => EndpointCopied.Show("Couldn't copy — try again"), () => EndpointUrl is not null);
+        }, _ => EndpointCopied.Show("Couldn't copy — try again"), () => _endpointText.Trim().Length > 0);
+
+        ReloadQrCommand = new AsyncCommand("setup: reload QR code", async () => { await ApplyEndpointAsync(); },
+            ex => EndpointProblem = $"[text] {ex.Message}");
+
+        // A new key straight away: the owner asked for the button, not a
+        // confirmation (12 Nov 2026). The main window's New key… asks first.
+        NewKeyCommand = new AsyncCommand("setup: new key", async () =>
+        {
+            KeyProblem = null;
+            Log.Write("[setup] making a new key");
+            await _host.RegenerateKeyAsync();
+            KeyShown = true;
+            Raise(nameof(KeyText));
+            UpdateQr();
+        }, ex =>
+        {
+            Log.Write($"[setup] couldn't make a new key: {ex.Message}");
+            KeyProblem = $"[text] {ex.Message}";
+        });
 
         CopyKeyCommand = new AsyncCommand("setup: copy key", async () =>
         {
@@ -127,7 +144,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         }, _ => KeyCopied.Show("Couldn't copy — try again"));
 
         ToggleKeyCommand = new Command(() => KeyShown = !KeyShown);
-        ToggleQrCommand = new Command(() => QrShown = !QrShown, () => EndpointUrl is not null);
+        ToggleQrCommand = new Command(() => QrShown = !QrShown, () => Qr is not null);
         // Show and Hide, the owner's words; the same pair for the key and the code.
 
         _clientId = host.Settings.DiscordClientId;
@@ -148,19 +165,18 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public bool OnDiscordPage => _page == SetupPage.Discord;
     public bool OnTailscalePage => _page == SetupPage.Tailscale;
-    public bool OnAddressPage => _page == SetupPage.Address;
     public bool OnStartPage => _page == SetupPage.StartWithWindows;
     public bool OnSourcePage => _page == SetupPage.Source;
 
     /// <summary>"Cancel" until the last page, then "Close": Microsoft's wizard rule once the task is done.</summary>
-    public string CloseLabel => _page == SetupPage.Source ? "Close" : "Cancel";
+    public string CloseLabel => _page == SetupPage.StartWithWindows ? "Close" : "Cancel";
 
-    public bool ShowNext => _page < SetupPage.Source;
+    public bool ShowNext => _page < SetupPage.StartWithWindows;
 
     /// <summary>
     /// Skip is always on the Tailscale page, and only there (the owner,
-    /// 12 Nov 2026). Next, when Tailscale has an address, goes past the
-    /// address page; Skip is the only way to it.
+    /// 12 Nov 2026): it goes on to Connect your source without Next's check,
+    /// for people who reach Issun some other way.
     /// </summary>
     public bool ShowSkip => _page == SetupPage.Tailscale;
 
@@ -168,22 +184,11 @@ public sealed class SetupViewModel : Observable, IDisposable
     public AsyncCommand NextCommand { get; }
     public Command SkipCommand { get; }
 
-    /// <summary>Whether this run reached Start with Windows through Skip, so Back returns the way it came.</summary>
-    private bool _viaSkip;
-
-    private SetupPage Previous(SetupPage page) => page switch
-    {
-        SetupPage.Address => SetupPage.Tailscale,
-        SetupPage.StartWithWindows => _viaSkip ? SetupPage.Address : SetupPage.Tailscale,
-        _ => page - 1,
-    };
-
     /// <summary>
     /// Next, as the owner set it out on 12 Nov 2026. On the Tailscale page it
     /// asks Tailscale for this PC's address and stays put with an error if
-    /// there is none (Skip is the way past without Tailscale); with one, it goes
-    /// straight on, past the address page. On the address page it saves what's
-    /// typed, or just moves on when the field is empty. Elsewhere it moves on.
+    /// there is none, or when Funnel isn't on (Skip is the way past without
+    /// Tailscale). Elsewhere it moves on.
     /// </summary>
     private async Task NextAsync()
     {
@@ -207,18 +212,7 @@ public sealed class SetupViewModel : Observable, IDisposable
                     return;
                 }
                 Log.Write("[setup] Next on the Tailscale page: Tailscale has this PC's address and Funnel is on");
-                _viaSkip = false;
-                Go(SetupPage.StartWithWindows);
-                break;
-            case SetupPage.Address:
-                if (_address.Trim().Length == 0)
-                {
-                    Log.Write("[setup] Next on the address page with nothing typed: moving on without saving");
-                    Go(SetupPage.StartWithWindows);
-                    break;
-                }
-                if (await SaveAddressAsync())
-                    Go(SetupPage.StartWithWindows);
+                Go(SetupPage.Source);
                 break;
             default:
                 Go(_page + 1);
@@ -229,8 +223,11 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     private void Go(SetupPage page)
     {
-        if (page < SetupPage.Discord || page > SetupPage.Source || page == _page)
+        if (page < SetupPage.Discord || page > SetupPage.StartWithWindows || page == _page)
             return;
+        // Leaving Connect your source with an edited endpoint still applies it.
+        if (_page == SetupPage.Source && _endpointDirty)
+            _ = ApplyEndpointAsync();
         // Leaving the Discord page with a half-typed ID still applies what is there.
         if (_page == SetupPage.Discord && _applyId.IsEnabled)
         {
@@ -242,7 +239,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         Raise(nameof(Page));
         Raise(nameof(OnDiscordPage));
         Raise(nameof(OnTailscalePage));
-        Raise(nameof(OnAddressPage));
         Raise(nameof(OnStartPage));
         Raise(nameof(OnSourcePage));
         Raise(nameof(CloseLabel));
@@ -250,6 +246,10 @@ public sealed class SetupViewModel : Observable, IDisposable
         Raise(nameof(ShowSkip));
         if (page == SetupPage.Tailscale)
             CheckTailscaleCommand.Execute(null);
+        // Next is an AsyncCommand, which WPF's requery doesn't reach: without
+        // this it stayed disabled after Back from the last page (sandbox,
+        // 12 Nov 2026).
+        NextCommand.RaiseCanExecuteChanged();
         CommandManagerRequery();
     }
 
@@ -257,7 +257,6 @@ public sealed class SetupViewModel : Observable, IDisposable
     {
         SetupPage.Discord => "Discord",
         SetupPage.Tailscale => "Tailscale",
-        SetupPage.Address => "own address",
         SetupPage.StartWithWindows => "Start with Windows",
         _ => "Connect your source",
     };
@@ -324,24 +323,6 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     // ───────────────────────────── Tailscale ─────────────────────────────
 
-    private string _address;
-
-    /// <summary>
-    /// This PC's public address as typed, on its own page behind the Tailscale
-    /// page's Skip, for people who reach Issun some other way (the owner,
-    /// 12 Nov 2026). It is Settings' Public address, which overrides
-    /// Tailscale's. Saved by Next, not as it's typed.
-    /// </summary>
-    public string PublicAddress
-    {
-        get => _address;
-        set
-        {
-            if (Set(ref _address, value ?? ""))
-                AddressProblem = null;
-        }
-    }
-
     /// <summary>
     /// What the typed text means as a public base, or null when it can't be one.
     /// "https://" is assumed when no scheme is typed, and a pasted endpoint
@@ -363,33 +344,6 @@ public sealed class SetupViewModel : Observable, IDisposable
             : null;
     }
 
-    private async Task<bool> SaveAddressAsync()
-    {
-        var address = NormaliseAddress(_address);
-        if (address is null)
-        {
-            AddressProblem = "[text]";
-            Log.Write($"[setup] not saving a public address of {_address.Trim().Length} characters: not an https address");
-            return false;
-        }
-        if (address == _host.Settings.PublicBase)
-            return true;
-        try
-        {
-            Log.Write($"[setup] saving a public address ({address.Length} characters{(address.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) ? ", a Tailscale name" : "")})");
-            await _host.UpdateSettingsAsync(_host.Settings with { PublicBase = address });
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Log.Write($"[setup] couldn't save the public address: {ex.Message}");
-            AddressProblem = $"[text] {ex.Message}";
-            return false;
-        }
-    }
-
-    public string? AddressProblem { get => _addressProblem; private set => Set(ref _addressProblem, value); }
-    private string? _addressProblem;
 
     public AsyncCommand GetTailscaleCommand { get; }
     public AsyncCommand CheckTailscaleCommand { get; }
@@ -482,22 +436,94 @@ public sealed class SetupViewModel : Observable, IDisposable
     public Command ToggleKeyCommand { get; }
     public Command ToggleQrCommand { get; }
 
-    public string? EndpointUrl
+    public AsyncCommand ReloadQrCommand { get; }
+    public AsyncCommand NewKeyCommand { get; }
+
+    private string _endpointText = "";
+
+    /// <summary>The endpoint the QR code carries, as last applied; null for none.</summary>
+    private string? _qrEndpoint;
+
+    /// <summary>Edited since it was last applied: the reload button shows.</summary>
+    private bool _endpointDirty;
+
+    /// <summary>Edited at all in this window: Tailscale no longer fills the field in.</summary>
+    private bool _endpointTouched;
+
+    /// <summary>
+    /// The endpoint field (the owner, 12 Nov 2026): Tailscale's endpoint when
+    /// it has one, editable whether or not it does. An edit shows the QR
+    /// code's reload button, as an edited field in Ammy shows Restart.
+    /// </summary>
+    public string EndpointText
     {
-        get => _endpointUrl;
-        private set
+        get => _endpointText;
+        set
         {
-            if (Set(ref _endpointUrl, value))
-            {
-                Raise(nameof(HasEndpoint));
-                CopyEndpointCommand.RaiseCanExecuteChanged();
-                UpdateQr();
-            }
+            if (!Set(ref _endpointText, value ?? ""))
+                return;
+            _endpointTouched = true;
+            EndpointProblem = null;
+            if (!_endpointDirty)
+                Log.Write("[setup] endpoint edited");
+            _endpointDirty = true;
+            Raise(nameof(ShowReload));
+            CopyEndpointCommand.RaiseCanExecuteChanged();
         }
     }
-    private string? _endpointUrl;
 
-    public bool HasEndpoint => _endpointUrl is not null;
+    /// <summary>Fills the field without counting it as an edit.</summary>
+    private void FillEndpoint(string? endpoint)
+    {
+        _qrEndpoint = endpoint;
+        if (Set(ref _endpointText, endpoint ?? "", nameof(EndpointText)))
+            CopyEndpointCommand.RaiseCanExecuteChanged();
+        UpdateQr();
+    }
+
+    public bool ShowReload => _endpointDirty;
+
+    public string? EndpointProblem { get => _endpointProblem; private set => Set(ref _endpointProblem, value); }
+    private string? _endpointProblem;
+
+    public string? KeyProblem { get => _keyProblem; private set => Set(ref _keyProblem, value); }
+    private string? _keyProblem;
+
+    /// <summary>
+    /// Applies the field: saves it as Settings' Public address (empty when it
+    /// is Tailscale's own or blank, so Issun keeps following Tailscale) and
+    /// redraws the QR code with it. A blank field leaves the endpoint out of
+    /// the code, so the source keeps its own.
+    /// </summary>
+    private async Task<bool> ApplyEndpointAsync()
+    {
+        var typed = _endpointText;
+        var address = NormaliseAddress(typed);
+        if (address is null)
+        {
+            EndpointProblem = "[text]";
+            Log.Write($"[setup] not applying an endpoint of {typed.Trim().Length} characters: not an https address");
+            return false;
+        }
+        var tailscale = _host.Snapshot.Tailscale?.PublicBase?.TrimEnd('/');
+        var setting = address == tailscale ? "" : address;
+        if (setting != _host.Settings.PublicBase)
+        {
+            Log.Write(setting.Length == 0
+                ? "[setup] endpoint applied: Issun follows Tailscale's address"
+                : $"[setup] endpoint applied: a public address of {setting.Length} characters{(setting.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) ? ", a Tailscale name" : "")}");
+            await _host.UpdateSettingsAsync(_host.Settings with { PublicBase = setting });
+        }
+        else
+        {
+            Log.Write("[setup] endpoint applied: the setting was already that");
+        }
+        _endpointDirty = false;
+        Raise(nameof(ShowReload));
+        FillEndpoint(address.Length > 0 ? address + "/now-playing" : null);
+        Log.Write($"[setup] QR code redrawn {(address.Length > 0 ? "with" : "without")} an endpoint");
+        return true;
+    }
 
     public bool KeyShown
     {
@@ -551,26 +577,33 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public double QrBlur => _qrShown ? 0 : BlurRadius;
 
-    public BitmapSource? Qr { get => _qr; private set => Set(ref _qr, value); }
+    public BitmapSource? Qr { get => _qr; private set { if (Set(ref _qr, value)) Raise(nameof(HasQr)); } }
+
+    public bool HasQr => _qr is not null;
     private BitmapSource? _qr;
 
     private string? _qrFor;
 
     private void UpdateQr()
     {
-        if (_endpointUrl is null)
+        // Either half may be missing; the source fills in only what the code
+        // carries (the owner, 12 Nov 2026).
+        var key = _host.Settings.Key is { Length: > 0 } k ? k : null;
+        if (_qrEndpoint is null && key is null)
         {
             Qr = null;
             _qrFor = null;
+            CommandManagerRequery();
             return;
         }
-        var payload = PairingCode.Payload(_endpointUrl, _host.Settings.Key);
+        var payload = PairingCode.Payload(_qrEndpoint, key);
         if (payload == _qrFor)
             return;
         try
         {
             Qr = PairingCode.Render(payload);
             _qrFor = payload;
+            CommandManagerRequery();
         }
         catch (Exception ex)
         {
@@ -623,7 +656,10 @@ public sealed class SetupViewModel : Observable, IDisposable
         Raise(nameof(ShowSkip));
         OfferUnattended = s.Tailscale is { Running: true, Unattended: false };
 
-        EndpointUrl = s.EndpointUrl;
+        // Until the field is edited, it follows what Issun knows: Tailscale's
+        // endpoint, or the public address already set.
+        if (!_endpointTouched && s.EndpointUrl != _qrEndpoint)
+            FillEndpoint(s.EndpointUrl);
         Raise(nameof(KeyText));
         UpdateQr();
         Tick();
@@ -657,6 +693,8 @@ public sealed class SetupViewModel : Observable, IDisposable
         // An ID typed in the last 0.6 s before closing still counts.
         if (_clientId.Trim() != _host.Settings.DiscordClientId && LooksLikeId(_clientId.Trim()))
             _ = ApplyClientIdAsync();
+        if (_endpointDirty)
+            _ = ApplyEndpointAsync();
         Log.Write($"[setup] closed on the {Describe(_page)} page");
     }
 }

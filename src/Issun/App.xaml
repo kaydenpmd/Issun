@@ -28,9 +28,12 @@
         </Style>
 
         <!-- A card that is itself a button, as Windows 11 Settings' cards that
-             open another page: the card's own fill and stroke at rest, the
-             theme's secondary and tertiary control fills on hover and press
-             (the Fluent states every button uses). -->
+             open another page. Measured on Windows 11 26H2's Settings, System
+             page, at 96 dpi (design library, microsoft/windows11-settings-cards):
+             68 px tall, padding 16, 4 px apart (the Card margin), the card fill
+             at rest and the secondary control fill on hover (5% and 8% white
+             in dark mode, as measured). Pressed uses the tertiary fill, not
+             measured. -->
         <Style x:Key="NavigationCard" TargetType="Button">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -41,7 +44,7 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bg" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
-                                CornerRadius="{DynamicResource ControlCornerRadius}" Padding="16,12" MinHeight="48">
+                                CornerRadius="{DynamicResource ControlCornerRadius}" Padding="16" MinHeight="68">
                             <ContentPresenter VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>

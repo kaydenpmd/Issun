@@ -188,7 +188,6 @@ public partial class App : Application
             {
                 _setupWindow = null;
                 _uiState?.MarkSetupShown();
-                _vm?.DismissBannerCommand.Execute(null);
                 _vm?.RefreshStartWithWindows();
                 if (afterwards && !_quitting)
                     ShowMainWindow();

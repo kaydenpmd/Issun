@@ -2,7 +2,6 @@ using Issun.Presentation;
 using Issun.ViewModels;
 using Issun.Views;
 using Microsoft.UI.Xaml;
-using WinRT.Interop;
 
 namespace Issun;
 
@@ -14,9 +13,7 @@ public sealed class MainWindow : Window
 {
     public MainWindow(MainViewModel vm)
     {
-        var view = new MainView(vm);
-        Content = view;
-        view.OwnerWindow = WindowNative.GetWindowHandle(this);
+        Content = new MainView(vm);
         WindowFit.Prepare(this, "Issun", 560, 820, 520, 640, "main");
 
         // The clock-driven text ("last push 12s ago") only ticks while the

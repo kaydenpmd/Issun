@@ -502,4 +502,26 @@ if ($Step -eq "qrrules") {
     Expect "with no button" (-not (ReloadShown))
     SaveLogs "qrrules"
 }
+# Not in "all": --screenshot of every screen, dark, from the download, which
+# renders and exits without installing. For when this PC's own session can't
+# render: a disconnected session draws wrongly, and Issun refuses then.
+if ($Step -eq "shots") {
+    Say "##### --screenshot of every screen"
+    $dir = Join-Path $out "shots"; New-Item -ItemType Directory -Force $dir | Out-Null
+    $runs = [ordered]@{
+        "1-main" = @(); "2-main-expanded" = @("--expanded");
+        "3-setup-discord" = @("--setup-page", "0");
+        "4-setup-tailscale" = @("--setup-page", "1");
+        "4b-setup-tailscale-not-installed" = @("--setup-page", "1", "--demo-tailscale", "0");
+        "4c-setup-tailscale-all-on" = @("--setup-page", "1", "--demo-tailscale", "3");
+        "5-setup-connect-hidden" = @("--setup-page", "2");
+        "6-setup-connect-shown" = @("--setup-page", "2", "--expanded");
+        "7-setup-startup" = @("--setup-page", "3")
+    }
+    foreach ($name in $runs.Keys) {
+        $a = @("--screenshot", (Join-Path $dir "$name.png"), "--theme", "dark") + $runs[$name]
+        $p = Start-Process $download.FullName -ArgumentList $a -PassThru -Wait
+        Expect "$name rendered" ($p.ExitCode -eq 0 -and (Test-Path (Join-Path $dir "$name.png")))
+    }
+}
 Say "##### done ($Step)"

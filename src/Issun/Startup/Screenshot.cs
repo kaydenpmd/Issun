@@ -47,6 +47,15 @@ public static class Screenshot
         Window? window = null;
         try
         {
+            // A disconnected session renders, but wrongly: on 12 Nov 2026,
+            // with the owner's session disconnected (a 1080 x 2272 virtual
+            // display), the main window came out at twice the size with
+            // checkboxes and section arrows drawn in states they weren't in.
+            // WPF drew nothing at all then. Either way the picture would pass
+            // for the window, so refuse.
+            if (SessionDisconnected())
+                throw new InvalidOperationException(
+                    "this Windows session is disconnected, and what WinUI draws then isn't what the window looks like. Reconnect to the PC and try again.");
             await host.StartAsync();
             vm = new MainViewModel(host, dispatcher);
             if (options.Expanded)
@@ -133,6 +142,30 @@ public static class Screenshot
             await host.DisposeAsync();
         }
     }
+
+    /// <summary>The session this process runs in is disconnected (WTSDisconnected), as when Remote Desktop was closed without signing out.</summary>
+    private static bool SessionDisconnected()
+    {
+        try
+        {
+            if (!WTSQuerySessionInformationW(0, -1 /* this session */, 8 /* WTSConnectState */, out var buffer, out _))
+                return false;
+            var state = System.Runtime.InteropServices.Marshal.ReadInt32(buffer);
+            WTSFreeMemory(buffer);
+            return state == 4; // WTSDisconnected
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"[ui] couldn't read the session's state: {ex.Message}");
+            return false;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("wtsapi32", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern bool WTSQuerySessionInformationW(nint server, int session, int infoClass, out nint buffer, out int bytes);
+
+    [System.Runtime.InteropServices.DllImport("wtsapi32")]
+    private static extern void WTSFreeMemory(nint memory);
 
     private static async Task SavePngAsync(string path, byte[] bgra, int width, int height)
     {

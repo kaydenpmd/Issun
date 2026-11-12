@@ -291,7 +291,7 @@
                                         VerticalAlignment="Center" Margin="12,0,0,0" AutomationProperties.Name="Copy endpoint" />
                             </Grid>
                             <TextBox Text="{x:Bind ViewModel.EndpointText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0"
-                                     FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Endpoint" />
+                                     AutomationProperties.Name="Endpoint" />
                             <TextBlock Text="{x:Bind ViewModel.EndpointProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
                                        Visibility="{x:Bind v:Bind.Present(ViewModel.EndpointProblem)}" />
                         </StackPanel>

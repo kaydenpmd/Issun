@@ -183,24 +183,6 @@
             <!-- ───────────── Connect a source ───────────── -->
             <TextBlock Text="Connect a source" Style="{StaticResource SectionHeader}" />
 
-            <Border Style="{StaticResource Card}"
-                    Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
-                    Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowFirstRunBanner)}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="Connect your source" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
-                        <TextBlock Style="{StaticResource RowDescription}"
-                                   Text="Put these two values into your source's settings: the address it sends to, and its key." />
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="Got it" Command="{x:Bind ViewModel.DismissBannerCommand}"
-                            VerticalAlignment="Center" Margin="12,0,0,0" />
-                </Grid>
-            </Border>
-
             <Border Style="{StaticResource Card}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -209,7 +191,9 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Endpoint" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{x:Bind ViewModel.EndpointUrl}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
+                        <!-- Not monospace (the owner, 12 Nov 2026): a description
+                             line under the title, as Settings shows a value. -->
+                        <TextBlock Text="{x:Bind ViewModel.EndpointUrl}" Style="{StaticResource RowDescription}"
                                    TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ViewModel.EndpointUrl}"
                                    Visibility="{x:Bind v:Bind.Visible(ViewModel.HasEndpoint)}" />
                         <TextBlock Style="{StaticResource RowDescription}"
@@ -244,7 +228,7 @@
                                     MinWidth="64" AutomationProperties.Name="Show or hide key" />
                             <Button Content="Copy" Command="{x:Bind ViewModel.CopyKeyCommand}" Margin="0,0,8,0"
                                     AutomationProperties.Name="Copy key" />
-                            <Button Content="New key…" Command="{x:Bind ViewModel.AskNewKeyCommand}" />
+                            <Button Content="New key" Command="{x:Bind ViewModel.AskNewKeyCommand}" />
                         </StackPanel>
                     </Grid>
 
@@ -394,26 +378,6 @@
                     </Grid>
                     <TextBlock Text="{x:Bind ViewModel.StartWithWindowsError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
                                Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError)}" />
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Coming from relay.py" Style="{StaticResource RowTitle}" />
-                            <TextBlock Style="{StaticResource RowDescription}"
-                                       Text="Brings over the key, the Discord application ID and the other settings from the relay's .env, and its check-in history if it sits beside it." />
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="Import relay .env…" Command="{x:Bind ViewModel.ImportEnvCommand}"
-                                VerticalAlignment="Center" Margin="12,0,0,0" />
-                    </Grid>
-                    <TextBlock Text="{x:Bind ViewModel.ImportNotes}" Style="{StaticResource RowDescription}" Margin="0,8,0,0"
-                               Visibility="{x:Bind v:Bind.Present(ViewModel.ImportNotes)}" />
                 </StackPanel>
             </Border>
 

@@ -15,11 +15,7 @@ public sealed partial class MainViewModel
 
     public AsyncCommand ApplySettingsCommand { get; private set; } = null!;
     public Command RevertSettingsCommand { get; private set; } = null!;
-    public AsyncCommand ImportEnvCommand { get; private set; } = null!;
     public Flash SettingsSaved { get; }
-
-    /// <summary>Set by the view: shows a file picker and returns the chosen path, or null.</summary>
-    public Func<string?>? PickEnvFile { get; set; }
 
     private void InitSettings()
     {
@@ -30,8 +26,6 @@ public sealed partial class MainViewModel
             LoadFields(_host.Settings);
             SettingsErrors = null;
         });
-        ImportEnvCommand = new AsyncCommand("Import relay .env", ImportEnvAsync,
-            ex => ImportNotes = $"Couldn't import: {ex.Message}");
     }
 
     private void RefreshSettings()
@@ -40,7 +34,7 @@ public sealed partial class MainViewModel
         if (_formBase == current)
             return;
 
-        // Settings changed underneath the form — an import, a new key, the host
+        // Settings changed underneath the form — the setup window, a new key, the host
         // filling something in. Reload unless the person is mid-edit, in which
         // case their edits stay and Apply lays them over whatever is current.
         var editing = _formBase is not null && SettingsForm.Differs(Fields(), _formBase);
@@ -64,22 +58,6 @@ public sealed partial class MainViewModel
         _formBase = null;          // reload from what the host actually kept
         RefreshSettings();
         SettingsSaved.Show("Saved");
-    }
-
-    private async Task ImportEnvAsync()
-    {
-        if (PickEnvFile?.Invoke() is not { } path)
-            return;
-        ImportNotes = null;
-        var result = await _host.ImportEnvAsync(path);
-        var notes = result.Notes.ToList();
-        if (result.UptimeLogImportedFrom is { } from)
-            notes.Add($"Check-in history carried over from {from}.");
-        if (notes.Count == 0)
-            notes.Add($"Nothing to import in {Path.GetFileName(path)}.");
-        ImportNotes = string.Join(Environment.NewLine, notes);
-        _formBase = null;
-        RefreshSettings();
     }
 
     private SettingsFields Fields() => new()
@@ -136,9 +114,6 @@ public sealed partial class MainViewModel
 
     public string? SettingsErrors { get => _settingsErrors; private set => Set(ref _settingsErrors, value); }
     private string? _settingsErrors;
-
-    public string? ImportNotes { get => _importNotes; private set => Set(ref _importNotes, value); }
-    private string? _importNotes;
 
     public string ClientId { get => _clientId; set { if (Set(ref _clientId, value ?? "")) Edited(); } }
     private string _clientId = "";

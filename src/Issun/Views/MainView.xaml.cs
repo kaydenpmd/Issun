@@ -1,4 +1,3 @@
-using Issun.Platform;
 using Issun.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -11,7 +10,7 @@ namespace Issun.Views;
 /// out and render it in a window that never reaches the screen.
 ///
 /// Code-behind holds only what bindings can't do: appending to the log box
-/// without losing its scroll position, and the file picker.
+/// without losing its scroll position.
 /// </summary>
 public sealed partial class MainView : UserControl
 {
@@ -22,7 +21,6 @@ public sealed partial class MainView : UserControl
         ViewModel = viewModel;
         InitializeComponent();
         viewModel.LogUpdated += OnLogUpdated;
-        viewModel.PickEnvFile = PickEnvFile;
         LogBox.Text = viewModel.LogText;
         LogBox.Loaded += (_, _) =>
         {
@@ -33,14 +31,10 @@ public sealed partial class MainView : UserControl
         Unloaded += (_, _) =>
         {
             viewModel.LogUpdated -= OnLogUpdated;
-            viewModel.PickEnvFile = null;
         };
     }
 
     public MainViewModel ViewModel { get; }
-
-    /// <summary>The window this view is in, for the file dialog to belong to.</summary>
-    public nint OwnerWindow { get; set; }
 
     private void OnLogUpdated(string appended, bool reload)
     {
@@ -71,9 +65,4 @@ public sealed partial class MainView : UserControl
         }
         return null;
     }
-
-    private string? PickEnvFile() =>
-        // relay.py's .env has no name before the dot, which "*.env" still
-        // matches; "All files" is there for a copy saved under another name.
-        DesktopShell.PickFile(OwnerWindow, "Import relay.py settings", "Relay settings (.env)|*.env|All files|*.*");
 }

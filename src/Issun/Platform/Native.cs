@@ -4,7 +4,7 @@ namespace Issun.Platform;
 
 /// <summary>
 /// The Win32 calls the WinUI build makes itself: the tray icon (WinUI has no
-/// control for one), Windows' own message boxes, the open-file dialog, and
+/// control for one), Windows' own message boxes, and
 /// the window styles that keep a --screenshot window off the screen. Most of
 /// it is the winui3-spike's Native.cs.
 /// </summary>
@@ -62,30 +62,6 @@ internal static class Native
         public nint hBalloonIcon;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct OPENFILENAMEW
-    {
-        public int lStructSize;
-        public nint hwndOwner, hInstance;
-        public string? lpstrFilter;
-        public nint lpstrCustomFilter;
-        public int nMaxCustFilter, nFilterIndex;
-        public nint lpstrFile;
-        public int nMaxFile;
-        public nint lpstrFileTitle;
-        public int nMaxFileTitle;
-        public string? lpstrInitialDir, lpstrTitle;
-        public int Flags;
-        public short nFileOffset, nFileExtension;
-        public string? lpstrDefExt;
-        public nint lCustData, lpfnHook;
-        public string? lpTemplateName;
-        public nint pvReserved;
-        public int dwReserved, FlagsEx;
-    }
-
-    public const int OFN_FILEMUSTEXIST = 0x1000, OFN_PATHMUSTEXIST = 0x800, OFN_EXPLORER = 0x80000, OFN_NOCHANGEDIR = 0x8;
-
     [DllImport("user32", CharSet = CharSet.Unicode, SetLastError = true)] public static extern ushort RegisterClassExW(ref WNDCLASSEXW wc);
     [DllImport("user32", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern nint CreateWindowExW(int exStyle, string cls, string name, int style, int x, int y, int w, int h, nint parent, nint menu, nint inst, nint param);
@@ -109,8 +85,6 @@ internal static class Native
     [DllImport("kernel32", CharSet = CharSet.Unicode)] public static extern nint GetModuleHandleW(string? name);
     [DllImport("shell32", CharSet = CharSet.Unicode)] public static extern bool Shell_NotifyIconW(uint msg, ref NOTIFYICONDATAW data);
     [DllImport("dwmapi")] public static extern int DwmSetWindowAttribute(nint hwnd, int attr, ref int value, int size);
-    [DllImport("comdlg32", CharSet = CharSet.Unicode, SetLastError = true)] public static extern bool GetOpenFileNameW(ref OPENFILENAMEW ofn);
-    [DllImport("comdlg32")] public static extern int CommDlgExtendedError();
 
     // Undocumented but what Windows' own Win32 tray menus use to follow dark
     // mode: uxtheme ordinal 135 (SetPreferredAppMode, 1 = AllowDark) and 136

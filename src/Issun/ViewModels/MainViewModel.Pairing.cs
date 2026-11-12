@@ -20,7 +20,6 @@ public sealed partial class MainViewModel
     public Command AskNewKeyCommand { get; private set; } = null!;
     public Command CancelNewKeyCommand { get; private set; } = null!;
     public AsyncCommand ConfirmNewKeyCommand { get; private set; } = null!;
-    public Command DismissBannerCommand { get; private set; } = null!;
     public Command OpenSetupCommand { get; private set; } = null!;
 
     /// <summary>Set by the app: opens the setup window, or brings it forward.</summary>
@@ -66,23 +65,12 @@ public sealed partial class MainViewModel
             Log.Write("[ui] Open setup clicked");
             OpenSetup?.Invoke();
         });
-
-        DismissBannerCommand = new Command(() =>
-        {
-            _bannerDismissed = true;
-            ShowFirstRunBanner = false;
-        });
     }
-
-    private bool _bannerDismissed;
 
     private void RefreshPairing(HostSnapshot s)
     {
         EndpointUrl = s.EndpointUrl;
         Key = _host.Settings.Key;
-        // Read on every refresh rather than once: the host may only learn that
-        // this is a first run while starting.
-        ShowFirstRunBanner = _host.FirstRun && !_bannerDismissed;
     }
 
     /// <summary>What goes in Ammy's Endpoint field; null until Tailscale (or a manual public address) says what this PC is called.</summary>
@@ -145,6 +133,4 @@ public sealed partial class MainViewModel
     private string? _keyMessage;
 
     /// <summary>First run only: a key was just generated and nothing has been paired yet.</summary>
-    public bool ShowFirstRunBanner { get => _showFirstRunBanner; private set => Set(ref _showFirstRunBanner, value); }
-    private bool _showFirstRunBanner;
 }

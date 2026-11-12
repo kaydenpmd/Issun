@@ -56,6 +56,7 @@ public partial class App : Application
             if (Has("screenshot")) code = await ScreenshotAsync(Opt("screenshot")!);
             else if (Has("tray-test")) code = await TrayTestAsync(Opt("tray-test")!);
             else if (Has("ring-frames")) code = await RingFramesAsync(Opt("ring-frames")!);
+            else if (Has("gallery")) code = await Gallery.RunAsync(Opt("gallery")!);
             else if (Has("package-test")) code = await PackageTest.RunAsync(Opt("package-test")!, int.Parse(Opt("port")!), Opt("pipe")!, Has("leave-startup-on"));
             else { ShowWindow(); return; }
         }
@@ -213,7 +214,7 @@ public partial class App : Application
         SpikeLog.Write($"[shot] wrote {jsonPath} ({boxes.Count} pieces of text)");
     }
 
-    private static async Task SavePngAsync(string path, byte[] bgra, int w, int h)
+    internal static async Task SavePngAsync(string path, byte[] bgra, int w, int h)
     {
         using var mem = new InMemoryRandomAccessStream();
         var enc = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, mem);

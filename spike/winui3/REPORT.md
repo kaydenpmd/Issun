@@ -342,4 +342,5 @@ delete stale `%TEMP%\.net\Issun\*` folders when it starts.
 - `sandbox/msix-run.ps1`, `sandbox/msix-test.ps1`: installing and checking the MSIX in Windows Sandbox.
 - `../fake-cli/`: the stand-in `tailscale.exe` for the sandbox.
 - `tools/wpf-ring-frames.ps1`: renders Issun's WPF ProgressRing at set points.
+- `Gallery.cs` (`--gallery <dir>`), `tools/button-styles.py`, `tools/style-usage.py`: every WinUI 3 button control and style key at rest, pointer over, pressed and disabled; `results/button-gallery/` (asked for by the owner, 12 Nov 2026).
 - `results/`: pictures, the sandbox runs' reports, logs and captures (`sandbox-run1`, `sandbox-run2`, `sandbox-msix-run1`, `sandbox-msix-run2`).

@@ -386,7 +386,15 @@ owner's order of 12 Nov 2026:
    a reload button beside Show, as an edited field shows Restart in Ammy; it
    saves the field as the public address (or clears it when it's Tailscale's
    own, so Issun keeps following Tailscale) and redraws the code. Leaving the
-   page or closing the window applies an edit too.
+   page or closing the window applies an edit too. The last card waits for the
+   source by itself (the owner, 12 Nov 2026): a 16 px ProgressRing and
+   "Waiting..." with Next greyed out until a source is checking in, then
+   Windows' InfoBar success mark and "Connected" with Next available. **Skip**
+   is here too, hidden while connected (Next then does the same) and back if
+   the connection drops. WPF has no ProgressRing; `Views/ProgressRing.cs` draws
+   WinUI's from its source (design library `microsoft/progress-ring/`). Its pen
+   isn't frozen: freezing it around the theme's brush threw and stopped Issun
+   starting, which the sandbox test caught.
 4. **Start with Windows**, ticked by default on a first run. Last, so Cancel is
    Close here and Next is gone.
 

@@ -175,11 +175,19 @@ if ($Step -in @("all","first")) {
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Show")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
     Expect "a QR code with only the key can be shown" ($show -and $show.Current.IsEnabled)
-    Click $w "Next" | Out-Null; Start-Sleep 2
-    Expect "Next leads to Start with Windows" (OnPage $w "Launch Issun on startup?")
+    $next = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Next")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
+    Expect "Next is greyed out while no source is connected" ($next -and -not $next.Current.IsEnabled)
+    $waiting = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Waiting...")))
+    Expect "the status says Waiting..." ($waiting -and -not $waiting.Current.IsOffscreen)
+    Start-Sleep -Milliseconds 700; Shot "source-waiting-a" $w
+    Start-Sleep -Milliseconds 600; Shot "source-waiting-b" $w
+    ClickId $w "Skip" | Out-Null; Start-Sleep 2
+    Expect "Skip leads to Start with Windows" (OnPage $w "Launch Issun on startup?")
     Click $w "Back" | Out-Null; Start-Sleep 1
     Expect "Back returns to Connect your source" (OnPage $w "Connect your source")
-    Click $w "Next" | Out-Null; Start-Sleep 2
+    ClickId $w "Skip" | Out-Null; Start-Sleep 2
     Dump $w "page 3"; Shot "setup-page-3" $w
     Click $w "Close" | Out-Null
     Start-Sleep 3

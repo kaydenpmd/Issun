@@ -244,11 +244,29 @@
                         </DockPanel>
                     </Border>
 
+                    <!-- Whether a source is connected (the owner, 12 Nov 2026):
+                         Windows 11's ProgressRing and "Waiting..." until one checks
+                         in, then the InfoBar's success mark (F136 in the success
+                         colour under F13E in the inverse text colour, 16 px, as
+                         WinUI draws it) and "Connected". Next follows it. -->
                     <Border Style="{StaticResource Card}">
-                        <DockPanel>
-                            <Ellipse DataContext="{Binding SourceStatus}" Style="{StaticResource StatusDot}" />
-                            <TextBlock Text="{Binding SourceStatus.Text}" Style="{StaticResource RowDescription}" />
-                        </DockPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal"
+                                        Visibility="{Binding SourceConnected, Converter={StaticResource Hidden}}">
+                                <v:ProgressRing Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <TextBlock Text="Waiting..." Style="{StaticResource RowDescription}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Visibility="{Binding SourceConnected, Converter={StaticResource Visible}}">
+                                <Grid Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <TextBlock Text="&#xF136;" FontFamily="{DynamicResource SymbolThemeFontFamily}" FontSize="16"
+                                               Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
+                                    <TextBlock Text="&#xF13E;" FontFamily="{DynamicResource SymbolThemeFontFamily}" FontSize="16"
+                                               Foreground="{DynamicResource TextFillColorInverseBrush}" />
+                                </Grid>
+                                <TextBlock Text="Connected" Style="{StaticResource RowDescription}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
                     </Border>
                 </StackPanel>
             </Grid>

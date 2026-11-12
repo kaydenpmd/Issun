@@ -64,11 +64,11 @@ public sealed class SetupViewModel : Observable, IDisposable
         {
             Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
             if (_page == SetupPage.Tailscale) TailscaleError = $"[text] {ex.Message}";
-        }, () => _page < SetupPage.StartWithWindows);
+        }, () => _page < SetupPage.StartWithWindows && (_page != SetupPage.Source || SourceConnected));
         SkipCommand = new Command(() =>
         {
-            Log.Write("[setup] skipped the Tailscale check");
-            Go(SetupPage.Source);
+            Log.Write(_page == SetupPage.Tailscale ? "[setup] skipped the Tailscale check" : "[setup] skipped connecting a source");
+            Go(_page + 1);
         });
         CloseCommand = new Command(() => CloseRequested?.Invoke());
         OpenPortalCommand = new Command(() => Open(DeveloperPortal, "the Discord Developer Portal"));
@@ -174,11 +174,14 @@ public sealed class SetupViewModel : Observable, IDisposable
     public bool ShowNext => _page < SetupPage.StartWithWindows;
 
     /// <summary>
-    /// Skip is always on the Tailscale page, and only there (the owner,
-    /// 12 Nov 2026): it goes on to Connect your source without Next's check,
-    /// for people who reach Issun some other way.
+    /// Skip is always on the Tailscale page and on Connect your source (the
+    /// owner, 12 Nov 2026). On the first it goes on without Next's check, for
+    /// people who reach Issun some other way; on the second it goes on without
+    /// a source having connected, for people who'd rather connect later. There
+    /// it goes while a source is connected, since Next then does the same, and
+    /// comes back if the connection drops (the owner, 12 Nov 2026).
     /// </summary>
-    public bool ShowSkip => _page == SetupPage.Tailscale;
+    public bool ShowSkip => _page == SetupPage.Tailscale || (_page == SetupPage.Source && !_sourceConnected);
 
     public Command BackCommand { get; }
     public AsyncCommand NextCommand { get; }
@@ -703,6 +706,26 @@ public sealed class SetupViewModel : Observable, IDisposable
     }
 
     private bool _sourceSeenLogged;
+
+    /// <summary>
+    /// A source is checking in now. Until it is, Connect your source shows a
+    /// ProgressRing and the owner's "Waiting...", and Next stays greyed out; then
+    /// Windows' success mark and "Connected", and Next works (the owner,
+    /// 12 Nov 2026: the check runs by itself, so Next only follows it).
+    /// </summary>
+    public bool SourceConnected
+    {
+        get => _sourceConnected;
+        private set
+        {
+            if (!Set(ref _sourceConnected, value))
+                return;
+            Log.Write(value ? "[setup] Connect your source: connected, Next available" : "[setup] Connect your source: waiting, Next greyed out");
+            NextCommand.RaiseCanExecuteChanged();
+            Raise(nameof(ShowSkip));
+        }
+    }
+    private bool _sourceConnected;
     private string? _discordLogged;
 
     private void Refresh()
@@ -740,6 +763,7 @@ public sealed class SetupViewModel : Observable, IDisposable
     {
         var s = _snapshot;
         SourceStatus = StatusText.Phone(s, SystemClock.Instance.Now, DateTime.Now);
+        SourceConnected = s.LastCheckinAt > 0 && !s.PhoneSilent;
         if (!_sourceSeenLogged && s.LastCheckinAt > 0 && !s.PhoneSilent)
         {
             _sourceSeenLogged = true;

@@ -6,7 +6,6 @@ using Issun.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
@@ -67,15 +66,13 @@ public static class Screenshot
             SetupViewModel? setup = options.SetupPage is { } n ? new SetupViewModel(host, dispatcher, (SetupPage)n) : null;
             if (options.Expanded)
                 setup?.ShowQrForScreenshot();
-            // The background as a ThemeResource, resolved once the page is in
-            // the window. Looked up by key in code instead, it threw "Cannot
-            // find a resource with the given key" in the published build in
-            // Windows Sandbox (12 Nov 2026), though the debug build found it.
-            var page = (Border)XamlReader.Load(
-                "<Border xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" " +
-                "Background=\"{ThemeResource SolidBackgroundFillColorBaseBrush}\" VerticalAlignment=\"Top\" />");
-            page.Width = setup is null ? Width : 600;
-            page.Child = setup is null ? new MainView(vm) : new SetupView(setup);
+            var page = new Border
+            {
+                Background = PageBackground(options.Theme),
+                Width = setup is null ? Width : 600,
+                VerticalAlignment = VerticalAlignment.Top,
+                Child = setup is null ? new MainView(vm) : new SetupView(setup),
+            };
             var loaded = new TaskCompletionSource();
             page.Loaded += (_, _) => loaded.TrySetResult();
 
@@ -144,6 +141,24 @@ public static class Screenshot
             GC.KeepAlive(window);
             await host.DisposeAsync();
         }
+    }
+
+    /// <summary>
+    /// The theme's solid base colour, what Windows shows where Mica is off.
+    /// In Windows Sandbox (12 Nov 2026) the published build couldn't find
+    /// SolidBackgroundFillColorBaseBrush by key, though the same build found
+    /// it on this PC and real windows there were styled; so when the lookup
+    /// fails, WinUI's own values for it are used (#202020 dark, #F3F3F3 light,
+    /// from its theme resources) and the log says so.
+    /// </summary>
+    private static Brush PageBackground(ThemeChoice theme)
+    {
+        if (Application.Current.Resources.TryGetValue("SolidBackgroundFillColorBaseBrush", out var found) && found is Brush brush)
+            return brush;
+        Log.Write("[ui] screenshot: SolidBackgroundFillColorBaseBrush isn't in the app's resources; using WinUI's value for it");
+        Console.Error.WriteLine("screenshot: SolidBackgroundFillColorBaseBrush not found; using WinUI's value");
+        var dark = theme == ThemeChoice.Dark || (theme == ThemeChoice.System && Presentation.AppTheme.IsDark);
+        return new SolidColorBrush(dark ? Windows.UI.Color.FromArgb(255, 0x20, 0x20, 0x20) : Windows.UI.Color.FromArgb(255, 0xF3, 0xF3, 0xF3));
     }
 
     /// <summary>The session this process runs in is disconnected (WTSDisconnected), as when Remote Desktop was closed without signing out.</summary>

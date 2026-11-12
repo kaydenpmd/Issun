@@ -94,6 +94,8 @@ public sealed partial class TailscaleCli : ITailscale
     {
         var lines = new List<string>();
         var status = await ProbeCore(port, lines, ct).ConfigureAwait(false);
+        if (status.Running && _locate() is { } exe)
+            status = status with { Unattended = await ReadUnattendedAsync(exe, lines, ct).ConfigureAwait(false) };
         if (status.Detail is { } detail)
             lines.Add($"[tailscale] {detail}");
         else
@@ -352,6 +354,69 @@ public sealed partial class TailscaleCli : ITailscale
         }
 
         Say($"[tailscale] Funnel turned on: https 443 -> localhost:{Num(port)}");
+        return (true, output);
+    }
+
+    /// <summary>
+    /// Run unattended is the ForceDaemon preference. <c>tailscale debug prefs</c>
+    /// is the one place the CLI prints it (checked on 1.104.4, 11 Nov 2026);
+    /// it is read-only, and a debug command, so anything unexpected means
+    /// "unknown" rather than "off".
+    /// </summary>
+    private async Task<bool?> ReadUnattendedAsync(string exe, List<string> log, CancellationToken ct)
+    {
+        var result = await _runner.RunAsync(exe, ["debug", "prefs"], ProbeTimeout, ct).ConfigureAwait(false);
+        if (!result.Succeeded)
+        {
+            log.Add($"[tailscale] debug prefs didn't answer ({(result.TimedOut ? "timed out" : FirstLine(result.StdErr, result.StdOut))}); Run unattended unknown");
+            return null;
+        }
+        var value = ParseForceDaemon(result.StdOut);
+        log.Add(value switch
+        {
+            true => "[tailscale] Run unattended is on",
+            false => "[tailscale] Run unattended is off: Tailscale waits for sign-in after a restart",
+            null => "[tailscale] debug prefs has no ForceDaemon; Run unattended unknown",
+        });
+        return value;
+    }
+
+    internal static bool? ParseForceDaemon(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.ValueKind == JsonValueKind.Object
+                   && doc.RootElement.TryGetProperty("ForceDaemon", out var v)
+                   && v.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? v.GetBoolean()
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    public async Task<(bool Ok, string Output)> EnableUnattendedAsync(CancellationToken ct)
+    {
+        var exe = _locate();
+        if (exe is null)
+        {
+            Say("[tailscale] not turning on Run unattended: tailscale.exe not found on PATH or in Program Files");
+            return (false, NotInstalledDetail);
+        }
+        var result = await _runner.RunAsync(exe, ["set", "--unattended"], ProbeTimeout, ct).ConfigureAwait(false);
+        var output = Combine(result.StdOut, result.StdErr);
+        if (!result.Succeeded)
+        {
+            var why = !result.Started ? result.StartError ?? "it couldn't start"
+                : result.TimedOut ? "it didn't answer within 5 seconds"
+                : output.Length > 0 ? output : $"it exited with code {Num(result.ExitCode ?? -1)}";
+            Say($"[tailscale] tailscale set --unattended failed: {Clip(OneLine(why))}");
+            return (false, $"Tailscale didn't turn on Run unattended: {why}");
+        }
+        Say("[tailscale] Run unattended turned on");
         return (true, output);
     }
 

@@ -37,11 +37,16 @@ public static class Screenshot
             if (options.Expanded)
                 vm.ExpandAll();
 
+            // --setup-page N renders the setup window's content instead, at
+            // its own width, the whole page whatever its height.
+            SetupViewModel? setup = options.SetupPage is { } n ? new SetupViewModel(host, dispatcher, (SetupPage)n) : null;
+            if (options.Expanded)
+                setup?.ShowQrForScreenshot();
             var page = new Border
             {
                 Background = Application.Current.TryFindResource("SolidBackgroundFillColorBaseBrush") as Brush ?? Brushes.White,
-                Width = Width,
-                Child = new MainView { DataContext = vm },
+                Width = setup is null ? Width : 600,
+                Child = setup is null ? new MainView { DataContext = vm } : new SetupView { DataContext = setup },
             };
 
             // Let bindings, the cover and the uptime summary settle. Awaiting
@@ -85,7 +90,7 @@ public static class Screenshot
 
     private static void Layout(FrameworkElement page)
     {
-        page.Measure(new Size(Width, double.PositiveInfinity));
+        page.Measure(new Size(double.IsNaN(page.Width) ? Width : page.Width, double.PositiveInfinity));
         page.Arrange(new Rect(page.DesiredSize));
         page.UpdateLayout();
     }

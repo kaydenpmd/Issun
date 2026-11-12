@@ -29,6 +29,12 @@ public sealed record StartupOptions
     /// <summary>--demo-phase N: start the demo's script at step N, to screenshot a particular state.</summary>
     public int DemoPhase { get; init; }
 
+    /// <summary>--uninstall: what Settings › Apps runs. Asks, then removes Issun and leaves the settings and logs.</summary>
+    public bool Uninstall { get; init; }
+
+    /// <summary>--setup-page N (with --screenshot): render the setup window on page N (0 to 3) instead of the main window.</summary>
+    public int? SetupPage { get; init; }
+
     public IReadOnlyList<string> Problems { get; init; } = [];
 
     /// <summary>
@@ -61,6 +67,18 @@ public sealed record StartupOptions
                     break;
                 case "--background":
                     options = options with { Background = true };
+                    break;
+                case "--uninstall":
+                    options = options with { Uninstall = true };
+                    break;
+                case "--setup-page":
+                    if (Next() is { } page)
+                    {
+                        if (int.TryParse(page, NumberStyles.None, CultureInfo.InvariantCulture, out var p) && p <= 3)
+                            options = options with { SetupPage = p };
+                        else
+                            problems.Add($"--setup-page takes 0 to 3, not {page}");
+                    }
                     break;
                 case "--expanded":
                     options = options with { Expanded = true };

@@ -21,6 +21,10 @@ public sealed partial class MainViewModel
     public Command CancelNewKeyCommand { get; private set; } = null!;
     public AsyncCommand ConfirmNewKeyCommand { get; private set; } = null!;
     public Command DismissBannerCommand { get; private set; } = null!;
+    public Command OpenSetupCommand { get; private set; } = null!;
+
+    /// <summary>Set by the app: opens the setup window, or brings it forward.</summary>
+    public Action? OpenSetup { get; set; }
 
     private void InitPairing()
     {
@@ -55,6 +59,12 @@ public sealed partial class MainViewModel
         {
             ConfirmingNewKey = false;
             KeyMessage = $"Couldn't make a new key: {ex.Message}. The old key still works.";
+        });
+
+        OpenSetupCommand = new Command(() =>
+        {
+            Log.Write("[ui] Open setup clicked");
+            OpenSetup?.Invoke();
         });
 
         DismissBannerCommand = new Command(() =>

@@ -143,6 +143,21 @@ public sealed class StartMenuShortcut
             return 0;
         });
 
+    /// <summary>
+    /// For uninstalling: the entry and the marker both go, so installing
+    /// again adds the entry again.
+    /// </summary>
+    public void Remove()
+    {
+        if (File.Exists(ShortcutPath))
+        {
+            File.Delete(ShortcutPath);
+            Log.Write($"[startmenu] removed the Start menu entry ({ShortcutPath})");
+        }
+        if (File.Exists(_markerPath))
+            File.Delete(_markerPath);
+    }
+
     private void MarkAdded()
     {
         if (File.Exists(_markerPath))

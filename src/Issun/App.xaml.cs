@@ -1,6 +1,8 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 using Issun.Core;
+using Issun.Core.Platform;
 using Issun.Startup;
 using Issun.Tray;
 using Issun.ViewModels;
@@ -15,8 +17,12 @@ namespace Issun;
 ///   Issun.exe                   window and tray
 ///   Issun.exe --background      tray only — what Start with Windows runs
 ///   Issun.exe --demo            made-up data; binds nothing, writes nothing real
-///   Issun.exe --screenshot a.png [--theme light|dark] [--expanded] [--demo-phase N]
-///                               render the window's content to a PNG and exit
+///   Issun.exe --uninstall       what Settings › Apps runs: asks, then removes Issun
+///   Issun.exe --screenshot a.png [--theme light|dark] [--expanded] [--demo-phase N] [--setup-page N]
+///                               render the window's content, or a setup page, to a PNG and exit
+///
+/// A release opened from anywhere but %LOCALAPPDATA%\Programs\Issun installs
+/// itself there first and hands over to the installed copy (SelfInstall).
 /// </summary>
 public partial class App : Application
 {
@@ -27,6 +33,7 @@ public partial class App : Application
     private IIssunHost? _host;
     private MainViewModel? _vm;
     private MainWindow? _window;
+    private SetupWindow? _setupWindow;
     private TrayIcon? _tray;
     private UiState? _uiState;
     private bool _quitting;
@@ -92,6 +99,25 @@ public partial class App : Application
     /// <summary>Everything up to starting the host. False when another Issun is already running.</summary>
     private bool Start(string[] args)
     {
+        if (!_options.Demo)
+        {
+            Log.UseFile(Paths.LogFile);
+            var install = new SelfInstall();
+            if (_options.Uninstall)
+            {
+                Uninstall(install);
+                Shutdown(0);
+                return false;
+            }
+            if (install.ShouldInstall)
+            {
+                InstallAndHandOver(install, args);
+                Shutdown(0);
+                return false;
+            }
+            install.EnsureRegistered();
+        }
+
         // A second launch by hand means "show me Issun"; a second --background
         // launch is the sign-in entry firing while Issun already runs, and
         // popping the window up at the person would be wrong.
@@ -103,22 +129,121 @@ public partial class App : Application
         }
 
         // The demo must not write into the real data folder, so its lines stay
-        // in memory and in the window's Log section.
-        if (!_options.Demo)
-            Log.UseFile(Paths.LogFile);
+        // in memory and in the window's Log section; the real log file was
+        // opened above, before installing.
         Log.Write($"[ui] {IssunInfo.Wire} starting{(_options.Background ? " in the tray" : "")}");
         foreach (var problem in _options.Problems)
             Log.Write($"[ui] ignoring the command line: {problem}");
 
         _host = HostFactory.Create(args);
         _uiState = UiState.Load(_host.DataFolder);
-        _vm = new MainViewModel(_host, Dispatcher);
+        _vm = new MainViewModel(_host, Dispatcher) { OpenSetup = () => ShowSetup(afterwards: false) };
         _tray = new TrayIcon(_vm, ShowMainWindow, () => _ = QuitAsync());
         _instance.Listen(() => Dispatcher.BeginInvoke(ShowMainWindow));
+        _instance.ListenForQuit(() => Dispatcher.BeginInvoke(() => _ = QuitAsync()));
 
-        if (!_options.Background)
+        // A first run opens the setup window instead of the main one, once
+        // ever; the main window follows when setup closes.
+        if (!_options.Background && _host.FirstRun && !_uiState.SetupShown)
+        {
+            Log.Write("[ui] first run: opening setup");
+            ShowSetup(afterwards: true);
+        }
+        else if (!_options.Background)
+        {
             ShowMainWindow();
+        }
         return true;
+    }
+
+    /// <param name="afterwards">Open the main window when setup closes: the first run, where setup came first.</param>
+    private void ShowSetup(bool afterwards)
+    {
+        if (_quitting || _host is null)
+            return;
+        if (_setupWindow is null)
+        {
+            _setupWindow = new SetupWindow(new SetupViewModel(_host, Dispatcher));
+            _setupWindow.Closed += (_, _) =>
+            {
+                _setupWindow = null;
+                _uiState?.MarkSetupShown();
+                _vm?.DismissBannerCommand.Execute(null);
+                if (afterwards && !_quitting)
+                    ShowMainWindow();
+            };
+            _setupWindow.Show();
+        }
+        if (_setupWindow.WindowState == WindowState.Minimized)
+            _setupWindow.WindowState = WindowState.Normal;
+        _setupWindow.Activate();
+    }
+
+    /// <summary>
+    /// This copy is a download: install it, quitting a running Issun first,
+    /// and start the installed copy in its place. Every failure is shown,
+    /// because nothing else will explain why opening the file did nothing.
+    /// </summary>
+    private static void InstallAndHandOver(SelfInstall install, string[] args)
+    {
+        Log.Write($"[install] {IssunInfo.Wire} opened from {install.ExePath}; installing to {install.InstallDir}");
+        if (!SingleInstance.AskRunningToQuit("Issun", TimeSpan.FromSeconds(10)))
+        {
+            MessageBox.Show(
+                "Issun is already running, so this copy can't replace it yet.\n\nQuit Issun from its icon in the notification area, then open this file again.",
+                "Issun", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        try
+        {
+            install.Install();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Issun couldn't install itself in {install.InstallDir}.\n\n{ex.Message}",
+                "Issun", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        try
+        {
+            var start = new ProcessStartInfo(install.InstalledExe) { UseShellExecute = false };
+            foreach (var arg in args)
+                start.ArgumentList.Add(arg);
+            Process.Start(start);
+            Log.Write($"[install] started {install.InstalledExe}");
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"[install] couldn't start {install.InstalledExe}: {ex.Message}");
+            MessageBox.Show($"Issun is installed, but couldn't be started.\n\n{ex.Message}\n\nOpen it from the Start menu.",
+                "Issun", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Settings › Apps › Uninstall. The settings, key, logs and check-in
+    /// history stay, so installing again picks up where this left off; the
+    /// message says so, since nothing else would.
+    /// </summary>
+    private static void Uninstall(SelfInstall install)
+    {
+        Log.Write($"[install] uninstall requested ({IssunInfo.Wire}, {install.ExePath})");
+        var answer = MessageBox.Show(
+            "Uninstall Issun?\n\nYour settings, key and logs stay on this PC, so installing Issun again picks up where it left off.",
+            "Uninstall Issun", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+        if (answer != MessageBoxResult.Yes)
+        {
+            Log.Write("[install] uninstall cancelled");
+            return;
+        }
+        if (!SingleInstance.AskRunningToQuit("Issun", TimeSpan.FromSeconds(10)))
+        {
+            MessageBox.Show("Issun is still running. Quit it from its icon in the notification area, then uninstall it again.",
+                "Uninstall Issun", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        install.Uninstall(new Autostart(), new StartMenuShortcut());
+        Log.Write("[install] uninstalled");
     }
 
     private void ShowMainWindow()
@@ -161,6 +286,7 @@ public partial class App : Application
         _quitting = true;
         Log.Write("[ui] quitting");
 
+        _setupWindow?.Close();
         _window?.Close();
         _tray?.Dispose();
         _vm?.Dispose();

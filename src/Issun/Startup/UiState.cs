@@ -6,17 +6,17 @@ namespace Issun.Startup;
 
 /// <summary>
 /// What the window remembers about itself between runs — not a setting, so
-/// not in settings.json. Today that is one thing: whether Issun has already
-/// explained that closing the window leaves it running in the tray. Said once,
-/// ever, rather than at every close: autostart means the window is opened and
-/// closed a lot, and a reminder each time would be nagging.
+/// not in settings.json: whether Issun has already explained that closing the
+/// window leaves it running in the tray, and whether the setup window has
+/// opened by itself once. Each happens once, ever: autostart means the window
+/// is opened and closed a lot, and either one each time would be nagging.
 ///
 /// Kept in the host's DataFolder, which for --demo is a temp folder, so a demo
 /// never writes into the real one.
 /// </summary>
 public sealed class UiState
 {
-    private sealed record Data(bool TrayHintShown);
+    private sealed record Data(bool TrayHintShown, bool SetupShown = false);
 
     private readonly string _path;
     private Data _data;
@@ -28,6 +28,8 @@ public sealed class UiState
     }
 
     public bool TrayHintShown => _data.TrayHintShown;
+
+    public bool SetupShown => _data.SetupShown;
 
     public static UiState Load(string folder)
     {
@@ -45,9 +47,13 @@ public sealed class UiState
         return new UiState(path, new Data(false));
     }
 
-    public void MarkTrayHintShown()
+    public void MarkTrayHintShown() => Save(_data with { TrayHintShown = true });
+
+    public void MarkSetupShown() => Save(_data with { SetupShown = true });
+
+    private void Save(Data data)
     {
-        _data = _data with { TrayHintShown = true };
+        _data = data;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);

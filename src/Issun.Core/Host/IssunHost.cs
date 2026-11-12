@@ -251,6 +251,15 @@ public sealed class IssunHost : IIssunHost
         return result;
     }
 
+    public async Task<(bool Ok, string Output)> EnableUnattendedAsync()
+    {
+        Log.Write("[tailscale] turning on Run unattended (requested from the window)");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var result = await _tailscale.EnableUnattendedAsync(timeout.Token);
+        await RefreshTailscaleAsync();
+        return result;
+    }
+
     public bool StartWithWindows
     {
         get

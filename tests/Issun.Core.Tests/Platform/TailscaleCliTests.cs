@@ -6,7 +6,11 @@ namespace Issun.Core.Tests.Platform;
 /// <summary>Stands in for tailscale.exe: answers by argument list and records every call.</summary>
 internal sealed class FakeRunner : IProcessRunner
 {
-    private readonly Dictionary<string, ProcessResult> _answers = new(StringComparer.Ordinal);
+    // Run unattended is read on every probe of a running Tailscale; on unless a test says otherwise.
+    private readonly Dictionary<string, ProcessResult> _answers = new(StringComparer.Ordinal)
+    {
+        ["debug prefs"] = Ok("""{"ForceDaemon": true}"""),
+    };
 
     public List<(string File, string[] Args, TimeSpan Timeout)> Calls { get; } = [];
 
@@ -37,6 +41,7 @@ public class TailscaleCliTests
     private const string Exe = @"C:\Program Files\Tailscale\tailscale.exe";
     private const string Status = "status --json";
     private const string FunnelStatus = "funnel status --json";
+    private const string Prefs = "debug prefs";
 
     private static TailscaleCli Cli(FakeRunner runner, string? exe = Exe) => new(runner, () => exe);
 
@@ -51,18 +56,18 @@ public class TailscaleCliTests
 
         var status = await Cli(runner).ProbeAsync(8787, CancellationToken.None);
 
-        Assert.Equal(new TailscaleStatus(true, true, DnsName, true, true, null), status);
+        Assert.Equal(new TailscaleStatus(true, true, DnsName, true, true, null, Unattended: true), status);
         Assert.Equal("https://mypc.example-tailnet.ts.net", status.PublicBase);
     }
 
     [Fact]
-    public async Task A_probe_runs_only_the_two_read_only_commands_with_a_five_second_limit()
+    public async Task A_probe_runs_only_the_three_read_only_commands_with_a_five_second_limit()
     {
         var runner = Running(FunnelToIssun);
 
         await Cli(runner).ProbeAsync(8787, CancellationToken.None);
 
-        Assert.Equal([Status, FunnelStatus], runner.Calls.Select(c => string.Join(" ", c.Args)));
+        Assert.Equal([Status, FunnelStatus, Prefs], runner.Calls.Select(c => string.Join(" ", c.Args)));
         Assert.All(runner.Calls, c => Assert.Equal(Exe, c.File));
         Assert.All(runner.Calls, c => Assert.Equal(TimeSpan.FromSeconds(5), c.Timeout));
     }
@@ -144,7 +149,71 @@ public class TailscaleCliTests
 
         Assert.Equal(new TailscaleStatus(true, true, DnsName, false, false,
             "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, "
-            + "or run: tailscale funnel --bg --https=443 localhost:8787"), status);
+            + "or run: tailscale funnel --bg --https=443 localhost:8787", Unattended: true), status);
+    }
+
+    // ───────────── Run unattended ─────────────
+
+    [Theory]
+    [InlineData("""{"ForceDaemon": true}""", true)]
+    [InlineData("""{"ForceDaemon": false}""", false)]
+    [InlineData("""{"WantRunning": true}""", null)]
+    [InlineData("not json", null)]
+    public async Task Run_unattended_is_read_from_the_prefs(string prefs, bool? expected)
+    {
+        var runner = Running(FunnelToIssun).Answer(Prefs, prefs);
+
+        var status = await Cli(runner).ProbeAsync(8787, CancellationToken.None);
+
+        Assert.Equal(expected, status.Unattended);
+        Assert.Null(status.Detail);
+    }
+
+    [Fact]
+    public async Task Run_unattended_unanswered_is_unknown_not_off()
+    {
+        var runner = Running(FunnelToIssun).Answer(Prefs, new ProcessResult(true, 1, "", "unknown subcommand", false));
+
+        var status = await Cli(runner).ProbeAsync(8787, CancellationToken.None);
+
+        Assert.Null(status.Unattended);
+    }
+
+    [Fact]
+    public async Task Run_unattended_is_not_asked_of_a_tailscale_that_isnt_running()
+    {
+        var runner = new FakeRunner().Answer(Status, StatusNeedsLogin);
+
+        var status = await Cli(runner).ProbeAsync(8787, CancellationToken.None);
+
+        Assert.Null(status.Unattended);
+        Assert.DoesNotContain(runner.Calls, c => string.Join(" ", c.Args) == Prefs);
+    }
+
+    [Fact]
+    public async Task Turning_on_run_unattended_runs_tailscale_set()
+    {
+        var runner = new FakeRunner().Answer("set --unattended", "");
+        using var log = Log.Capture();
+
+        var (ok, _) = await Cli(runner).EnableUnattendedAsync(CancellationToken.None);
+
+        Assert.True(ok);
+        Assert.Equal(["set --unattended"], runner.Calls.Select(c => string.Join(" ", c.Args)));
+        Assert.Contains("[tailscale] Run unattended turned on", log.Lines);
+    }
+
+    [Fact]
+    public async Task A_refused_run_unattended_says_what_tailscale_said()
+    {
+        var runner = new FakeRunner().Answer("set --unattended", new ProcessResult(true, 1, "", "Access denied", false));
+        using var log = Log.Capture();
+
+        var (ok, output) = await Cli(runner).EnableUnattendedAsync(CancellationToken.None);
+
+        Assert.False(ok);
+        Assert.Contains("Access denied", output);
+        Assert.Contains(log.Lines, l => l.StartsWith("[tailscale] tailscale set --unattended failed: Access denied"));
     }
 
     [Fact]

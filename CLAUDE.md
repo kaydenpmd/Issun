@@ -151,9 +151,9 @@ comments in `Contracts.cs` say which function each member replaces.
 | artwork | `ArtworkResolver` | the store-ID lookup, `_album_url`, uploaded JPEGs, the cache pruning, `_normalize` / `_similarity` / `_score` (an exact port of `difflib.SequenceMatcher`), fuzzy search |
 | discord | `DiscordIpcClient`, `PresenceWorker` | pypresence itself, `rpc_worker`, `push_with_fallback` |
 | server | `RelayServer` (Kestrel) | `Handler`, `QuietHTTPServer`, `public_state` |
-| platform | `SettingsStore`, `KeyGenerator`, `EnvImporter`, `Autostart`, `TailscaleCli` | `.env` and `_load_env_file`, `install-task.ps1`, the hand-typed `tailscale funnel` command |
+| platform | `SettingsStore`, `KeyGenerator`, `EnvImporter`, `Autostart`, `TailscaleCli`, `SelfInstall`, `StartMenuShortcut` | `.env` and `_load_env_file`, `install-task.ps1`, the hand-typed `tailscale funnel` command |
 | host | `IssunHost` | `main()`: builds every module, wires them, gives the window one object |
-| ui | `App`, `MainWindow`, the tray, `DemoHost`, `HostFactory` | a PowerShell window and `relay.log` |
+| ui | `App`, `MainWindow`, `SetupWindow`, the tray, `DemoHost`, `HostFactory` | a PowerShell window and `relay.log` |
 
 **The icon, since 28 Oct 2026, is two waves arriving at a speech bubble**, the
 owner's pick. `tools/make_icon.py` draws it in the style of the owner's iPhone
@@ -209,6 +209,11 @@ dotnet run --project src/Issun -- --demo
 - `--screenshot <png>` (with `--demo`): renders the window offscreen to a PNG
   after layout, then exits. **This is how a session looks at the UI**: render,
   then Read the PNG. It never puts a window on the owner's desktop.
+  `--setup-page 0..3` renders a page of the setup window instead, and
+  `--expanded` there draws the QR code (of the demo's made-up key).
+- `--uninstall`: what Settings › Apps runs. Asks first, quits a running Issun,
+  then removes the Run entry, the Start menu entry, the Apps entry and the
+  install folder. Settings, key, logs and history stay.
 - `ISSUN_HOME`: puts both the config and data folders under one directory
   (see `Paths.cs`).
 
@@ -229,8 +234,12 @@ The owner's receiver is live on this machine. These are hard limits:
 - **Autostart tests** use a throwaway `HKCU\Software\IssunTests\<guid>` for both
   registry paths and delete it afterwards.
 - **Tailscale:** only read-only commands (`tailscale status --json`,
-  `tailscale funnel status --json`). `EnableFunnelAsync` runs for real only when
-  the owner clicks the button; tests go through an injected process runner.
+  `tailscale funnel status --json`, `tailscale debug prefs`). `EnableFunnelAsync`
+  and `EnableUnattendedAsync` run for real only when the owner clicks a button;
+  tests go through an injected process runner.
+- **Self-install tests** install into a temp folder and register under a
+  throwaway `HKCU\Software\IssunTests\<guid>` key, never the real Uninstall key
+  or `%LOCALAPPDATA%\Programs\Issun`.
 - **No secrets anywhere.** Never read or print `C:\Users\links\Python Scripts\.env`.
   No key, Discord client ID or tailnet name (the part between the machine name
   and `.ts.net`) in code, tests, fixtures, logs or commit messages. Fixtures say
@@ -293,6 +302,9 @@ it, and moving it must not lose anything.
 | Uptime log | `%LOCALAPPDATA%\Issun\uptime.log` | Named `ammy-uptime.log` until 23 Sept 2026; `IssunHost` renames an old one once, never over an existing file. Import merges relay.py's `ammy-uptime.log` into it, placed before Issun's own lines. |
 | Uploaded covers | `%LOCALAPPDATA%\Issun\art_cache\` | 60 newest kept. |
 | Autostart | `HKCU\...\CurrentVersion\Run`, value `Issun` | `"<exe>" --background`. |
+| The program | `%LOCALAPPDATA%\Programs\Issun\Issun.exe` | Self-installed (below); the one before an update is kept as `Issun.exe.previous`. |
+| Settings › Apps entry | `HKCU\...\CurrentVersion\Uninstall\Issun` | No Publisher: public text is the owner's. |
+| Window state | `%LOCALAPPDATA%\Issun\window.json` | Whether the tray hint and the setup window have shown once. |
 
 `ISSUN_HOME` puts both folders under one directory instead.
 
@@ -315,9 +327,42 @@ repoints the entry when Issun runs from a new path, which is what happens on
 every update, because each release has a new filename.
 
 **Tailscale's state is Tailscale's.** Issun reads `tailscale status --json` (the
-MagicDNS name, which becomes `PublicBase` unless Settings overrides it) and
-`tailscale funnel status --json`, and changes nothing unless the owner clicks
-**Turn on Funnel**.
+MagicDNS name, which becomes `PublicBase` unless Settings overrides it),
+`tailscale funnel status --json`, and, while Tailscale is running, `tailscale
+debug prefs` for Run unattended. It changes nothing unless the owner clicks
+**Turn on Funnel** or the setup window's **Turn on** for Run unattended.
+
+**Issun installs itself** (since 11 Nov 2026, `SelfInstall`). A release build
+opened from anywhere but the install folder asks a running Issun to quit (a
+named event, `Local\Issun-<SID>-quit`), renames the installed `.exe` to
+`Issun.exe.previous`, copies itself in, registers the Apps entry, starts the
+installed copy and exits. That is the by-hand update procedure at the end of
+this file, rename first. Builds 48 and earlier don't listen for the quit
+request, so the first update over one of them says to quit Issun from the tray
+and open the file again. The Run key and Start menu entry repoint themselves as
+before. Local builds never install, and under `ISSUN_HOME` the install folder
+is `<ISSUN_HOME>\Programs\Issun`. The installed copy also writes the Apps entry
+if it's missing, so the owner's copy, installed by hand, gets one on its first
+run of a build that has this.
+
+**The setup window** opens by itself on a first run (no settings.json), once
+ever, and from **Open setup** in Settings after that. Four pages, each applying
+as it goes: the Discord application ID (applied 0.6 s after it looks like a
+17–20 digit ID, with the live Discord status under it), Tailscale (Get
+Tailscale, Turn on Funnel, and **Run unattended**, `tailscale set
+--unattended`, read from `tailscale debug prefs`' `ForceDaemon`), Start with
+Windows (ticked by default on a first run), and Connect your source (endpoint,
+key, a QR code behind **Show QR code**, and the source's live status). Its
+structure is Microsoft's wizard guidance, saved in the design library at
+`microsoft/windows-setup-wizards/`: no welcome page, a main instruction per page
+(Windows 11's Title style, 28/36 semibold), Back, Next and Cancel, Cancel
+becoming Close on the last page. The rest is the main window's cards. Every
+step logs as `[setup]`.
+
+**The QR code is plain JSON**, `{"endpoint": "...", "key": "..."}`
+(`PairingCode`), black on white, error correction M. Not a link: a link would
+name an app, and Issun names no source. Ammy reads it from its **Scan QR Code**
+row (`CodeScanner.swift`), and so can any source.
 
 **Import never writes to relay.py's folder.** It reads the `.env` it is pointed
 at and copies the `ammy-uptime.log` beside it, and leaves both where they were.
@@ -619,11 +664,14 @@ a private repo.
 
 Asked for by the owner and not yet done. Take the top item unless told otherwise.
 
-1. **Setup wizard and installer** (asked 23 Sept 2026). The owner said it "needs
-   some thinking first", so talk through it before building anything: what it
-   walks through (Discord application ID, Tailscale and Funnel, connecting the
-   source, Start with Windows), what kind of installer, and whether to pair by
-   QR code.
+1. **Setup wizard and installer: built 11 Nov 2026, not yet run for real.**
+   Talked through first, as asked; the owner chose "Self-install", "QR, scanned
+   in Ammy" and "Its own window". Seen only as `--screenshot` renders of the demo
+   (the owner declined a click-through of the demo window). Not yet tried: a
+   real first run, an update over a running copy, `--uninstall`, and scanning the
+   code with Ammy, which is on Ammy's `scan-endpoint-code` branch until it is
+   merged. The QR image wasn't decoded here (no decoder installed); the phone is
+   the test.
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;

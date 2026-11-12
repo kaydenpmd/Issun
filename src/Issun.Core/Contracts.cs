@@ -279,8 +279,14 @@ public interface IRelayServer : IAsyncDisposable
 /// <param name="FunnelOn">Funnel is publishing something from this machine.</param>
 /// <param name="FunnelTargetsPort">...and it proxies to localhost on Issun's port.</param>
 /// <param name="Detail">What to tell the person when something is missing.</param>
+/// <param name="Unattended">
+/// Tailscale's "Run unattended" (ForceDaemon): it connects at boot, before
+/// anyone signs in, instead of waiting for its tray app. Null when unknown.
+/// Off, it cost Funnel three hours after the 23 Sept 2026 reboot.
+/// </param>
 public sealed record TailscaleStatus(
-    bool Installed, bool Running, string? DnsName, bool FunnelOn, bool FunnelTargetsPort, string? Detail)
+    bool Installed, bool Running, string? DnsName, bool FunnelOn, bool FunnelTargetsPort, string? Detail,
+    bool? Unattended = null)
 {
     public string? PublicBase => DnsName is { Length: > 0 } ? "https://" + DnsName.TrimEnd('.') : null;
 }
@@ -295,6 +301,9 @@ public interface ITailscale
     /// after a reboot. Only ever run because the person clicked a button.
     /// </summary>
     Task<(bool Ok, string Output)> EnableFunnelAsync(int port, CancellationToken ct);
+
+    /// <summary><c>tailscale set --unattended</c>. Only ever run because the person clicked a button.</summary>
+    Task<(bool Ok, string Output)> EnableUnattendedAsync(CancellationToken ct);
 }
 
 public interface IAutostart
@@ -379,6 +388,9 @@ public interface IIssunHost : IAsyncDisposable
     Task RefreshTailscaleAsync();
 
     Task<(bool Ok, string Output)> EnableFunnelAsync();
+
+    /// <summary>Turns on Tailscale's Run unattended, then re-probes.</summary>
+    Task<(bool Ok, string Output)> EnableUnattendedAsync();
 
     bool StartWithWindows { get; set; }
 

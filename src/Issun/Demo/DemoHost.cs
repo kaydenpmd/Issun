@@ -80,7 +80,7 @@ public sealed class DemoHost : IIssunHost
         _settings = new Settings { DiscordClientId = "123456789012345678", Key = NewKey() };
         _tailscale = new TailscaleStatus(true, true, DemoDnsName, FunnelOn: false, FunnelTargetsPort: false,
             "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, " +
-            "or run: tailscale funnel --bg --https=443 localhost:8787");
+            "or run: tailscale funnel --bg --https=443 localhost:8787", Unattended: false);
 
         // Invented releases, except the one-character title: "i" by Kendrick
         // Lamar is the track that exposed Discord's two-character minimum, so
@@ -175,6 +175,16 @@ public sealed class DemoHost : IIssunHost
     {
         await Task.Delay(700);
         Changed?.Invoke();
+    }
+
+    public async Task<(bool Ok, string Output)> EnableUnattendedAsync()
+    {
+        await Task.Delay(600);
+        lock (_gate)
+            _tailscale = _tailscale with { Unattended = true };
+        Log.Write("[demo] Run unattended turned on (pretend)");
+        Tick();
+        return (true, "");
     }
 
     public async Task<(bool Ok, string Output)> EnableFunnelAsync()

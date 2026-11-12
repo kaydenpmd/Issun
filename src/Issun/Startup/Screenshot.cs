@@ -70,6 +70,7 @@ public static class Screenshot
                 encoder.Save(file);
 
             Console.Out.WriteLine($"wrote {path} ({pixelsWide}x{pixelsHigh})");
+            WriteTextBoxes(page, Path.ChangeExtension(path, ".text.json"));
             return 0;
         }
         catch (Exception ex)
@@ -86,6 +87,40 @@ public static class Screenshot
             vm?.Dispose();
             await host.DisposeAsync();
         }
+    }
+
+    /// <summary>
+    /// Beside the PNG, where every visible piece of text sits in it, in the
+    /// PNG's pixels: <c>[{"text": "...", "x": .., "y": .., "w": .., "h": ..}]</c>.
+    /// For pages that put a field over each piece of text so the owner can
+    /// write the wording (their rule since 12 Nov 2026: the words are theirs).
+    /// </summary>
+    private static void WriteTextBoxes(FrameworkElement page, string jsonPath)
+    {
+        var boxes = new List<object>();
+        void Walk(DependencyObject node)
+        {
+            if (node is UIElement { Visibility: not Visibility.Visible }) // IsVisible is false off-screen
+                return;
+            string? text = node switch
+            {
+                TextBlock tb => tb.Text,
+                TextBox box => box.Text,
+                _ => null,
+            };
+            if (text is { Length: > 0 } && node is FrameworkElement fe && fe.ActualWidth > 0 && fe.ActualHeight > 0)
+            {
+                var r = fe.TransformToAncestor(page).TransformBounds(new Rect(0, 0, fe.ActualWidth, fe.ActualHeight));
+                boxes.Add(new { text, x = Math.Round(r.X * Scale), y = Math.Round(r.Y * Scale), w = Math.Round(r.Width * Scale), h = Math.Round(r.Height * Scale) });
+                if (node is TextBox)
+                    return; // its inner parts repeat the same text
+            }
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
+                Walk(VisualTreeHelper.GetChild(node, i));
+        }
+        Walk(page);
+        File.WriteAllText(jsonPath, System.Text.Json.JsonSerializer.Serialize(boxes, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        Console.Out.WriteLine($"wrote {jsonPath} ({boxes.Count} pieces of text)");
     }
 
     private static void Layout(FrameworkElement page)

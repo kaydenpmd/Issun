@@ -366,23 +366,43 @@ if it's missing, so the owner's copy, installed by hand, gets one on its first
 run of a build that has this.
 
 **The setup window** opens by itself on a first run (no settings.json), once
-ever, and from **Open setup** in Settings after that. Four pages, each applying
-as it goes: the Discord application ID (applied 0.6 s after it looks like a
-17–20 digit ID, with the live Discord status under it), Tailscale (Get
-Tailscale, Turn on Funnel, and **Run unattended**, `tailscale set
---unattended`, read from `tailscale debug prefs`' `ForceDaemon`), Start with
-Windows (ticked by default on a first run), and Connect your source (endpoint,
-key, a QR code behind **Show QR code**, and the source's live status). Its
-structure is Microsoft's wizard guidance, saved in the design library at
+ever, and from **Set up again** in Settings after that. Four pages, in the
+owner's order of 12 Nov 2026:
+1. **Discord**: the application ID, applied 0.6 s after it looks like a 17–20
+   digit ID, with the live Discord status under it.
+2. **Tailscale** ("Make this PC reachable with a Tailscale Funnel", the owner's
+   title): the install button runs `winget install --id Tailscale.Tailscale
+   --exact` (by id: the name matches four packages and winget stops to ask),
+   opening the download page where there is no winget; Turn on Funnel; **Run
+   unattended** (`tailscale set --unattended`, read from `tailscale debug
+   prefs`' `ForceDaemon`). **Next** refreshes Tailscale and stays with an error
+   unless Tailscale has this PC's address *and* Funnel is on for Issun's port.
+   **Skip**, always there, moves on without that check, for people who reach
+   Issun some other way.
+3. **Connect your source**: the QR code, the endpoint as an editable field
+   (filled from Tailscale until edited), the key read-only with Show, Copy and
+   a button that makes a new key at once (no confirmation, unlike the main
+   window's New key…), and the source's live status. Editing the endpoint shows
+   a reload button beside Show, as an edited field shows Restart in Ammy; it
+   saves the field as the public address (or clears it when it's Tailscale's
+   own, so Issun keeps following Tailscale) and redraws the code. Leaving the
+   page or closing the window applies an edit too.
+4. **Start with Windows**, ticked by default on a first run. Last, so Cancel is
+   Close here and Next is gone.
+
+The structure is Microsoft's wizard guidance, saved in the design library at
 `microsoft/windows-setup-wizards/`: no welcome page, a main instruction per page
 (Windows 11's Title style, 28/36 semibold), Back, Next and Cancel, Cancel
 becoming Close on the last page. The rest is the main window's cards. Every
-step logs as `[setup]`.
+step logs as `[setup]`. Command links (Windows' title-and-note buttons, measured
+in the library's `microsoft/command-links/`) were rendered for the Tailscale
+page's choice on 12 Nov 2026 and set aside for Next and Skip.
 
 **The QR code is plain JSON**, `{"endpoint": "...", "key": "..."}`
-(`PairingCode`), black on white, error correction M. Not a link: a link would
-name an app, and Issun names no source. Ammy reads it from its **Scan QR Code**
-row (`CodeScanner.swift`), and so can any source.
+(`PairingCode`), black on white, error correction M. Either value may be left
+out (since 12 Nov 2026): Ammy fills in only the field a code carries. Not a
+link: a link would name an app, and Issun names no source. Ammy reads it from
+its **Scan QR Code** row (`CodeScanner.swift`), and so can any source.
 
 **Import never writes to relay.py's folder.** It reads the `.env` it is pointed
 at and copies the `ammy-uptime.log` beside it, and leaves both where they were.

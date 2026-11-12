@@ -32,6 +32,12 @@
     <!-- Also required for a single file: it builds the resources.pri that
          WinUI reads its XAML from, embedded in the .exe. No MSIX is made. -->
     <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- WinUI finds its compiled XAML and styles in <exe name>.pri, or else in
+         resources.pri. Named after the exe (Issun.pri), a renamed copy, such
+         as a release download (Issun-0.1.0-b88-....exe), found none: every
+         ThemeResource failed and no view would load (seen 12 Nov 2026). The
+         generic name works whatever the .exe is called. -->
+    <ProjectPriFileName>resources.pri</ProjectPriFileName>
   </PropertyGroup>
 
   <ItemGroup>

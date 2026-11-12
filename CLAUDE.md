@@ -414,9 +414,17 @@ owner's order of 12 Nov 2026:
    Issun some other way.
 3. **Connect your source**: the QR code, the endpoint as an editable field
    (filled from Tailscale until edited), the key read-only with Show, Copy and
-   a button that makes a new key at once (no confirmation, unlike the main
-   window's New key, which asks in place first; "New key…" lost its ellipsis on
-   12 Nov 2026, the owner's word), and the source's live status. Editing the endpoint shows
+   New key, which makes a new key at once with no confirmation, and the
+   source's live status. **The main window's Connect your source section is
+   the same cards** (the owner, 12 Nov 2026: "i want parity between the
+   connect your source screen on setup and on the main screen", "favor the
+   setup screen"): one control, `Views/PairingCards`, on one view model,
+   `PairingViewModel`, which each window makes its own of (logging as
+   `[setup]` or `[ui]`). So a change to the cards is a change to both. The
+   main window's own old rows went with it: the read-only endpoint, the dotted
+   key, the in-place "Replace the key?" question and the Copied notes. Its
+   endpoint edit is applied when the window closes, as leaving the page
+   applies setup's. "New key" is the owner's word, given for the main window. Editing the endpoint shows
    a reload button beside Show, as an edited field shows Restart in Ammy; it
    saves the field as the public address (or clears it when it's Tailscale's
    own, so Issun keeps following Tailscale) and redraws the code. Leaving the

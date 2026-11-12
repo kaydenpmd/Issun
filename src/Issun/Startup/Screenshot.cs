@@ -82,7 +82,8 @@ public static class Screenshot
             // An outer scroller gives the view as much height as it wants, as
             // WPF's Measure with an infinite height did; the window itself
             // can stay small.
-            window = new Window { Content = new ScrollViewer { Content = page, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden } };
+            var scroller = new ScrollViewer { Content = page, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
+            window = new Window { Content = scroller };
             var hwnd = WindowNative.GetWindowHandle(window);
             var ex = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
             SetWindowLongPtr(hwnd, GWL_EXSTYLE, (ex | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) & ~(nint)WS_EX_APPWINDOW);
@@ -102,6 +103,20 @@ public static class Screenshot
             await Task.Delay(TimeSpan.FromMilliseconds(600));
             vm.RefreshNow();
             await Task.Delay(TimeSpan.FromMilliseconds(400));
+
+            // Scrolled through to the bottom, as a person would. Lists that
+            // build only what's in view, the SettingsExpanders' contents among
+            // them, drew nothing below the window (seen 12 Nov 2026), and the
+            // window can't be made as tall as the page: Windows held it to the
+            // screen's height. RenderAsync draws the whole page whatever the
+            // scroll position.
+            for (var offset = 0.0; ; offset += scroller.ViewportHeight * 0.75)
+            {
+                scroller.ChangeView(null, Math.Min(offset, scroller.ScrollableHeight), null, disableAnimation: true);
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
+                if (offset >= scroller.ScrollableHeight)
+                    break;
+            }
 
             // Rendered at 1.25x, as the WPF build's screenshots were, whatever
             // the screen's own scaling. Without setting it RenderAsync draws

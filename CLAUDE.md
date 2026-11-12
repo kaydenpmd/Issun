@@ -526,6 +526,12 @@ their shape. What had no direct WinUI equivalent, and what took its place:
   single line in one is centred, as SettingsCard centres its content. The
   toolkit's open issue #391: SettingsCard has no Invoke pattern, so UI
   Automation can't click Set up again; the sandbox test doesn't need to.
+  Diagnostics and Log are SettingsExpanders (the owner, 12 Nov 2026), titles
+  alone, each opening to one left-aligned SettingsCard of free-form content,
+  indented by the toolkit's own item padding. Their contents sit in a list
+  that builds only what's in view, so `--screenshot` scrolls the page through
+  to the bottom before rendering: in a window held to the screen's height,
+  they otherwise rendered as empty space.
 - **The .pri is named resources.pri.** WinUI finds the compiled XAML and
   styles in `<exe name>.pri`, else `resources.pri`. Named `Issun.pri`, a
   renamed copy (a release download is `Issun-<version>-b<build>-<sha>.exe`)

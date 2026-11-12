@@ -256,12 +256,14 @@
             </tk:SettingsCard>
 
             <!-- ───────────── Diagnostics ───────────── -->
-            <Expander IsExpanded="{x:Bind ViewModel.DiagnosticsExpanded, Mode=TwoWay}" Margin="0,22,0,4"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                <!-- The title alone: its description went on 12 Nov 2026, the owner's word. -->
-                <Expander.Header>
-                    <TextBlock Text="Diagnostics" Style="{StaticResource RowTitle}" />
-                </Expander.Header>
+            <!-- SettingsExpander, as Windows 11 Settings' rows that open (the
+                 owner, 12 Nov 2026), the title alone (its description went the
+                 same day). What it opens to is one card of free-form content,
+                 left-aligned, the toolkit's way of holding it. -->
+            <tk:SettingsExpander Header="Diagnostics" IsExpanded="{x:Bind ViewModel.DiagnosticsExpanded, Mode=TwoWay}"
+                                 Margin="0,22,0,4">
+                <tk:SettingsExpander.Items>
+                    <tk:SettingsCard ContentAlignment="Left" HorizontalContentAlignment="Stretch">
                 <StackPanel>
                     <TextBlock Text="The source's last report" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <TextBlock Text="{x:Bind ViewModel.DiagSummary}" Style="{StaticResource MonoBlock}" Margin="0,4,0,0" />
@@ -274,15 +276,15 @@
                         <Button Content="Open log folder" Command="{x:Bind ViewModel.OpenLogFolderCommand}" />
                     </StackPanel>
                 </StackPanel>
-            </Expander>
+                    </tk:SettingsCard>
+                </tk:SettingsExpander.Items>
+            </tk:SettingsExpander>
 
             <!-- ───────────── Log ───────────── -->
-            <Expander IsExpanded="{x:Bind ViewModel.LogExpanded, Mode=TwoWay}" Margin="0,0,0,4"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                <!-- The title alone: its description went on 12 Nov 2026, the owner's word. -->
-                <Expander.Header>
-                    <TextBlock Text="Log" Style="{StaticResource RowTitle}" />
-                </Expander.Header>
+            <tk:SettingsExpander Header="Log" IsExpanded="{x:Bind ViewModel.LogExpanded, Mode=TwoWay}"
+                                 Margin="0,0,0,4">
+                <tk:SettingsExpander.Items>
+                    <tk:SettingsCard ContentAlignment="Left" HorizontalContentAlignment="Stretch">
                 <StackPanel>
                     <TextBox x:Name="LogBox" IsReadOnly="True" Height="320" AcceptsReturn="True"
                              FontFamily="{StaticResource MonoFont}" FontSize="{StaticResource CaptionTextBlockFontSize}"
@@ -295,7 +297,9 @@
                         <TextBlock Text="{x:Bind ViewModel.LogCopied.Text}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
-            </Expander>
+                    </tk:SettingsCard>
+                </tk:SettingsExpander.Items>
+            </tk:SettingsExpander>
 
             <TextBlock Text="{x:Bind ViewModel.VersionText, Mode=OneTime}" Style="{StaticResource Caption}"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"

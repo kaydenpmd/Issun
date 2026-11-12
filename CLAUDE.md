@@ -526,6 +526,11 @@ their shape. What had no direct WinUI equivalent, and what took its place:
   single line in one is centred, as SettingsCard centres its content. The
   toolkit's open issue #391: SettingsCard has no Invoke pattern, so UI
   Automation can't click Set up again; the sandbox test doesn't need to.
+  The main window's Start with Windows sits above Apply and waits for it,
+  like the settings above it (the owner, 12 Nov 2026: "don't apply it
+  straight away for the sake of consistency with the other settings"); the
+  tray menu's item and setup's Yes and No still apply at once, and the
+  checkbox follows them unless it's mid-edit.
   Diagnostics and Log are SettingsExpanders (the owner, 12 Nov 2026), titles
   alone, each opening to one left-aligned SettingsCard of free-form content,
   indented by the toolkit's own item padding. Their contents sit in a list

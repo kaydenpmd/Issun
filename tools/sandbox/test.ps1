@@ -1,7 +1,7 @@
 # Runs INSIDE Windows Sandbox (Windows PowerShell 5.1, the signed-in user's
 # session), started by run.ps1 through `wsb exec`. Tests what only a clean PC
 # shows: the first run, the setup window, self-install, an update over a
-# running copy, and uninstall. Drives WPF windows through UI Automation and
+# running copy, the tray icon, and uninstall. Drives the WinUI windows through UI Automation and
 # Windows message boxes with keystrokes (their buttons don't show up in UI
 # Automation from here). Writes report.txt, screenshots and copies of Issun's
 # logs to C:\IssunOut, which run.ps1 maps to a folder on the host.
@@ -179,6 +179,10 @@ if ($Step -in @("all","first")) {
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Next")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
     Expect "Next is greyed out while no source is connected" ($next -and -not $next.Current.IsEnabled)
+    # The page runs below a 600-tall window, and WinUI (unlike WPF) reports
+    # what's scrolled out of view as off screen: scroll to the status card.
+    $scroller = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::IsScrollPatternAvailableProperty, $true)))
+    if ($scroller) { $scroller.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent(-1, 100); Start-Sleep 1; Say "scrolled to the foot of the page" }
     $waiting = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Waiting...")))
     Expect "the status says Waiting..." ($waiting -and -not $waiting.Current.IsOffscreen)
     Start-Sleep -Milliseconds 700; Shot "source-waiting-a" $w
@@ -216,6 +220,74 @@ if ($Step -in @("all","again")) {
     $main = FindWindow "Issun" 5
     if ($main) { CheckFits $main "main" } else { Say "FAIL main window didn't show" }
     Shot "second-open" $null
+}
+
+# The notification-area icon, rewritten by hand for WinUI 3 (12 Nov 2026):
+# it's there with the tooltip, a left click opens the window, a right click
+# opens the menu, closing the window leaves Issun running, and the menu's
+# Quit ends it. Starts the installed copy again afterwards, for the steps that
+# follow.
+if ($Step -in @("all","tray")) {
+    Say "##### the tray icon"
+    Add-Type @"
+using System; using System.Runtime.InteropServices;
+public static class TrayMouse {
+    [DllImport("user32")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32")] public static extern void mouse_event(uint f, uint x, uint y, uint d, IntPtr e);
+    public static void Right(int x, int y) { SetCursorPos(x, y); mouse_event(8, 0, 0, 0, IntPtr.Zero); mouse_event(16, 0, 0, 0, IntPtr.Zero); }
+    public static void Left(int x, int y) { SetCursorPos(x, y); mouse_event(2, 0, 0, 0, IntPtr.Zero); mouse_event(4, 0, 0, 0, IntPtr.Zero); }
+}
+"@
+    if (-not (Get-Process Issun* -ErrorAction SilentlyContinue)) { Start-Process $installed -ArgumentList "--background"; Start-Sleep 6 }
+    # Windows 11 puts a new icon in the overflow; promote Issun's to the taskbar.
+    Get-ChildItem "HKCU:\Control Panel\NotifyIconSettings" -ErrorAction SilentlyContinue | ForEach-Object {
+        $k = Get-ItemProperty $_.PSPath
+        if ($k.ExecutablePath -like "*Issun*") { Set-ItemProperty $_.PSPath IsPromoted 1 -Type DWord; Say "promoted the icon ($($k.ExecutablePath))" }
+    }
+    Start-Sleep 3
+    function FindTray {
+        $cond = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+        $taskbar = $AE::RootElement.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, "Shell_TrayWnd")))
+        if (-not $taskbar) { return $null }
+        foreach ($b in $taskbar.FindAll($Tree::Descendants, $cond)) { if ($b.Current.Name -like "Issun*") { return $b } }
+        return $null
+    }
+    $icon = $null; $deadline = (Get-Date).AddSeconds(20)
+    while (-not $icon -and (Get-Date) -lt $deadline) { $icon = FindTray; if (-not $icon) { Start-Sleep 1 } }
+    if (-not $icon) { Say "FAIL no Issun icon in the notification area"; Shot "tray-missing" $null }
+    else {
+        Say "ok tray icon: $($icon.Current.Name)"
+        $r = $icon.Current.BoundingRectangle; $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
+        $main = FindWindow "Issun" 1
+        if ($main) { $main.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close(); Start-Sleep 2 }
+        [TrayMouse]::Left($cx, $cy); Start-Sleep 3
+        $main = FindWindow "Issun" 5
+        Expect "a click on the icon opens the window" $main
+        if ($main) {
+            $main.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close(); Start-Sleep 2
+            Expect "closing the window leaves Issun running" (Get-Process Issun* -ErrorAction SilentlyContinue)
+            Expect "and hides the window" (-not (FindWindow "Issun" 1))
+            Shot "tray-after-close" $null
+        }
+        [TrayMouse]::Right($cx, $cy); Start-Sleep 2
+        $menu = $AE::RootElement.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, "#32768")))
+        if (-not $menu) { $menu = $AE::RootElement.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Menu))) }
+        if (-not $menu) { Say "FAIL no menu on a right click"; Shot "tray-no-menu" $null }
+        else {
+            Shot "tray-menu" $menu
+            $items = $menu.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem)))
+            $names = @($items | ForEach-Object { $_.Current.Name })
+            Say ("menu: " + ($names -join " | "))
+            Expect "the menu has Open Issun, Start with Windows and Quit Issun" (($names -contains "Open Issun") -and ($names -contains "Start with Windows") -and ($names -contains "Quit Issun"))
+            $quit = $items | Where-Object { $_.Current.Name -eq "Quit Issun" } | Select-Object -First 1
+            if ($quit) { $quit.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Say "clicked Quit Issun" }
+            Start-Sleep 6
+            Expect "Quit Issun ends it" (-not (Get-Process Issun* -ErrorAction SilentlyContinue))
+            Expect "and takes the icon away" (-not (FindTray))
+        }
+    }
+    SaveLogs "tray"
+    Start-Process $installed -ArgumentList "--background"; Start-Sleep 6
 }
 
 if ($Step -in @("all","update")) {

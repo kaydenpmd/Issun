@@ -136,7 +136,7 @@ src/Issun.Core/                 everything that isn't UI, testable without a win
   Paths.cs                      where state lives; ISSUN_HOME
   IssunInfo.cs                  Version, Build, Commit, Display, Wire
   <Module>/                     one folder per module, namespace Issun.Core.<Folder>
-src/Issun/                      WPF window and tray; talks only to IIssunHost
+src/Issun/                      WinUI 3 window and tray; talks only to IIssunHost
 tests/Issun.Core.Tests/         xUnit, one folder per module, namespace Issun.Core.Tests.<Folder>
 tools/                          make_icon.py, which draws the icon
 ```
@@ -200,7 +200,9 @@ dotnet test
 dotnet run --project src/Issun -- --demo
 ```
 
-.NET 9 SDK, Windows only: WPF, named pipes and the registry are all Windows.
+.NET 9 SDK, Windows only: WinUI 3, named pipes and the registry are all Windows.
+The window project is x64 only (`win-x64`), as Windows App SDK's self-contained
+builds are; a local build lands in `src/Issun/bin/x64/Debug/net9.0-windows10.0.22621.0/win-x64/`.
 
 - `--background`: start in the tray with no window. The autostart entry passes
   it.
@@ -210,7 +212,13 @@ dotnet run --project src/Issun -- --demo
   after layout, then exits. **This is how a session looks at the UI**: render,
   then Read the PNG. It never puts a window on the owner's desktop.
   `--setup-page 0..3` renders a page of the setup window instead, and
-  `--expanded` there draws the QR code (of the demo's made-up key).
+  `--expanded` there draws the QR code (of the demo's made-up key), and
+  `--demo-tailscale 0..3` sets the demo's Tailscale state. WinUI can't render
+  a control with no window, as WPF could, so the page goes in a window that
+  is a tool window, never activated, and cloaked (`DWMWA_CLOAK`), which keeps
+  it off the screen; the render is at 1.25x through `RasterizationScale`.
+  Each PNG gets a `.text.json` beside it: every visible piece of text and
+  where it sits, for wording pages.
 - `--uninstall`: what Settings › Apps runs. Asks first, quits a running Issun,
   then removes the Run entry, the Start menu entry, the Apps entry and the
   install folder. Settings, key, logs and history stay.
@@ -221,8 +229,13 @@ relay.py's `--version` and `--summary` have no command-line equivalent: a WinExe
 has no console to print to. Use `GET /version`, the `.exe`'s file properties, or
 the window's Diagnostics section, which shows `IUptimeLog.Summarize()`.
 
-A single-file `.exe` unpacks WPF's native DLLs under `%TEMP%\.net` on first
-launch. That is expected, not litter.
+A single-file `.exe` unpacks everything, about 180 MB, into
+`%TEMP%\.net\Issun\<hash>` on first launch: Windows App SDK requires it
+(`IncludeAllContentForSelfExtract`), and the hash changes with every build. So
+the installed copy deletes the folders earlier builds left there when it
+starts (`StaleUnpacks`), leaving any a running copy still uses: it renames each
+folder first, which Windows refuses while a file in it is open. The WPF build
+unpacked 8 MB.
 
 ### Testing on a clean PC: Windows Sandbox
 
@@ -240,7 +253,7 @@ run on this PC; never open its `.exe` outside it. Enabled on 12 Nov 2026
 /all`, from an elevated shell; `Enable-WindowsOptionalFeature` failed in
 PowerShell 7 with "Class not registered"). Computer use can't see the Sandbox
 window (its owner, `WindowsSandboxRemoteSession`, can't be granted), which is
-why the test drives itself: UI Automation for WPF, keystrokes for message boxes,
+why the test drives itself: UI Automation for the WinUI windows, keystrokes for message boxes,
 whose buttons UI Automation didn't find from there. It can't test Discord,
 Tailscale, Funnel or the phone.
 
@@ -391,10 +404,14 @@ owner's order of 12 Nov 2026:
    "Waiting..." with Next greyed out until a source is checking in, then
    Windows' InfoBar success mark and "Connected" with Next available. **Skip**
    is here too, hidden while connected (Next then does the same) and back if
-   the connection drops. WPF has no ProgressRing; `Views/ProgressRing.cs` draws
-   WinUI's from its source (design library `microsoft/progress-ring/`). Its pen
-   isn't frozen: freezing it around the theme's brush threw and stopped Issun
-   starting, which the sandbox test caught.
+   the connection drops. The ring is WinUI's own ProgressRing since the move
+   to WinUI 3; the WPF build drew a copy of it (`Views/ProgressRing.cs`, in
+   git history). The QR code and the key are blurred until Show. WinUI has no
+   blur effect, so the blur is done on the CPU (`Presentation/Blur.cs`): the
+   code from its own pixels (`PairingCode.Render`), the key from a render of
+   an invisible copy of its text (`Views/BlurredText`); the sharp key is never
+   drawn while blurred. A shown code decodes and a blurred one doesn't
+   (checked with `zxing-cpp`, 12 Nov 2026).
 4. **Start with Windows**, ticked by default on a first run. Last, so Cancel is
    Close here and Next is gone.
 
@@ -418,6 +435,50 @@ its **Scan QR Code** row (`CodeScanner.swift`), and so can any source.
 
 **Import never writes to relay.py's folder.** It reads the `.env` it is pointed
 at and copies the `ammy-uptime.log` beside it, and leaves both where they were.
+
+## The WinUI 3 move (12 Nov 2026)
+
+The window and tray moved from WPF to WinUI 3 (Windows App SDK 2.6.5, the
+`Microsoft.WindowsAppSDK.WinUI` and `.Runtime` packages, not the metapackage,
+which adds about 25 MB of AI and ML libraries). `Issun.Core` didn't change.
+Every screen, behaviour and word was carried over; the view models kept
+their shape. What had no direct WinUI equivalent, and what took its place:
+
+- **Tray icon**: WinUI has none, so `Tray/TrayIcon.cs` is Shell_NotifyIcon on
+  a hidden top-level window of its own (from the spike), with a Win32 popup
+  menu that follows dark mode (uxtheme ordinals 135 and 136, undocumented, as
+  Windows' own tray menus use). The window has no title, or the sandbox test
+  would find it in place of the main window. It also receives
+  WM_QUERYENDSESSION, which replaces WPF's SessionEnding. WinForms is gone.
+- **Message boxes** (install, update, uninstall, crashes): Windows' own
+  `MessageBoxW` through `DesktopShell.Message` and `AskYesNo`, the same box
+  WPF's MessageBox drew, with the same flags. **The open-file dialog** is
+  `GetOpenFileNameW` with WPF's title and filters (`DesktopShell.PickFile`).
+- **Blur**: none in WinUI; done on the CPU (see the setup window above).
+- **Triggers and converters**: the status dot is a control with visual
+  states (`Views/StatusDot`), so its colours stay ThemeResources; visibility
+  comes from x:Bind functions (`Views/Converters.cs`, class `Bind`). Every
+  binding is x:Bind, compiled, so a wrong property name fails the build.
+- **WPF's CommandManager** requeried every command after any input; WinUI
+  has nothing like it, so a `Command` whose CanExecute depends on state
+  names its view model and is requeried when that changes.
+- **DockPanel and WrapPanel**: Grids, and a small `Views/WrapPanel`.
+- **Covers** are fetched as bytes and decoded on the UI thread
+  (`Views/Images.cs`), since a WinUI image belongs to the thread that made it.
+  The demo's covers are BMPs, needing no encoder.
+- **Window size**: `WindowFit.Prepare` sizes in view pixels against the DPI,
+  sets the minimum through the presenter, centres on the work area and
+  shrinks to fit, as before; Mica is the window's backdrop.
+- **Theme**: `--theme` sets `Application.RequestedTheme` in App's
+  constructor (WinUI takes it nowhere else). `AppTheme.IsDark` asks Windows
+  directly for the QR code's colours, since WinUI's RequestedTheme doesn't
+  follow a switch made while Issun runs.
+- **Single file**: needs `EnableMsixTooling` (for the embedded
+  resources.pri; no MSIX is made) and unpacks about 180 MB on first run,
+  which `StaleUnpacks` cleans up after updates.
+- **Looks**: the WinUI renders match the WPF ones within a few pixels on
+  every page (dark, 12 Nov 2026). The check-in history, which WPF drew
+  double-spaced, now reads as written.
 
 ## relay.py's gotchas, preserved, and where they live now
 
@@ -529,8 +590,9 @@ cosmetic annoyance; a link that opens the wrong song is a broken promise.
 
 **So does explicitness, when the source doesn't say** (added 23 Sept 2026, the
 window's "E" after the title). The E is a typed 🅴 (U+1F174) after a space, in
-the title's own colour (`NowPlayingText.CardTitle`). WPF's font fallback draws
-it with Segoe UI Symbol, seen rendering on 24 Sept 2026. (Yu Gothic and a few
+the title's own colour (`NowPlayingText.CardTitle`). WPF's font fallback drew
+it with Segoe UI Symbol, seen rendering on 24 Sept 2026, and WinUI's draws it
+too (the demo's explicit track, rendered 12 Nov 2026). (Yu Gothic and a few
 other Japanese fonts have the character too; fallback picks Segoe UI Symbol.) It replaced a hand-drawn badge the owner asked to
 have rolled back as more complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`
 first: only a JSON `true` or `false` counts, and `false` beats the catalog.
@@ -707,7 +769,9 @@ checked against a `--depth 1` clone on 21 Sept 2026 and failed as intended. On
 the scaffold, the published `.exe` was 74 MB compressed (161 MB without
 `EnableCompressionInSingleFile`), FileVersion `0.1.0.2`, and `Issun.Core`
 carried the SHA, so the CI properties do reach `IssunInfo` through the project
-reference. Trimming is not an option: WPF doesn't support it.
+reference. Trimming is not an option: WPF didn't support it, and WinUI's
+XAML binding isn't checked for it either. The WinUI build's single file is
+about 82 MB, a little smaller than WPF's 86.
 
 The repo is public, which keeps Windows runner minutes free; they bill at 2× on
 a private repo.
@@ -738,8 +802,12 @@ isn't redone:
   Store avoids the warning.
 - The current unsigned `.exe` on GitHub releases goes on as it is until the
   Store build exists.
-Whether Issun moves to WinUI 3, and how either packages as MSIX, is the
-`winui3-spike` branch's question.
+Issun moved to WinUI 3 on 12 Nov 2026 (the owner: "let's move to winui 3
+actually"); the `winui3-spike` branch's report (question 6) shows a WinUI
+Issun packaged as a full-trust MSIX, with what changes inside a package:
+AppData and HKCU writes redirected, a StartupTask for the Run key, and the
+Windows App SDK runtime a dependency the Store installs. Packaging is a step
+of its own, not yet taken.
 
 ## Queued work
 
@@ -797,13 +865,12 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    that the wording page has a field for every `[text]` in `SetupView.xaml` and
    `SetupViewModel.cs`, and add any that's missing. Push only after their
    words are in and they've said it can go out.
-   **Also waiting on the owner: WinUI 3 or not.** The `winui3-spike` branch
-   (pushed, never to be merged; `spike/winui3/REPORT.md`, fce7811) found a
-   move loses nothing Issun depends on and packages as MSIX, at the cost of
-   rewriting both windows (about 4,800 lines) and the tray. Its advice:
-   migrate if the window keeps growing and wanting Windows 11 controls, else
-   stay on WPF. If they choose WinUI 3, make further setup-window changes after
-   the move rather than twice.
+   **WinUI 3: decided and done on the `winui3` branch (12 Nov 2026).** The
+   owner chose it ("let's move to winui 3 actually") after the
+   `winui3-spike` branch's report (pushed, never to be merged;
+   `spike/winui3/REPORT.md`, fce7811), and gave the go-ahead to the phased
+   plan. See "The WinUI 3 move" below for what changed and how it was
+   checked. Make further setup-window changes on top of it.
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;

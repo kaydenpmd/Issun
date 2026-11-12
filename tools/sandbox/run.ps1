@@ -5,7 +5,7 @@
 #
 #   pwsh tools/sandbox/run.ps1                 # build, test, close the sandbox
 #   pwsh tools/sandbox/run.ps1 -Keep           # leave the sandbox open after
-#   pwsh tools/sandbox/run.ps1 -Steps first    # only some of: first, again, update, uninstall
+#   pwsh tools/sandbox/run.ps1 -Steps first    # only some of: first, again, tray, update, uninstall
 #
 # Needs Windows Sandbox (Windows 11 Pro; the optional feature
 # Containers-DisposableClientVM) and its `wsb` command. A build here gets the
@@ -17,7 +17,7 @@
 # Results go to %LOCALAPPDATA%\IssunSandbox\<time>\out: report.txt (every line
 # that failed starts with FAIL), screenshots, and Issun's own logs.
 param(
-    [string[]]$Steps = @("first", "again", "update", "uninstall"),
+    [string[]]$Steps = @("first", "again", "tray", "update", "uninstall"),
     [switch]$Keep,
     [switch]$NoBuild
 )

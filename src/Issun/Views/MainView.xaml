@@ -254,11 +254,15 @@
                  owner's words and layout, 12 Nov 2026. -->
             <Button Style="{StaticResource NavigationCard}" Command="{Binding OpenSetupCommand}">
                 <DockPanel>
-                    <!-- Settings' own chevron, matched glyph for glyph in a 96 dpi
-                         capture: E974 at 16 px (ink 6 x 12), in the primary text
-                         colour, its ink's right edge 21 px inside the card. -->
-                    <TextBlock DockPanel.Dock="Right" Text="&#xE974;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
-                               FontSize="16" VerticalAlignment="Center" Margin="14,0,0,0"
+                    <!-- Setup opens in a window of its own, so not the chevron
+                         (Settings' sign for a page in the same window) but the
+                         sign Settings puts on a card that opens another window,
+                         as on Sound's "More sound settings": E8A7 (Open in new
+                         window) at 14 px, ink 14 x 14, white, its right edge 18 px
+                         in from the card's outer edge. Measured at 96 dpi on
+                         Windows 11 26H2. -->
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE8A7;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                               FontSize="14" VerticalAlignment="Center" Margin="14,0,0,0"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                     <TextBlock Text="Set up again" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
                 </DockPanel>

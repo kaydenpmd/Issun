@@ -110,7 +110,7 @@ Three things to know:
 - **Keep a reference to the window.** A cloaked window nothing refers to is
   collected, closes, and the app exits with code 0 mid-render, silently.
 - **The ProgressRing comes out aliased in a render** (`ring-frames-compare-dark.png`)
-  while live on screen it is anti-aliased (`live-ring-strip-dark.png`), so a
+  while live on screen it is anti-aliased (`live-ring-strip-dark.png`, `-light.png`), so a
   screenshot of a ring is a little rougher than the real thing.
 
 The `.text.json` beside each PNG (every piece of text and where it sits, for
@@ -164,11 +164,13 @@ log agrees: first frame 2,423 ms after process start on the first run, and
 
 ### 5. Connect your source, dark: WPF against WinUI 3
 
-`results/wpf-wait-dark.png` and `results/wpf-connected-dark.png` are Issun's own
-`--demo --screenshot --theme dark --setup-page 2`;
-`results/winui-wait-dark.png` and `results/winui-connected-dark.png` are the
-spike's same page. `results/ring-and-mark-compare-dark.png` zooms the status
-row of each; `results/ring-frames-compare-dark.png` puts the two rings side by
+`results/wpf-wait-*.png` and `results/wpf-connected-*.png` are Issun's own
+`--demo --screenshot --theme dark|light --setup-page 2`;
+`results/winui-wait-*.png` and `results/winui-connected-*.png` are the
+spike's same page, each in `-dark` and `-light` (light added the same day, for
+the design library). `tools/compare-sheets.py` builds the sheets below for
+either theme. `results/ring-and-mark-compare-*.png` zooms the status
+row of each; `results/ring-frames-compare-*.png` puts the two rings side by
 side at eight points of their 2 s loop.
 
 - **Success mark:** the same. Both are InfoBar's glyph pair, F136 in

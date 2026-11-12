@@ -4,7 +4,9 @@
 # Results: %LOCALAPPDATA%\IssunSandbox\spike-<time>\out (report.txt, pictures, spike.log).
 # The WPF Issun must be a local (build 0) publish run with --demo only, which
 # neither installs itself nor touches real data.
-param([Parameter(Mandatory)][string]$Spike, [Parameter(Mandatory)][string]$Wpf, [Parameter(Mandatory)][string]$Baseline, [switch]$Keep)
+param([Parameter(Mandatory)][string]$Spike, [Parameter(Mandatory)][string]$Wpf, [Parameter(Mandatory)][string]$Baseline, [switch]$Keep,
+      [string[]]$Steps = @("clean", "start", "uia", "tray", "shot"), [ValidateSet("dark", "light")][string]$Theme = "dark")
+$Steps = @($Steps | ForEach-Object { $_ -split "," } | Where-Object { $_ })
 $ErrorActionPreference = "Stop"
 $work = Join-Path $env:LOCALAPPDATA ("IssunSandbox\spike-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
 $in = Join-Path $work "in"; $out = Join-Path $work "out"
@@ -38,9 +40,9 @@ while ((Get-Date) -lt $deadline) {
 if (-not (Test-Path (Join-Path $out "ready.txt"))) { throw "the sandbox didn't become ready within 10 minutes" }
 Note "sandbox ready ($id)"
 wsb exec --id $id -r ExistingLogin -c "cmd /c copy C:\IssunIn\*.exe %USERPROFILE%\Downloads\" | Out-Null
-foreach ($s in "clean", "start", "uia", "tray", "shot") {
+foreach ($s in $Steps) {
     Note "step: $s"
-    wsb exec --id $id -r ExistingLogin -c "cmd /c powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\IssunIn\test.ps1 -Step $s > C:\IssunOut\ps-$s.txt 2>&1" | Out-Null
+    wsb exec --id $id -r ExistingLogin -c "cmd /c powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\IssunIn\test.ps1 -Step $s -Theme $Theme > C:\IssunOut\ps-$s.txt 2>&1" | Out-Null
 }
 Get-Content (Join-Path $out "report.txt")
 if (-not $Keep) { wsb stop --id $id | Out-Null; Note "sandbox closed" }

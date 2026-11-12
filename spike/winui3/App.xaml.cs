@@ -56,7 +56,7 @@ public partial class App : Application
             if (Has("screenshot")) code = await ScreenshotAsync(Opt("screenshot")!);
             else if (Has("tray-test")) code = await TrayTestAsync(Opt("tray-test")!);
             else if (Has("ring-frames")) code = await RingFramesAsync(Opt("ring-frames")!);
-            else if (Has("gallery")) code = await Gallery.RunAsync(Opt("gallery")!);
+            else if (Has("gallery")) code = await Gallery.RunAsync(Opt("gallery")!, Theme == ElementTheme.Light ? ElementTheme.Light : ElementTheme.Dark);
             else if (Has("package-test")) code = await PackageTest.RunAsync(Opt("package-test")!, int.Parse(Opt("port")!), Opt("pipe")!, Has("leave-startup-on"));
             else { ShowWindow(); return; }
         }
@@ -231,7 +231,7 @@ public partial class App : Application
     private async Task<int> RingFramesAsync(string dir)
     {
         Directory.CreateDirectory(dir);
-        var page = new ConnectPage { RequestedTheme = ElementTheme.Dark, Width = 600, VerticalAlignment = VerticalAlignment.Top, RasterizationScale = 1.25 };
+        var page = new ConnectPage { RequestedTheme = Theme == ElementTheme.Light ? ElementTheme.Light : ElementTheme.Dark, Width = 600, VerticalAlignment = VerticalAlignment.Top, RasterizationScale = 1.25 };
         page.SetConnected(false);
         page.RingControl.IsActive = false;
         var loaded = new TaskCompletionSource();

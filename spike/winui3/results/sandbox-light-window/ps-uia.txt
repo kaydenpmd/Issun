@@ -1,0 +1,10 @@
+04:47:08.344 == UI Automation and a live picture of the spike's window
+04:47:12.149  ok   found the spike's window (Issun, class WinUIDesktopWin32WindowClass)
+04:47:14.199  ok   found the Copy key button by name
+04:47:15.269  ok   invoking it ran its handler (the spike logged the click)
+04:47:15.285  ok   found the [text] button by AutomationId NewKey
+04:47:15.317  ok   read the Endpoint box's value: https://demo-pc.example-tailnet.ts.net/now-playing
+04:47:15.380      buttons UI Automation sees: Show | Copy endpoint | Show or hide key | Copy key | [text] | Back | Next | Cancel
+04:47:15.412      the ProgressRing appears as: ProgressBar 'Busy '
+04:47:16.553      ring on screen at 205,713 16x16
+04:47:18.811 == done

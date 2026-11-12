@@ -3,7 +3,7 @@
 # runtime installed; then measures cold start against WPF Issun, drives the
 # spike with UI Automation, opens its tray menu and restarts Explorer under it.
 # Every check prints "ok" or "FAIL"; results land in C:\IssunOut.
-param([string]$Step = "all")
+param([string]$Step = "all", [ValidateSet("dark", "light")][string]$Theme = "dark")
 $ErrorActionPreference = "Continue"
 $out = "C:\IssunOut"; $in = "C:\IssunIn"
 $report = Join-Path $out "report.txt"
@@ -25,12 +25,14 @@ $dl = Join-Path $env:USERPROFILE "Downloads"
 $spike = Join-Path $dl "IssunSpike.exe"; $wpf = Join-Path $dl "Issun.exe"; $base = Join-Path $dl "BaselineWpf.exe"
 $env:ISSUN_SPIKE_LOG = Join-Path $out "spike.log"
 
-# Dark mode, for every picture (the owner's rule) and so the tray menu has
-# something to follow.
+# Dark mode by default, for every picture (the owner's rule) and so the tray
+# menu has something to follow; -Theme light for the design library's light
+# captures.
 $p = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
 New-Item $p -Force | Out-Null
-Set-ItemProperty $p AppsUseLightTheme 0 -Type DWord
-Set-ItemProperty $p SystemUsesLightTheme 0 -Type DWord
+$light = [int]($Theme -eq "light")
+Set-ItemProperty $p AppsUseLightTheme $light -Type DWord
+Set-ItemProperty $p SystemUsesLightTheme $light -Type DWord
 
 if ($Step -in "all", "clean") {
     Say "== clean PC"
@@ -97,7 +99,7 @@ if ($Step -in "all", "start") {
 
 if ($Step -in "all", "uia") {
     Say "== UI Automation and a live picture of the spike's window"
-    $proc = Start-Process $spike -ArgumentList "--theme dark" -PassThru
+    $proc = Start-Process $spike -ArgumentList "--theme $Theme" -PassThru
     $win = $null
     foreach ($i in 1..200) { $win = $root.FindFirst($TS::Children, (Cond $AE::ProcessIdProperty $proc.Id)); if ($win) { break }; Start-Sleep -Milliseconds 50 }
     Check $win "found the spike's window ($($win.Current.Name), class $($win.Current.ClassName))"
@@ -121,10 +123,15 @@ if ($Step -in "all", "uia") {
     $ring = $win.FindFirst($TS::Descendants, (Cond $AE::ControlTypeProperty ([System.Windows.Automation.ControlType]::ProgressBar)))
     Say "     the ProgressRing appears as: $(if ($ring) { "ProgressBar '$($ring.Current.Name)'" } else { 'nothing' })"
     $b = $win.Current.BoundingRectangle
-    Shot "live-spike-window-dark" (New-Object System.Drawing.Rectangle ([int]$b.X), ([int]$b.Y), ([int]$b.Width), ([int]$b.Height))
+    Shot "live-spike-window-$Theme" (New-Object System.Drawing.Rectangle ([int]$b.X), ([int]$b.Y), ([int]$b.Width), ([int]$b.Height))
     if ($ring) {
+        # Scroll the page to its foot so the whole ring is on screen: at this
+        # window height the status row sits under the window's edge.
+        $sv = $win.FindFirst($TS::Descendants, (Cond $AE::IsScrollPatternAvailableProperty $true))
+        if ($sv) { $sv.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, 100); Start-Sleep 1 }
         $rb = $ring.Current.BoundingRectangle
-        foreach ($k in 0..7) { Shot ("live-ring-{0}" -f $k) (New-Object System.Drawing.Rectangle ([int]$rb.X - 6), ([int]$rb.Y - 6), ([int]$rb.Width + 12), ([int]$rb.Height + 12)); Start-Sleep -Milliseconds 250 }
+        Say "     ring on screen at $([int]$rb.X),$([int]$rb.Y) $([int]$rb.Width)x$([int]$rb.Height)"
+        foreach ($k in 0..7) { Shot ("live-ring-{0}-{1}" -f $Theme, $k) (New-Object System.Drawing.Rectangle ([int]$rb.X - 6), ([int]$rb.Y - 6), ([int]$rb.Width + 12), ([int]$rb.Height + 12)); Start-Sleep -Milliseconds 250 }
     }
     Stop-Process -Id $proc.Id -Force
 }

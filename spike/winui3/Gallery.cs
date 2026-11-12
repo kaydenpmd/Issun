@@ -16,8 +16,8 @@ namespace IssunSpike;
 /// <summary>
 /// --gallery dir: every button-family control WinUI 3 ships, and every
 /// button-family style key in its generic.xaml, at rest, pointer-over,
-/// pressed and disabled, rendered offscreen in dark mode to
-/// dir\buttons-NN.png. Pointer-over and pressed are forced with
+/// pressed and disabled, rendered offscreen to dir\buttons-NN-...-dark.png
+/// (or -light.png with --theme light). Pointer-over and pressed are forced with
 /// VisualStateManager.GoToState (an offscreen render can't hover); a cell
 /// whose template has no such state says so instead of showing a copy of rest.
 /// </summary>
@@ -182,7 +182,7 @@ internal static class Gallery
         return new(tag, k.Key, () => (Control)XamlReader.Load(xaml), states) { Note = note };
     }
 
-    public static async Task<int> RunAsync(string dir)
+    public static async Task<int> RunAsync(string dir, ElementTheme theme)
     {
         Directory.CreateDirectory(dir);
         // Pages short enough for the window, which Windows clamps to the
@@ -193,20 +193,26 @@ internal static class Gallery
         for (int i = 0, n = 3; i < keyed.Count; i += 11, n++)
             pages.Add(($"buttons-{n:00}-style-keys", keyed.Skip(i).Take(11).ToList()));
         var failures = new List<string>();
+        var mode = theme == ElementTheme.Light ? "light" : "dark";
         foreach (var (name, rows) in pages)
-            await RenderPageAsync(Path.Combine(dir, name + ".png"), rows, failures);
-        File.WriteAllLines(Path.Combine(dir, "buttons-notes.txt"), failures.Count == 0 ? new[] { "every forced state was found in its template" } : failures);
+            await RenderPageAsync(Path.Combine(dir, $"{name}-{mode}.png"), rows, failures, theme);
+        File.WriteAllLines(Path.Combine(dir, $"render-notes-{mode}.txt"), failures.Count == 0 ? new[] { "every forced state was found in its template" } : failures);
         return 0;
     }
 
-    private static TextBlock Text(string s, double size, string brush, bool semibold = false) => new()
+    // ThemeResource through XAML, so the brush follows the page's theme; a
+    // lookup in Application.Resources from code follows the app's instead.
+    private static TextBlock Text(string s, double size, string brush, bool semibold = false)
     {
-        Text = s, FontSize = size, TextWrapping = TextWrapping.Wrap,
-        FontWeight = semibold ? FontWeights.SemiBold : FontWeights.Normal,
-        Foreground = (Brush)Application.Current.Resources[brush],
-    };
+        var t = (TextBlock)XamlReader.Load($"<TextBlock {Xmlns} Foreground=\"{{ThemeResource {brush}}}\" />");
+        t.Text = s;
+        t.FontSize = size;
+        t.TextWrapping = TextWrapping.Wrap;
+        t.FontWeight = semibold ? FontWeights.SemiBold : FontWeights.Normal;
+        return t;
+    }
 
-    private static async Task RenderPageAsync(string path, List<Row> rows, List<string> failures)
+    private static async Task RenderPageAsync(string path, List<Row> rows, List<string> failures, ElementTheme theme)
     {
         var grid = new Grid { Padding = new Thickness(24), ColumnSpacing = 16, RowSpacing = 12 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(300) });
@@ -256,11 +262,11 @@ internal static class Gallery
             }
         }
 
-        var page = new Border
-        {
-            Child = grid, RequestedTheme = ElementTheme.Dark, VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Left,
-            Background = (Brush)Application.Current.Resources["SolidBackgroundFillColorBaseBrush"],
-        };
+        var page = (Border)XamlReader.Load($"<Border {Xmlns} Background=\"{{ThemeResource SolidBackgroundFillColorBaseBrush}}\" />");
+        page.Child = grid;
+        page.RequestedTheme = theme;
+        page.VerticalAlignment = VerticalAlignment.Top;
+        page.HorizontalAlignment = HorizontalAlignment.Left;
         var loaded = new TaskCompletionSource();
         page.Loaded += (_, _) => loaded.TrySetResult();
         var w = new Window { Content = page, Title = "IssunSpike gallery" };

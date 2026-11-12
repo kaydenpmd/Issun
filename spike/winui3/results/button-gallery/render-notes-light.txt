@@ -1,0 +1,7 @@
+Button TabViewCloseButtonStyle: couldn't be created (0x802B000A, not found in app resources): The text associated with this error code could not be found.
+Button DatePickerFlyoutButtonStyle: couldn't be created (0x802B000A, not found in app resources): The text associated with this error code could not be found.
+Button TimePickerFlyoutButtonStyle: couldn't be created (0x802B000A, not found in app resources): The text associated with this error code could not be found.
+ToggleButton InkToolbarCommonButtonStyle: couldn't be created (0x802B000A, not found in app resources): The text associated with this error code could not be found.
+AppBarButton AppBarButtonStyle: couldn't be created (0x802B000A, not found in app resources): The text associated with this error code could not be found.
+AppBarButton MediaControlAppBarButtonStyle: couldn't be created (0x802B000A, not found in app resources): The text associated with this error code could not be found.
+AppBarToggleButton AppBarToggleButtonStyle: couldn't be created (0x802B000A, not found in app resources): The text associated with this error code could not be found.

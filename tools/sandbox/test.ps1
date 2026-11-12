@@ -166,7 +166,7 @@ if ($Step -in @("all","first")) {
     Click $w "Next" | Out-Null; Start-Sleep 3
     Dump $w "page 1"; Shot "setup-page-1" $w
     Click $w "Next" | Out-Null; Start-Sleep 4
-    Expect "Next stays on the Tailscale page without Tailscale" (OnPage $w "Make this PC reachable")
+    Expect "Next stays on the Tailscale page without Tailscale" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
     Dump $w "page 1 after Next"; Shot "setup-page-1-refused" $w
     ClickId $w "Skip" | Out-Null; Start-Sleep 2
     Expect "Skip leads to the address page" (OnPage $w "Public address")

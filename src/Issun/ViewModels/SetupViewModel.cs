@@ -198,7 +198,15 @@ public sealed class SetupViewModel : Observable, IDisposable
                     TailscaleError = "[text]";
                     return;
                 }
-                Log.Write("[setup] Next on the Tailscale page: Tailscale has this PC's address");
+                // Funnel too, the owner's ask the same day: an address with
+                // Funnel off is one the phone can't reach.
+                if (_host.Snapshot.Tailscale is not { FunnelOn: true, FunnelTargetsPort: true })
+                {
+                    Log.Write("[setup] Next on the Tailscale page: Tailscale has an address but Funnel isn't on for Issun's port, staying");
+                    TailscaleError = "[text]";
+                    return;
+                }
+                Log.Write("[setup] Next on the Tailscale page: Tailscale has this PC's address and Funnel is on");
                 _viaSkip = false;
                 Go(SetupPage.StartWithWindows);
                 break;

@@ -101,7 +101,7 @@
 
                 <!-- ───────────── 2. Tailscale ───────────── -->
                 <StackPanel Visibility="{Binding OnTailscalePage, Converter={StaticResource Visible}}">
-                    <TextBlock Text="Make this PC reachable" Style="{StaticResource MainInstruction}" />
+                    <TextBlock Text="Make this PC reachable with a Tailscale Funnel" Style="{StaticResource MainInstruction}" />
                     <TextBlock Style="{StaticResource PageBody}"
                                Text="This step will give your PC a persistent address to connect to. Without one, you'll be stuck with a rotating IP address.&#x0a;Tailscale is a free service." />
 

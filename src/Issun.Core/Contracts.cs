@@ -329,11 +329,6 @@ public interface IAutostart
     void RepairIfMoved();
 }
 
-/// <param name="Settings">The imported settings, merged over the current ones. Not yet saved.</param>
-/// <param name="Notes">One line per thing imported, skipped or worth knowing — shown to the person.</param>
-/// <param name="UptimeLogImportedFrom">Where an existing ammy-uptime.log was copied from, if one was.</param>
-public sealed record EnvImportResult(Settings Settings, IReadOnlyList<string> Notes, string? UptimeLogImportedFrom);
-
 // ─────────────────────────────────── Host ──────────────────────────────────
 
 /// <summary>Everything the window shows, as one immutable read.</summary>
@@ -391,9 +386,6 @@ public interface IIssunHost : IAsyncDisposable
 
     /// <summary>Replaces the key and returns it. Ammy stops being accepted until its Key field is updated.</summary>
     Task<string> RegenerateKeyAsync();
-
-    /// <summary>Reads a relay.py .env and applies it, carrying ammy-uptime.log over if one sits beside it.</summary>
-    Task<EnvImportResult> ImportEnvAsync(string envPath);
 
     Task RefreshTailscaleAsync();
 

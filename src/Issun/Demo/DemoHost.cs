@@ -168,17 +168,6 @@ public sealed class DemoHost : IIssunHost
         return key;
     }
 
-    public async Task<EnvImportResult> ImportEnvAsync(string envPath)
-    {
-        // Deliberately does not open the file: a relay .env holds the real key
-        // and application ID, and the demo has no business reading them.
-        await Task.Delay(300);
-        Log.Write("[demo] import skipped: the demo reads nothing");
-        return new EnvImportResult(Settings,
-            [$"Demo: nothing was read from {Path.GetFileName(envPath)}. Run Issun without --demo to import it."],
-            null);
-    }
-
     public async Task RefreshTailscaleAsync()
     {
         await Task.Delay(700);

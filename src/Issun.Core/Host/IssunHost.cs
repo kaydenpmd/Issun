@@ -211,14 +211,6 @@ public sealed class IssunHost : IIssunHost
         return key;
     }
 
-    public async Task<EnvImportResult> ImportEnvAsync(string envPath)
-    {
-        // The importer logs what it took and every note itself.
-        var result = EnvImporter.Import(envPath, _config.Settings, Paths.UptimeLog);
-        await UpdateSettingsAsync(result.Settings);
-        return result;
-    }
-
     public async Task RefreshTailscaleAsync()
     {
         var port = _config.Settings.Port;
@@ -407,7 +399,7 @@ public sealed class IssunHost : IIssunHost
     /// Settings the window no longer offers, pinned to the owner's choice
     /// (23 Sept 2026): Discord's member list shows the artist, the card has no
     /// album line, and cover matching uses relay.py's default floor. Applied
-    /// wherever settings enter the running app — load, Apply, import — so a
+    /// wherever settings enter the running app — load and Apply — so a
     /// hand-edited or relay-era settings.json can't turn them back on where
     /// nobody can see it.
     /// </summary>

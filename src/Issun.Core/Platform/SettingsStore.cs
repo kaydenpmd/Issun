@@ -47,9 +47,8 @@ public sealed class SettingsStore : ISettingsStore
     /// <summary>
     /// A key was generated on this run and Ammy does not have it yet: no
     /// settings existed, the file was unreadable and had to be set aside, or it
-    /// held no key. All three mean the same thing to the person — pair Ammy, or
-    /// import relay.py's .env to keep the key Ammy already has — so all three
-    /// report true. (An empty key refuses every request, so a file without one
+    /// held no key. All three mean the same thing to the person — pair the
+    /// source with the new key — so all three report true. (An empty key refuses every request, so a file without one
     /// was never paired with anything.)
     /// </summary>
     public bool CreatedOnThisRun { get; }

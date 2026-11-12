@@ -66,8 +66,7 @@ Three things still carry the name on purpose, and they stay:
 The same day the owner removed three settings from the window and **locked** them:
 the member list always shows the artist, the card never gets an album line, and
 cover matching uses relay.py's 0.35 floor. `IssunHost.Locked()` applies that
-wherever settings enter the app, including load, Apply and import, and the importer
-notes `STATUS_LINE`, `SHOW_ALBUM` and `ART_MIN_SCORE` as not applying. The
+wherever settings enter the app, load and Apply both. The
 `Settings` record keeps the fields so the relay.py parity tests can still
 exercise the builder's other modes. Don't put them back in the window without
 asking. The check-in history file was renamed `uptime.log` at the same time.
@@ -96,10 +95,12 @@ as throwaway work for exactly that reason.
 So Issun generates its own key on first run, registers its own autostart, reads
 Tailscale's state instead of asking for a URL, offers to turn Funnel on, and
 imported a relay-era `.env` so the owner's phone kept working without
-re-pairing. The window's import row ("Coming from relay.py") went on 12 Nov
-2026, the owner: "i'm the only person on the planet who ever used that";
-`EnvImporter` and `IIssunHost.ImportEnvAsync` stay in Issun.Core, unused by
-the window.
+re-pairing. The import went on 12 Nov 2026, the owner: "i'm the only person
+on the planet who ever used that", and then "remove" for the code behind it:
+`EnvImporter`, `UptimeHistory` (which merged relay.py's `ammy-uptime.log`
+in), `IIssunHost.ImportEnvAsync` and their tests are gone. The last of them
+is in git history before that commit; the history it imported stays in
+`uptime.log`.
 
 **The shape is unchanged, deliberately.** Discord has no Rich Presence SDK on
 iOS. Setting presence from a phone directly would mean a Gateway WebSocket with
@@ -154,7 +155,7 @@ comments in `Contracts.cs` say which function each member replaces.
 | artwork | `ArtworkResolver` | the store-ID lookup, `_album_url`, uploaded JPEGs, the cache pruning, `_normalize` / `_similarity` / `_score` (an exact port of `difflib.SequenceMatcher`), fuzzy search |
 | discord | `DiscordIpcClient`, `PresenceWorker` | pypresence itself, `rpc_worker`, `push_with_fallback` |
 | server | `RelayServer` (Kestrel) | `Handler`, `QuietHTTPServer`, `public_state` |
-| platform | `SettingsStore`, `KeyGenerator`, `EnvImporter`, `Autostart`, `TailscaleCli`, `SelfInstall`, `StartMenuShortcut` | `.env` and `_load_env_file`, `install-task.ps1`, the hand-typed `tailscale funnel` command |
+| platform | `SettingsStore`, `KeyGenerator`, `Autostart`, `TailscaleCli`, `SelfInstall`, `StartMenuShortcut` | `.env` and `_load_env_file`, `install-task.ps1`, the hand-typed `tailscale funnel` command |
 | host | `IssunHost` | `main()`: builds every module, wires them, gives the window one object |
 | ui | `App`, `MainWindow`, `SetupWindow`, the tray, `DemoHost`, `HostFactory` | a PowerShell window and `relay.log` |
 
@@ -350,7 +351,7 @@ it, and moving it must not lose anything.
 |---|---|---|
 | Settings | `%APPDATA%\Issun\settings.json` | Roams with the profile. Holds the key in plain text. |
 | Log | `%LOCALAPPDATA%\Issun\issun.log` | relay.log's successor. Moves to `.old` past 5 MB; relay.log grew forever. |
-| Uptime log | `%LOCALAPPDATA%\Issun\uptime.log` | Named `ammy-uptime.log` until 23 Sept 2026; `IssunHost` renames an old one once, never over an existing file. Import merges relay.py's `ammy-uptime.log` into it, placed before Issun's own lines. |
+| Uptime log | `%LOCALAPPDATA%\Issun\uptime.log` | Named `ammy-uptime.log` until 23 Sept 2026; `IssunHost` renames an old one once, never over an existing file. relay.py's `ammy-uptime.log` was merged in ahead of Issun's own lines by the import, which is gone since 12 Nov 2026. |
 | Uploaded covers | `%LOCALAPPDATA%\Issun\art_cache\` | 60 newest kept. |
 | Autostart | `HKCU\...\CurrentVersion\Run`, value `Issun` | `"<exe>" --background`. |
 | The program | `%LOCALAPPDATA%\Programs\Issun\Issun.exe` | Self-installed (below); the one before an update is kept as `Issun.exe.previous`. |
@@ -452,9 +453,6 @@ reads the white-on-black one is for the phone to show. Either value may be left
 out (since 12 Nov 2026): Ammy fills in only the field a code carries. Not a
 link: a link would name an app, and Issun names no source. Ammy reads it from
 its **Scan QR Code** row (`CodeScanner.swift`), and so can any source.
-
-**Import never writes to relay.py's folder.** It reads the `.env` it is pointed
-at and copies the `ammy-uptime.log` beside it, and leaves both where they were.
 
 ## The WinUI 3 move (12 Nov 2026)
 
@@ -920,7 +918,6 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;
-   - a bad `PUBLIC_BASE` in a `.env` fails the whole import;
    - the uptime verdict problems in `UptimeLog`. What the review found was
      never written down. Build 48 fixed the three a census of the logs found
      (see "Where Issun deliberately differs from relay.py"), so check whether

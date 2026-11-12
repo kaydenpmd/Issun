@@ -64,7 +64,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         {
             Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
             if (_page == SetupPage.Tailscale) TailscaleError = $"[text] {ex.Message}";
-        }, () => _page < SetupPage.StartWithWindows && (_page != SetupPage.Source || SourceConnected));
+        }, () => _page != SetupPage.Source || SourceConnected);
         SkipCommand = new Command(() =>
         {
             Log.Write(_page == SetupPage.Tailscale ? "[setup] skipped the Tailscale check" : "[setup] skipped connecting a source");
@@ -182,9 +182,14 @@ public sealed class SetupViewModel : Observable, IDisposable
     public bool OnSourcePage => _page == SetupPage.Source;
 
     /// <summary>"Cancel" until the last page, then "Close": Microsoft's wizard rule once the task is done.</summary>
-    public string CloseLabel => _page == SetupPage.StartWithWindows ? "Close" : "Cancel";
+    /// <summary>
+    /// "Cancel" on every page: Next finishes setup on the last one (the owner,
+    /// 12 Nov 2026: "make sure Next is still there"), so no page is a finished
+    /// one, which is when Microsoft's guidance renames Cancel to Close.
+    /// </summary>
+    public string CloseLabel => "Cancel";
 
-    public bool ShowNext => _page < SetupPage.StartWithWindows;
+    public bool ShowNext => true;
 
     /// <summary>
     /// Skip is always on the Tailscale page and on Connect your source (the
@@ -229,6 +234,10 @@ public sealed class SetupViewModel : Observable, IDisposable
                 }
                 Log.Write("[setup] Next on the Tailscale page: Tailscale has this PC's address and Funnel is on");
                 Go(SetupPage.Source);
+                break;
+            case SetupPage.StartWithWindows:
+                Log.Write("[setup] Next on the last page: setup finished");
+                CloseRequested?.Invoke();
                 break;
             default:
                 Go(_page + 1);

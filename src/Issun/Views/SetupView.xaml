@@ -36,7 +36,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid x:Name="Box" Background="{TemplateBinding Background}" CornerRadius="4" Padding="3,9,8,9">
+                        <Grid x:Name="Box" Background="{TemplateBinding Background}" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="3,9,8,9">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal" />
@@ -161,7 +161,7 @@
                                             Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferInstall)}">
                                         <StackPanel>
                                             <TextBlock Text="[text]" FontSize="16" />
-                                            <TextBlock Text="{x:Bind ViewModel.InstallCommandText, Mode=OneTime}" FontSize="12" TextWrapping="Wrap"
+                                            <TextBlock Text="{x:Bind ViewModel.InstallCommandText, Mode=OneTime}" FontSize="{StaticResource CaptionTextBlockFontSize}" TextWrapping="Wrap"
                                                        FontFamily="{StaticResource MonoFont}" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </Button>

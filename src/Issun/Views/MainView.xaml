@@ -265,10 +265,10 @@
                     </StackPanel>
                 </Expander.Header>
                 <StackPanel>
-                    <TextBlock Text="The source's last report" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
+                    <TextBlock Text="The source's last report" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <TextBlock Text="{x:Bind ViewModel.DiagSummary}" Style="{StaticResource MonoBlock}" Margin="0,4,0,0" />
 
-                    <TextBlock Text="Check-in history" Style="{StaticResource RowTitle}" FontWeight="SemiBold" Margin="0,16,0,0" />
+                    <TextBlock Text="Check-in history" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,0" />
                     <TextBlock Text="{x:Bind ViewModel.UptimeSummary}" Style="{StaticResource MonoBlock}" TextWrapping="NoWrap" Margin="0,4,0,0" />
 
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
@@ -289,7 +289,7 @@
                 </Expander.Header>
                 <StackPanel>
                     <TextBox x:Name="LogBox" IsReadOnly="True" Height="320" AcceptsReturn="True"
-                             FontFamily="{StaticResource MonoFont}" FontSize="12"
+                             FontFamily="{StaticResource MonoFont}" FontSize="{StaticResource CaptionTextBlockFontSize}"
                              TextWrapping="Wrap" TextAlignment="Left"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"

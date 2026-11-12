@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:v="using:Issun.Views"
+             xmlns:tk="using:CommunityToolkit.WinUI.Controls"
              x:DefaultBindMode="OneWay"
              IsTabStop="False">
 
@@ -190,81 +191,45 @@
             <TextBlock Text="Settings" Style="{StaticResource SectionHeader}" />
 
             <!-- The whole card is the button, as Windows 11 Settings' cards
-                 that open a page are. The owner's words and layout, 12 Nov 2026. -->
-            <Button Style="{StaticResource NavigationCard}" Command="{x:Bind ViewModel.OpenSetupCommand}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Set up again" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
-                    <!-- Setup opens in a window of its own, so not the chevron
-                         (Settings' sign for a page in the same window) but the
-                         sign Settings puts on a card that opens another window,
-                         as on Sound's "More sound settings": E8A7 (Open in new
-                         window) at 14 px, ink 14 x 14, its right edge 18 px in
-                         from the card's outer edge. Measured at 96 dpi on
-                         Windows 11 26H2. -->
-                    <TextBlock Grid.Column="1" Text="&#xE8A7;" FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                               FontSize="14" VerticalAlignment="Center" Margin="14,0,0,0"
-                               Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
-                </Grid>
-            </Button>
+                 that open a page are. The owner's words and layout, 12 Nov 2026.
+                 Setup opens in a window of its own, so not the chevron (Settings'
+                 sign for a page in the same window) but the sign Settings puts on
+                 a card that opens another window, as on Sound's "More sound
+                 settings": E8A7, Open in new window. -->
+            <tk:SettingsCard Header="Set up again" Command="{x:Bind ViewModel.OpenSetupCommand}" IsClickEnabled="True"
+                             Style="{StaticResource Row}">
+                <tk:SettingsCard.ActionIcon>
+                    <FontIcon Glyph="&#xE8A7;" />
+                </tk:SettingsCard.ActionIcon>
+            </tk:SettingsCard>
 
-            <Border Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="Discord application ID" Style="{StaticResource RowTitle}" />
-                        <TextBlock Style="{StaticResource RowDescription}"
-                                   Text="From your application in the Discord Developer Portal. Its name is what Discord shows after &quot;Listening to&quot;, so name it after where the music comes from, like Apple Music." />
-                    </StackPanel>
-                    <TextBox Grid.Column="1" Width="200" VerticalAlignment="Center" Margin="12,0,0,0"
-                             Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="Discord application ID" />
-                </Grid>
-            </Border>
+            <tk:SettingsCard Header="Discord application ID" Style="{StaticResource Row}"
+                             Description="From your application in the Discord Developer Portal. Its name is what Discord shows after &quot;Listening to&quot;, so name it after where the music comes from, like Apple Music.">
+                <TextBox Width="200" Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.Name="Discord application ID" />
+            </tk:SettingsCard>
 
-            <Border Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+            <tk:SettingsCard Header="Public now playing" Style="{StaticResource Row}">
+                <tk:SettingsCard.Description>
                     <StackPanel>
-                        <TextBlock Text="Public now playing" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="Lets a web page read what you're playing from this PC's address without the key." Style="{StaticResource RowDescription}" />
+                        <TextBlock Text="Lets a web page read what you're playing from this PC's address without the key." TextWrapping="Wrap" />
                         <!-- In the caution colour and semibold while it's on. -->
-                        <TextBlock Text="Anyone who has the address can then see what you're listening to." Style="{StaticResource RowDescription}"
+                        <TextBlock Text="Anyone who has the address can then see what you're listening to." TextWrapping="Wrap"
                                    Visibility="{x:Bind v:Bind.Hidden(ViewModel.PublicRead)}" />
-                        <TextBlock Text="Anyone who has the address can then see what you're listening to." Style="{StaticResource RowDescription}"
+                        <TextBlock Text="Anyone who has the address can then see what you're listening to." TextWrapping="Wrap"
                                    Foreground="{ThemeResource SystemFillColorCautionBrush}" FontWeight="SemiBold"
                                    Visibility="{x:Bind v:Bind.Visible(ViewModel.PublicRead)}" />
                     </StackPanel>
-                    <CheckBox Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="0" Padding="0"
-                              IsChecked="{x:Bind ViewModel.PublicRead, Mode=TwoWay}" AutomationProperties.Name="Public now playing" />
-                </Grid>
-            </Border>
+                </tk:SettingsCard.Description>
+                <CheckBox MinWidth="0" Padding="0" IsChecked="{x:Bind ViewModel.PublicRead, Mode=TwoWay}"
+                          AutomationProperties.Name="Public now playing" />
+            </tk:SettingsCard>
 
-            <Border Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="Port" Style="{StaticResource RowTitle}" />
-                        <TextBlock Style="{StaticResource RowDescription}"
-                                   Text="Where Issun listens on this PC. Tailscale Funnel has to point at the same port." />
-                    </StackPanel>
-                    <TextBox Grid.Column="1" Width="90" VerticalAlignment="Center" Margin="12,0,0,0"
-                             Text="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="Port" />
-                </Grid>
-            </Border>
+            <tk:SettingsCard Header="Port" Style="{StaticResource Row}"
+                             Description="Where Issun listens on this PC. Tailscale Funnel has to point at the same port.">
+                <TextBox Width="90" Text="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.Name="Port" />
+            </tk:SettingsCard>
 
             <StackPanel Padding="2,8,2,4" Margin="0,0,0,4">
                 <StackPanel Orientation="Horizontal">
@@ -278,25 +243,17 @@
                            Visibility="{x:Bind v:Bind.Present(ViewModel.SettingsErrors)}" />
             </StackPanel>
 
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Start with Windows" Style="{StaticResource RowTitle}" />
-                            <TextBlock Style="{StaticResource RowDescription}"
-                                       Text="Starts Issun in the tray when you sign in. Takes effect straight away." />
-                        </StackPanel>
-                        <CheckBox Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="0" Padding="0"
-                                  IsChecked="{x:Bind ViewModel.StartWithWindows, Mode=TwoWay}" AutomationProperties.Name="Start with Windows" />
-                    </Grid>
-                    <TextBlock Text="{x:Bind ViewModel.StartWithWindowsError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
-                               Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError)}" />
-                </StackPanel>
-            </Border>
+            <tk:SettingsCard Header="Start with Windows" Style="{StaticResource Row}">
+                <tk:SettingsCard.Description>
+                    <StackPanel>
+                        <TextBlock Text="Starts Issun in the tray when you sign in. Takes effect straight away." TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Bind ViewModel.StartWithWindowsError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
+                                   Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError)}" />
+                    </StackPanel>
+                </tk:SettingsCard.Description>
+                <CheckBox MinWidth="0" Padding="0" IsChecked="{x:Bind ViewModel.StartWithWindows, Mode=TwoWay}"
+                          AutomationProperties.Name="Start with Windows" />
+            </tk:SettingsCard>
 
             <!-- ───────────── Diagnostics ───────────── -->
             <Expander IsExpanded="{x:Bind ViewModel.DiagnosticsExpanded, Mode=TwoWay}" Margin="0,22,0,4"

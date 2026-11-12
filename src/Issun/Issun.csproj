@@ -41,11 +41,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Only WinUI and what it depends on, not the Microsoft.WindowsAppSDK
-         metapackage, which also brings the AI, ML, Search and Widgets packages
-         (onnxruntime, DirectML, the semantic index: about 25 MB of the .exe). -->
-    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.5" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.6.5" />
+    <!-- The whole Windows App SDK, as PowerToys references it, though it also
+         brings the AI, ML, Search and Widgets packages Issun doesn't use
+         (onnxruntime, DirectML, the semantic index: about 25 MB of the .exe).
+         The toolkit's SettingsControls below asks for Microsoft.WindowsAppSDK
+         1.6 or later; with only the WinUI and Runtime packages referenced,
+         NuGet satisfied that with 1.6's own copy beside 2.6.5's. The owner
+         chose the size for the real SettingsCard, 12 Nov 2026 ("switch"). -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
+    <!-- Windows 11 Settings' rows: SettingsCard and SettingsExpander, which
+         WinUI itself lacks and Microsoft's settings guidance points to. -->
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 

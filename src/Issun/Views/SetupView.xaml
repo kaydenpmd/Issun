@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:v="using:Issun.Views"
+             xmlns:tk="using:CommunityToolkit.WinUI.Controls"
              x:DefaultBindMode="OneWay"
              IsTabStop="False">
 
@@ -103,45 +104,27 @@
                 <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.OnDiscordPage)}">
                     <TextBlock Text="Connect to Discord" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
 
-                    <Border Style="{StaticResource Card}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                    <tk:SettingsCard Header="Make an application" Style="{StaticResource Row}"
+                                     Description="In the Discord Developer Portal, select New Application and give it a name.">
+                        <Button Content="Open Developer Portal" Command="{x:Bind ViewModel.OpenPortalCommand}" />
+                    </tk:SettingsCard>
+
+                    <tk:SettingsCard Header="Application ID" Style="{StaticResource Row}">
+                        <tk:SettingsCard.Description>
                             <StackPanel>
-                                <TextBlock Text="Make an application" Style="{StaticResource RowTitle}" />
-                                <TextBlock Style="{StaticResource RowDescription}"
-                                           Text="In the Discord Developer Portal, select New Application and give it a name." />
+                                <TextBlock Text="Copy this from the application's General Information page and paste it here." TextWrapping="Wrap" />
+                                <TextBlock Text="{x:Bind ViewModel.ClientIdProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
+                                           Visibility="{x:Bind v:Bind.Present(ViewModel.ClientIdProblem)}" />
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Open Developer Portal" Command="{x:Bind ViewModel.OpenPortalCommand}"
-                                    VerticalAlignment="Center" Margin="12,0,0,0" />
-                        </Grid>
-                    </Border>
+                        </tk:SettingsCard.Description>
+                        <TextBox x:Name="ClientIdBox" Width="200"
+                                 Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.Name="Discord application ID" />
+                    </tk:SettingsCard>
 
                     <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Application ID" Style="{StaticResource RowTitle}" />
-                                    <TextBlock Style="{StaticResource RowDescription}"
-                                               Text="Copy this from the application's General Information page and paste it here." />
-                                </StackPanel>
-                                <TextBox x:Name="ClientIdBox" Grid.Column="1" Width="200" VerticalAlignment="Center" Margin="12,0,0,0"
-                                         Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         AutomationProperties.Name="Discord application ID" />
-                            </Grid>
-                            <TextBlock Text="{x:Bind ViewModel.ClientIdProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
-                                       Visibility="{x:Bind v:Bind.Present(ViewModel.ClientIdProblem)}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <Grid>
+                        <!-- Centred in the card's height, as a SettingsCard centres its content. -->
+                        <Grid VerticalAlignment="Center">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />

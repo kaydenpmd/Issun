@@ -51,6 +51,13 @@ public sealed class SetupViewModel : Observable, IDisposable
             _applyId.Stop();
             _ = ApplyClientIdAsync();
         };
+        _applyAddress = new DispatcherTimer(DispatcherPriority.Normal, dispatcher) { Interval = ApplyDelay };
+        _applyAddress.Tick += (_, _) =>
+        {
+            _applyAddress.Stop();
+            _ = ApplyAddressAsync();
+        };
+        _address = host.Settings.PublicBase;
 
         EndpointCopied = new Flash(dispatcher);
         KeyCopied = new Flash(dispatcher);
@@ -155,6 +162,11 @@ public sealed class SetupViewModel : Observable, IDisposable
             _applyId.Stop();
             _ = ApplyClientIdAsync();
         }
+        if (_page == SetupPage.Tailscale && _applyAddress.IsEnabled)
+        {
+            _applyAddress.Stop();
+            _ = ApplyAddressAsync();
+        }
         Log.Write($"[setup] {Describe(_page)} -> {Describe(page)}");
         _page = page;
         Raise(nameof(Page));
@@ -238,6 +250,81 @@ public sealed class SetupViewModel : Observable, IDisposable
     private StatusLine _discordStatus = new("Not connected", StatusLevel.Neutral);
 
     // ───────────────────────────── Tailscale ─────────────────────────────
+
+    private readonly DispatcherTimer _applyAddress;
+    private string _address;
+
+    /// <summary>
+    /// This PC's public address as typed: Tailscale's or anything else that
+    /// forwards https to Issun (the owner's ask, 12 Nov 2026, so people with
+    /// their own setup can still get the endpoint and QR code). It is Settings'
+    /// Public address, so empty means "work it out from Tailscale". Applied
+    /// 0.6 s after it stops changing, like the Discord ID.
+    /// </summary>
+    public string PublicAddress
+    {
+        get => _address;
+        set
+        {
+            if (!Set(ref _address, value ?? ""))
+                return;
+            _applyAddress.Stop();
+            AddressProblem = null;
+            _applyAddress.Start();
+        }
+    }
+
+    /// <summary>
+    /// What the typed text means as a public base, or null when it can't be one.
+    /// "https://" is assumed when no scheme is typed, and a pasted endpoint
+    /// loses its "/now-playing", since that is added back for the source.
+    /// </summary>
+    internal static string? NormaliseAddress(string typed)
+    {
+        var text = typed.Trim().TrimEnd('/');
+        if (text.Length == 0)
+            return "";
+        if (!text.Contains("://", StringComparison.Ordinal))
+            text = "https://" + text;
+        if (text.EndsWith("/now-playing", StringComparison.OrdinalIgnoreCase))
+            text = text[..^"/now-playing".Length].TrimEnd('/');
+        return Uri.TryCreate(text, UriKind.Absolute, out var uri)
+               && uri.Scheme == Uri.UriSchemeHttps && uri.Host.Contains('.')
+               && uri.Query.Length == 0 && uri.Fragment.Length == 0
+            ? text
+            : null;
+    }
+
+    private async Task ApplyAddressAsync()
+    {
+        var address = NormaliseAddress(_address);
+        if (address is null)
+        {
+            AddressProblem = "[text]";
+            Log.Write($"[setup] not applying a public address of {_address.Trim().Length} characters: not an https address");
+            return;
+        }
+        if (address == _host.Settings.PublicBase)
+            return;
+        try
+        {
+            Log.Write(address.Length == 0
+                ? "[setup] public address cleared: Issun works it out from Tailscale"
+                : $"[setup] applying a public address ({address.Length} characters{(address.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) ? ", a Tailscale name" : "")})");
+            await _host.UpdateSettingsAsync(_host.Settings with { PublicBase = address });
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"[setup] couldn't save the public address: {ex.Message}");
+            AddressProblem = $"[text] {ex.Message}";
+        }
+    }
+
+    public bool ShowAddress { get => _showAddress; private set => Set(ref _showAddress, value); }
+    private bool _showAddress;
+
+    public string? AddressProblem { get => _addressProblem; private set => Set(ref _addressProblem, value); }
+    private string? _addressProblem;
 
     public AsyncCommand GetTailscaleCommand { get; }
     public AsyncCommand CheckTailscaleCommand { get; }
@@ -468,6 +555,10 @@ public sealed class SetupViewModel : Observable, IDisposable
         OfferFunnel = StatusText.OfferFunnel(s.Tailscale);
         ShowUnattended = s.Tailscale is { Running: true };
         UnattendedStatus = Unattended(s.Tailscale?.Unattended);
+        // Tailscale gives Issun this PC's address by itself, so the field is
+        // for those without it (the owner, 12 Nov 2026), and for an address
+        // already typed, which overrides Tailscale's and must stay clearable.
+        ShowAddress = s.Tailscale is { Installed: false } || _host.Settings.PublicBase.Length > 0;
         OfferUnattended = s.Tailscale is { Running: true, Unattended: false };
 
         EndpointUrl = s.EndpointUrl;
@@ -504,6 +595,9 @@ public sealed class SetupViewModel : Observable, IDisposable
         // An ID typed in the last 0.6 s before closing still counts.
         if (_clientId.Trim() != _host.Settings.DiscordClientId && LooksLikeId(_clientId.Trim()))
             _ = ApplyClientIdAsync();
+        _applyAddress.Stop();
+        if (NormaliseAddress(_address) is { } address && address != _host.Settings.PublicBase)
+            _ = ApplyAddressAsync();
         Log.Write($"[setup] closed on the {Describe(_page)} page");
     }
 }

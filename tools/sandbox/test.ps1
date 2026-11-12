@@ -265,4 +265,39 @@ if ($Step -eq "tailscale") {
     Get-Service Tailscale -ErrorAction SilentlyContinue | ForEach-Object { Say "  service: $($_.Name) $($_.Status) $($_.StartType)" }
     SaveLogs "tailscale"
 }
+# A first run that types an address of its own on the Tailscale page, as
+# someone without Tailscale would, then checks the source page uses it.
+if ($Step -eq "address") {
+    Say "##### first run with an address of its own"
+    Start-Process $download.FullName
+    $w = FindWindow "Set up Issun" 90
+    if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
+    Start-Sleep 3
+    Click $w "Next" | Out-Null
+    Start-Sleep 2
+    $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Public address")))
+    if (-not $box) { Say "FAIL no address field"; exit 1 }
+    $value = $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    $value.SetValue("http://not-https.example.com")
+    Start-Sleep 2
+    Dump $w "after an http address"
+    Shot "address-rejected" $w
+    $value.SetValue("issun-test.example.com/now-playing/")
+    Start-Sleep 2
+    Dump $w "after a good address"
+    Shot "address-typed" $w
+    Click $w "Next" | Out-Null; Start-Sleep 1; Click $w "Next" | Out-Null; Start-Sleep 3
+    Dump $w "source page"
+    $all = $w.FindAll($Tree::Descendants, [System.Windows.Automation.Condition]::TrueCondition) | ForEach-Object { $_.Current.Name }
+    Expect "endpoint shows the typed address" ($all -contains "https://issun-test.example.com/now-playing")
+    $show = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Show")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
+    Expect "QR code can be shown" ($show -and $show.Current.IsEnabled)
+    if ($show) { Click $w "Show" | Out-Null; Start-Sleep 1 }
+    Shot "address-source-page" $w
+    $sj = Get-Content "$env:APPDATA\Issun\settings.json" -Raw | ConvertFrom-Json
+    Expect "saved as Settings' public address" ($sj.publicBase -eq "https://issun-test.example.com")
+    SaveLogs "address"
+}
 Say "##### done ($Step)"

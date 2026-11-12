@@ -152,6 +152,26 @@
                         </DockPanel>
                     </Border>
 
+                    <!-- This PC's public address, Tailscale's or another, for
+                         the endpoint and QR code: Settings' Public address.
+                         The owner's ask, 12 Nov 2026; its words are theirs.
+                         Shown without Tailscale, or once an address is set. -->
+                    <Border Style="{StaticResource Card}" Visibility="{Binding ShowAddress, Converter={StaticResource Visible}}">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBox DockPanel.Dock="Right" Width="260" VerticalAlignment="Center" Margin="12,0,0,0"
+                                         Text="{Binding PublicAddress, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="Public address" />
+                                <StackPanel>
+                                    <TextBlock Text="[text]" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="[text]" Style="{StaticResource RowDescription}" />
+                                </StackPanel>
+                            </DockPanel>
+                            <TextBlock Text="{Binding AddressProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
+                                       Visibility="{Binding AddressProblem, Converter={StaticResource Present}}" />
+                        </StackPanel>
+                    </Border>
+
                     <TextBlock Text="{Binding TailscaleError}" Style="{StaticResource ErrorText}" Margin="2,8,0,0"
                                Visibility="{Binding TailscaleError, Converter={StaticResource Present}}" />
                 </StackPanel>

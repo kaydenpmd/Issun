@@ -249,17 +249,17 @@
             <!-- ───────────── Settings ───────────── -->
             <TextBlock Text="Settings" Style="{StaticResource SectionHeader}" />
 
-            <Border Style="{StaticResource Card}">
+            <!-- The whole card is the button, as Windows 11 Settings' cards
+                 that open a page are, with the chevron at the right. The
+                 owner's words and layout, 12 Nov 2026. -->
+            <Button Style="{StaticResource NavigationCard}" Command="{Binding OpenSetupCommand}">
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Open setup" Command="{Binding OpenSetupCommand}"
-                            VerticalAlignment="Center" Margin="12,0,0,0" />
-                    <StackPanel>
-                        <TextBlock Text="Setup" Style="{StaticResource RowTitle}" />
-                        <TextBlock Style="{StaticResource RowDescription}"
-                                   Text="Discord, Tailscale, Start with Windows and connecting your source, one step at a time." />
-                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE974;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                               FontSize="12" VerticalAlignment="Center" Margin="12,0,0,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="Set up again" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
                 </DockPanel>
-            </Border>
+            </Button>
 
             <Border Style="{StaticResource Card}">
                 <DockPanel>

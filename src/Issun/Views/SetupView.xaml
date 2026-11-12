@@ -16,7 +16,12 @@
          at least 120 wide, 8 apart. The main instruction is Windows 11's Title
          style (28/36 semibold), with 12 between it and the text below, per
          "Content layout and spacing". The cards, rows and type below that are
-         the main window's, which follow Windows 11 Settings. -->
+         the main window's, which follow Windows 11 Settings.
+
+         Every word on these pages is the owner's, from the wording page of
+         12 Nov 2026 (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ): where they
+         left a field blank the text was taken out, not emptied. The Tailscale
+         page's two cards are still Claude's drafts, waiting on the owner. -->
     <UserControl.Resources>
         <Style x:Key="MainInstruction" TargetType="TextBlock">
             <Setter Property="FontSize" Value="28" />
@@ -55,9 +60,7 @@
 
                 <!-- ───────────── 1. Discord ───────────── -->
                 <StackPanel Visibility="{Binding OnDiscordPage, Converter={StaticResource Visible}}">
-                    <TextBlock Text="Connect to Discord" Style="{StaticResource MainInstruction}" />
-                    <TextBlock Style="{StaticResource PageBody}"
-                               Text="Issun shows your music on Discord through a Discord application of your own. Discord shows the application's name after &quot;Listening to&quot;, so name it after where the music comes from, like Apple Music." />
+                    <TextBlock Text="Connect to Discord" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
 
                     <Border Style="{StaticResource Card}">
                         <DockPanel>
@@ -80,7 +83,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Application ID" Style="{StaticResource RowTitle}" />
                                     <TextBlock Style="{StaticResource RowDescription}"
-                                               Text="Copy it from the application's General Information page and paste it here." />
+                                               Text="Copy this from the application's General Information page and paste it here." />
                                 </StackPanel>
                             </DockPanel>
                             <TextBlock Text="{Binding ClientIdProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
@@ -91,10 +94,7 @@
                     <Border Style="{StaticResource Card}">
                         <DockPanel>
                             <Ellipse DataContext="{Binding DiscordStatus}" Style="{StaticResource StatusDot}" />
-                            <StackPanel>
-                                <TextBlock Text="Discord" Style="{StaticResource RowTitle}" />
-                                <TextBlock Text="{Binding DiscordStatus.Text}" Style="{StaticResource RowDescription}" />
-                            </StackPanel>
+                            <TextBlock Text="{Binding DiscordStatus.Text}" Style="{StaticResource RowDescription}" />
                         </DockPanel>
                     </Border>
                 </StackPanel>
@@ -103,7 +103,7 @@
                 <StackPanel Visibility="{Binding OnTailscalePage, Converter={StaticResource Visible}}">
                     <TextBlock Text="Make this PC reachable" Style="{StaticResource MainInstruction}" />
                     <TextBlock Style="{StaticResource PageBody}"
-                               Text="Your source sends to this PC over the internet through Tailscale Funnel. Tailscale is free, and needs an account." />
+                               Text="This step will give your PC a persistent address to connect to. Without one, you'll be stuck with a rotating IP address.&#x0a;Tailscale is a free service." />
 
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
@@ -150,18 +150,13 @@
 
                 <!-- ───────────── 3. Start with Windows ───────────── -->
                 <StackPanel Visibility="{Binding OnStartPage, Converter={StaticResource Visible}}">
-                    <TextBlock Text="Start with Windows" Style="{StaticResource MainInstruction}" />
-                    <TextBlock Style="{StaticResource PageBody}"
-                               Text="Issun passes your music on to Discord only while it's running. It runs in the notification area." />
+                    <TextBlock Text="Launch Issun on startup?" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
 
                     <Border Style="{StaticResource Card}">
                         <DockPanel>
                             <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0"
                                       IsChecked="{Binding StartWithWindows}" AutomationProperties.Name="Start with Windows" />
-                            <StackPanel>
-                                <TextBlock Text="Start with Windows" Style="{StaticResource RowTitle}" />
-                                <TextBlock Text="Starts Issun in the tray when you sign in." Style="{StaticResource RowDescription}" />
-                            </StackPanel>
+                            <TextBlock Text="Launch minimized on Windows startup" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
                         </DockPanel>
                     </Border>
                 </StackPanel>
@@ -170,23 +165,38 @@
                 <StackPanel Visibility="{Binding OnSourcePage, Converter={StaticResource Visible}}">
                     <TextBlock Text="Connect your source" Style="{StaticResource MainInstruction}" />
                     <TextBlock Style="{StaticResource PageBody}"
-                               Text="Put this address and key into your source's settings, or scan the QR code with it." />
+                               Text="Complete these fields in the service that you're connecting to Issun." />
+
+                    <!-- The QR code first, the owner's order. It and the key are
+                         blurred until Show, so a screenshot of this window
+                         doesn't give the key away. -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="{Binding ToggleQrLabel}" Command="{Binding ToggleQrCommand}"
+                                        VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="64" />
+                                <TextBlock Text="QR code" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <Image Source="{Binding Qr}" Width="200" Height="200" Margin="0,12,0,0" HorizontalAlignment="Left"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True" ClipToBounds="True"
+                                   AutomationProperties.Name="QR code with the address and key"
+                                   Visibility="{Binding HasEndpoint, Converter={StaticResource Visible}}">
+                                <Image.Effect>
+                                    <BlurEffect Radius="{Binding QrBlur}" KernelType="Gaussian" />
+                                </Image.Effect>
+                            </Image>
+                        </StackPanel>
+                    </Border>
 
                     <Border Style="{StaticResource Card}">
                         <DockPanel>
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                                <TextBlock Text="{Binding EndpointCopied.Text}" Style="{StaticResource Caption}"
-                                           VerticalAlignment="Center" Margin="0,0,8,0" />
-                                <Button Content="Copy" Command="{Binding CopyEndpointCommand}" AutomationProperties.Name="Copy endpoint" />
-                            </StackPanel>
+                            <Button DockPanel.Dock="Right" Content="Copy" Command="{Binding CopyEndpointCommand}"
+                                    VerticalAlignment="Center" Margin="12,0,0,0" AutomationProperties.Name="Copy endpoint" />
                             <StackPanel>
                                 <TextBlock Text="Endpoint" Style="{StaticResource RowTitle}" />
                                 <TextBlock Text="{Binding EndpointUrl}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding EndpointUrl}"
                                            Visibility="{Binding HasEndpoint, Converter={StaticResource Visible}}" />
-                                <TextBlock Style="{StaticResource RowDescription}"
-                                           Visibility="{Binding HasEndpoint, Converter={StaticResource Hidden}}"
-                                           Text="Not known yet. It appears here once Tailscale is running on this PC: go back a page to set it up." />
                             </StackPanel>
                         </DockPanel>
                     </Border>
@@ -194,45 +204,26 @@
                     <Border Style="{StaticResource Card}">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                                <TextBlock Text="{Binding KeyCopied.Text}" Style="{StaticResource Caption}"
-                                           VerticalAlignment="Center" Margin="0,0,8,0" />
                                 <Button Content="{Binding ToggleKeyLabel}" Command="{Binding ToggleKeyCommand}" Margin="0,0,8,0"
                                         MinWidth="64" AutomationProperties.Name="Show or hide key" />
                                 <Button Content="Copy" Command="{Binding CopyKeyCommand}" AutomationProperties.Name="Copy key" />
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Text="Key" Style="{StaticResource RowTitle}" />
-                                <TextBlock Text="{Binding KeyDisplay}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
-                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding KeyText}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
+                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ClipToBounds="True">
+                                    <TextBlock.Effect>
+                                        <BlurEffect Radius="{Binding KeyBlur}" KernelType="Gaussian" />
+                                    </TextBlock.Effect>
+                                </TextBlock>
                             </StackPanel>
                         </DockPanel>
                     </Border>
 
                     <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="{Binding ToggleQrLabel}" Command="{Binding ToggleQrCommand}"
-                                        VerticalAlignment="Center" Margin="12,0,0,0" />
-                                <StackPanel>
-                                    <TextBlock Text="QR code" Style="{StaticResource RowTitle}" />
-                                    <TextBlock Text="Holds the address and the key, for a source that can scan it." Style="{StaticResource RowDescription}" />
-                                </StackPanel>
-                            </DockPanel>
-                            <!-- Drawn at whole device pixels so the modules stay sharp. -->
-                            <Image Source="{Binding Qr}" Width="200" Height="200" Margin="0,12,0,0" HorizontalAlignment="Left"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True"
-                                   AutomationProperties.Name="QR code with the address and key"
-                                   Visibility="{Binding QrShown, Converter={StaticResource Visible}}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
                         <DockPanel>
                             <Ellipse DataContext="{Binding SourceStatus}" Style="{StaticResource StatusDot}" />
-                            <StackPanel>
-                                <TextBlock Text="Source" Style="{StaticResource RowTitle}" />
-                                <TextBlock Text="{Binding SourceStatus.Text}" Style="{StaticResource RowDescription}" />
-                            </StackPanel>
+                            <TextBlock Text="{Binding SourceStatus.Text}" Style="{StaticResource RowDescription}" />
                         </DockPanel>
                     </Border>
                 </StackPanel>

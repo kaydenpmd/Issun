@@ -98,6 +98,7 @@ public sealed class SetupViewModel : Observable, IDisposable
 
         ToggleKeyCommand = new Command(() => KeyShown = !KeyShown);
         ToggleQrCommand = new Command(() => QrShown = !QrShown, () => EndpointUrl is not null);
+        // Show and Hide, the owner's words; the same pair for the key and the code.
 
         _clientId = host.Settings.DiscordClientId;
         _host.Changed += OnHostChanged;
@@ -199,7 +200,7 @@ public sealed class SetupViewModel : Observable, IDisposable
             return;
         if (!LooksLikeId(id))
         {
-            ClientIdProblem = "An application ID is a number 17 to 20 digits long.";
+            ClientIdProblem = "An application ID is 17–20 digits long.";
             Log.Write($"[setup] not applying a Discord application ID of {id.Length} characters: not 17 to 20 digits");
             return;
         }
@@ -338,19 +339,29 @@ public sealed class SetupViewModel : Observable, IDisposable
         {
             if (Set(ref _keyShown, value))
             {
-                Raise(nameof(KeyDisplay));
+                Raise(nameof(KeyBlur));
                 Raise(nameof(ToggleKeyLabel));
+                Log.Write($"[setup] key {(value ? "shown" : "hidden")}");
             }
         }
     }
     private bool _keyShown;
 
-    public string KeyDisplay => _keyShown ? _host.Settings.Key : "••••••••••••••••";
+    /// <summary>The key itself, drawn blurred until Show (<see cref="KeyBlur"/>), as the owner asked.</summary>
+    public string KeyText => _host.Settings.Key;
+    public double KeyBlur => _keyShown ? 0 : BlurRadius;
     public string ToggleKeyLabel => _keyShown ? "Hide" : "Show";
 
     /// <summary>
-    /// The QR code carries the key, so like the key it is hidden until asked
-    /// for: a screenshot of this window shouldn't give the key away.
+    /// A Gaussian blur this wide on 13 px text or a 200 px code leaves nothing
+    /// legible or scannable. It hides the key from a glance or a screenshot;
+    /// it isn't encryption.
+    /// </summary>
+    private const double BlurRadius = 14;
+
+    /// <summary>
+    /// The QR code carries the key, so like the key it is blurred until Show:
+    /// a screenshot of this window shouldn't give the key away.
     /// </summary>
     public bool QrShown
     {
@@ -360,8 +371,8 @@ public sealed class SetupViewModel : Observable, IDisposable
             if (!Set(ref _qrShown, value))
                 return;
             Raise(nameof(ToggleQrLabel));
+            Raise(nameof(QrBlur));
             Log.Write($"[setup] QR code {(value ? "shown" : "hidden")}");
-            UpdateQr();
         }
     }
     private bool _qrShown;
@@ -369,7 +380,9 @@ public sealed class SetupViewModel : Observable, IDisposable
     /// <summary>--screenshot --expanded: draw the QR code too. Only ever on the demo host's made-up key.</summary>
     public void ShowQrForScreenshot() => QrShown = true;
 
-    public string ToggleQrLabel => _qrShown ? "Hide QR code" : "Show QR code";
+    public string ToggleQrLabel => _qrShown ? "Hide" : "Show";
+
+    public double QrBlur => _qrShown ? 0 : BlurRadius;
 
     public BitmapSource? Qr { get => _qr; private set => Set(ref _qr, value); }
     private BitmapSource? _qr;
@@ -378,7 +391,7 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     private void UpdateQr()
     {
-        if (!_qrShown || _endpointUrl is null)
+        if (_endpointUrl is null)
         {
             Qr = null;
             _qrFor = null;
@@ -443,7 +456,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         OfferUnattended = s.Tailscale is { Running: true, Unattended: false };
 
         EndpointUrl = s.EndpointUrl;
-        Raise(nameof(KeyDisplay));
+        Raise(nameof(KeyText));
         UpdateQr();
         Tick();
     }

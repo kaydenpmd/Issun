@@ -334,4 +334,51 @@ if ($Step -eq "address") {
     Dump $w "endpoint applied"; Shot "endpoint-applied" $w
     SaveLogs "address"
 }
+# The QR code's regenerate rules (the owner, 12 Nov 2026): an edit shows the
+# button and undoing it hides it; a new key mid-edit waits for the button and
+# keeps it up even after the edit is undone; a new key with no edit redraws at once.
+if ($Step -eq "qrrules") {
+    Say "##### the QR code's regenerate rules"
+    Start-Process $download.FullName
+    $w = FindWindow "Set up Issun" 90
+    if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
+    Start-Sleep 3
+    Click $w "Next" | Out-Null; Start-Sleep 3
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3
+    $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))))
+    $value = $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    $reloadCond = New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "ReloadQr")
+    function ReloadShown { $r = $w.FindFirst($Tree::Descendants, $reloadCond); return [bool]($r -and -not $r.Current.IsOffscreen) }
+    $log = "$env:LOCALAPPDATA\Issun\issun.log"
+    # Only lines written since the last Mark count.
+    $script:from = 0
+    function Mark { $script:from = @(Get-Content $log).Count }
+    function LogHas($text) { return [bool](@(Get-Content $log) | Select-Object -Skip $script:from | Where-Object { $_.Contains($text) }) }
+    $original = $value.Current.Value
+    Expect "starts with no reload button" (-not (ReloadShown))
+
+    $value.SetValue("one.example.com"); Start-Sleep 1
+    Expect "an edit shows it" (ReloadShown)
+    $value.SetValue($original); Start-Sleep 1
+    Expect "undoing the edit hides it" (-not (ReloadShown))
+
+    $value.SetValue("two.example.com"); Start-Sleep 1
+    Mark; ClickId $w "NewKey" | Out-Null; Start-Sleep 2
+    Expect "a new key mid-edit waits for the button" (LogHas "new key during an endpoint edit")
+    Expect "and doesn't redraw the code" (-not (LogHas "QR code redrawn with the new key"))
+    $value.SetValue($original); Start-Sleep 3
+    Expect "undoing the edit leaves the button up" (ReloadShown)
+    Expect "and still doesn't redraw the code" (-not (LogHas "QR code redrawn"))
+    Shot "qrrules-stuck" $w
+    Mark; ClickId $w "ReloadQr" | Out-Null; Start-Sleep 2
+    Expect "pressing it hides it" (-not (ReloadShown))
+    Expect "and redraws the code" (LogHas "QR code redrawn without an endpoint")
+
+    Mark; ClickId $w "NewKey" | Out-Null; Start-Sleep 2
+    Expect "a new key with no edit redraws at once" (LogHas "QR code redrawn with the new key")
+    Expect "with no button" (-not (ReloadShown))
+    SaveLogs "qrrules"
+}
 Say "##### done ($Step)"

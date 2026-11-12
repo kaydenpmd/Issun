@@ -131,7 +131,7 @@ public sealed class SetupViewModel : Observable, IDisposable
             await _host.RegenerateKeyAsync();
             KeyShown = true;
             Raise(nameof(KeyText));
-            UpdateQr();
+            KeyChanged();
         }, ex =>
         {
             Log.Write($"[setup] couldn't make a new key: {ex.Message}");
@@ -226,7 +226,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         if (page < SetupPage.Discord || page > SetupPage.StartWithWindows || page == _page)
             return;
         // Leaving Connect your source with an edited endpoint still applies it.
-        if (_page == SetupPage.Source && _endpointDirty)
+        if (_page == SetupPage.Source && (_endpointDirty || _qrKeyStale))
             _ = ApplyEndpointAsync();
         // Leaving the Discord page with a half-typed ID still applies what is there.
         if (_page == SetupPage.Discord && _applyId.IsEnabled)
@@ -444,8 +444,25 @@ public sealed class SetupViewModel : Observable, IDisposable
     /// <summary>The endpoint the QR code carries, as last applied; null for none.</summary>
     private string? _qrEndpoint;
 
-    /// <summary>Edited since it was last applied: the reload button shows.</summary>
+    /// <summary>
+    /// The key the QR code carries. Not read live from the settings: a new key
+    /// made while the endpoint is being edited waits for the reload button
+    /// (the owner, 12 Nov 2026).
+    /// </summary>
+    private string? _qrKey;
+
+    /// <summary>The field's text when it was last filled in or applied; an edit back to it is undone.</summary>
+    private string _appliedEndpointText = "";
+
+    /// <summary>The field differs from what was last applied.</summary>
     private bool _endpointDirty;
+
+    /// <summary>
+    /// A new key was made while the endpoint was being edited, so the code
+    /// still carries the old one. Keeps the reload button up even if the edit
+    /// is undone, until it is pressed.
+    /// </summary>
+    private bool _qrKeyStale;
 
     /// <summary>Edited at all in this window: Tailscale no longer fills the field in.</summary>
     private bool _endpointTouched;
@@ -464,10 +481,14 @@ public sealed class SetupViewModel : Observable, IDisposable
                 return;
             _endpointTouched = true;
             EndpointProblem = null;
-            if (!_endpointDirty)
-                Log.Write("[setup] endpoint edited");
-            _endpointDirty = true;
+            // As in Ammy: typing back what was there undoes the edit, and the
+            // button goes, unless a new key is waiting to go into the code.
+            var dirty = _endpointText != _appliedEndpointText;
+            if (dirty != _endpointDirty)
+                Log.Write(dirty ? "[setup] endpoint edited" : "[setup] endpoint edit undone");
+            _endpointDirty = dirty;
             Raise(nameof(ShowReload));
+            Raise(nameof(QrBlur));
             CopyEndpointCommand.RaiseCanExecuteChanged();
         }
     }
@@ -476,12 +497,46 @@ public sealed class SetupViewModel : Observable, IDisposable
     private void FillEndpoint(string? endpoint)
     {
         _qrEndpoint = endpoint;
-        if (Set(ref _endpointText, endpoint ?? "", nameof(EndpointText)))
+        _appliedEndpointText = endpoint ?? "";
+        if (Set(ref _endpointText, _appliedEndpointText, nameof(EndpointText)))
             CopyEndpointCommand.RaiseCanExecuteChanged();
         UpdateQr();
     }
 
-    public bool ShowReload => _endpointDirty;
+    public bool ShowReload => _endpointDirty || _qrKeyStale;
+
+    /// <summary>
+    /// The key changed (this page's button, or the main window's New key…).
+    /// Not mid-edit, the code is redrawn with it at once; mid-edit, the code
+    /// waits for the reload button, since the endpoint may not be finished.
+    /// </summary>
+    private void KeyChanged()
+    {
+        var key = _host.Settings.Key;
+        if (key == _qrKey)
+            return;
+        if (_qrKey is null)
+        {
+            // The first look at the key, when the window opens: not a change.
+            _qrKey = key;
+            UpdateQr();
+            return;
+        }
+        // Mid-edit, or after an edit that was undone while a new key waited:
+        // the button stays the only way to redraw (the owner, 12 Nov 2026).
+        if (_endpointDirty || _qrKeyStale)
+        {
+            if (!_qrKeyStale)
+                Log.Write("[setup] new key during an endpoint edit: the QR code waits for the reload button");
+            _qrKeyStale = true;
+            Raise(nameof(ShowReload));
+            Raise(nameof(QrBlur));
+            return;
+        }
+        _qrKey = key;
+        UpdateQr();
+        Log.Write("[setup] QR code redrawn with the new key");
+    }
 
     public string? EndpointProblem { get => _endpointProblem; private set => Set(ref _endpointProblem, value); }
     private string? _endpointProblem;
@@ -519,7 +574,10 @@ public sealed class SetupViewModel : Observable, IDisposable
             Log.Write("[setup] endpoint applied: the setting was already that");
         }
         _endpointDirty = false;
+        _qrKeyStale = false;
+        _qrKey = _host.Settings.Key;
         Raise(nameof(ShowReload));
+            Raise(nameof(QrBlur));
         FillEndpoint(address.Length > 0 ? address + "/now-playing" : null);
         Log.Write($"[setup] QR code redrawn {(address.Length > 0 ? "with" : "without")} an endpoint");
         return true;
@@ -575,7 +633,12 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public string ToggleQrLabel => _qrShown ? "Hide" : "Show";
 
-    public double QrBlur => _qrShown ? 0 : BlurRadius;
+    /// <summary>
+    /// Blurred while hidden, and while it needs regenerating (the owner,
+    /// 12 Nov 2026): a code that's out of date shouldn't be scanned, and
+    /// Regenerate stands where Show was.
+    /// </summary>
+    public double QrBlur => _qrShown && !ShowReload ? 0 : BlurRadius;
 
     public BitmapSource? Qr { get => _qr; private set { if (Set(ref _qr, value)) Raise(nameof(HasQr)); } }
 
@@ -588,7 +651,8 @@ public sealed class SetupViewModel : Observable, IDisposable
     {
         // Either half may be missing; the source fills in only what the code
         // carries (the owner, 12 Nov 2026).
-        var key = _host.Settings.Key is { Length: > 0 } k ? k : null;
+        _qrKey ??= _host.Settings.Key;
+        var key = _qrKey is { Length: > 0 } k ? k : null;
         if (_qrEndpoint is null && key is null)
         {
             Qr = null;
@@ -661,6 +725,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         if (!_endpointTouched && s.EndpointUrl != _qrEndpoint)
             FillEndpoint(s.EndpointUrl);
         Raise(nameof(KeyText));
+        KeyChanged();
         UpdateQr();
         Tick();
     }
@@ -693,7 +758,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         // An ID typed in the last 0.6 s before closing still counts.
         if (_clientId.Trim() != _host.Settings.DiscordClientId && LooksLikeId(_clientId.Trim()))
             _ = ApplyClientIdAsync();
-        if (_endpointDirty)
+        if (_endpointDirty || _qrKeyStale)
             _ = ApplyEndpointAsync();
         Log.Write($"[setup] closed on the {Describe(_page)} page");
     }

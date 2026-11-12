@@ -181,13 +181,16 @@
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
                             <DockPanel>
+                                <!-- Show/Hide, or Regenerate in its place while the code is
+                                     out of date (an edited endpoint, or a new key made
+                                     mid-edit): the code is blurred then, so Show's place
+                                     is where someone looks. Like Restart for an edited
+                                     field in Ammy. The owner's layout and word, 12 Nov 2026. -->
                                 <Button DockPanel.Dock="Right" Content="{Binding ToggleQrLabel}" Command="{Binding ToggleQrCommand}"
-                                        VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="64" />
-                                <!-- Shows once the endpoint is edited, as Ammy's Restart
-                                     does for an edited field; applies the field and
-                                     redraws the code. The owner's words go here. -->
-                                <Button DockPanel.Dock="Right" Content="[text]" Command="{Binding ReloadQrCommand}"
-                                        VerticalAlignment="Center" Margin="12,0,0,0" AutomationProperties.AutomationId="ReloadQr"
+                                        VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="64"
+                                        Visibility="{Binding ShowReload, Converter={StaticResource Hidden}}" />
+                                <Button DockPanel.Dock="Right" Content="Regenerate" Command="{Binding ReloadQrCommand}"
+                                        VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="64" AutomationProperties.AutomationId="ReloadQr"
                                         Visibility="{Binding ShowReload, Converter={StaticResource Visible}}" />
                                 <TextBlock Text="QR code" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
                             </DockPanel>

@@ -258,11 +258,9 @@
             <!-- ───────────── Diagnostics ───────────── -->
             <Expander IsExpanded="{x:Bind ViewModel.DiagnosticsExpanded, Mode=TwoWay}" Margin="0,22,0,4"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <!-- The title alone: its description went on 12 Nov 2026, the owner's word. -->
                 <Expander.Header>
-                    <StackPanel Margin="0,12">
-                        <TextBlock Text="Diagnostics" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="The source's last report and its check-in history" Style="{StaticResource RowDescription}" />
-                    </StackPanel>
+                    <TextBlock Text="Diagnostics" Style="{StaticResource RowTitle}" />
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock Text="The source's last report" Style="{StaticResource BodyStrongTextBlockStyle}" />
@@ -281,11 +279,9 @@
             <!-- ───────────── Log ───────────── -->
             <Expander IsExpanded="{x:Bind ViewModel.LogExpanded, Mode=TwoWay}" Margin="0,0,0,4"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <!-- The title alone: its description went on 12 Nov 2026, the owner's word. -->
                 <Expander.Header>
-                    <StackPanel Margin="0,12">
-                        <TextBlock Text="Log" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="The most recent lines, as they are written" Style="{StaticResource RowDescription}" />
-                    </StackPanel>
+                    <TextBlock Text="Log" Style="{StaticResource RowTitle}" />
                 </Expander.Header>
                 <StackPanel>
                     <TextBox x:Name="LogBox" IsReadOnly="True" Height="320" AcceptsReturn="True"

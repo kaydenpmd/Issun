@@ -1,0 +1,8 @@
+03:40:05.561 == clean PC
+03:40:06.463      os Microsoft Windows 11 Enterprise 10.0.26100 build 26100
+03:40:06.803      Windows App Runtime packages: Microsoft.WindowsAppRuntime.CBS.1.6 6000.900.156.100; Microsoft.WindowsAppRuntime.CBS.2 2.2.0.100
+03:40:06.827      (inbox, part of Windows itself: 2 package(s); not installed by anyone)
+03:40:09.553  ok   no .NET runtime is installed (dotnet: False, desktop runtime folder: False)
+03:40:09.563  ok   nothing unpacked yet under %TEMP%\.net
+03:40:09.595      IssunSpike.exe 82022903 bytes (78.22 MB); Issun.exe (WPF) 86170329 bytes (82.18 MB)
+03:40:09.610 == done

@@ -1,0 +1,134 @@
+<UserControl x:Class="IssunSpike.ConnectPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The setup window's Connect your source page (src/Issun/Views/SetupView.xaml,
+         page 2) redone in WinUI 3 with the same layout and the owner's words,
+         for a side-by-side with the WPF copy. Where WinUI has the real thing
+         it is used: TitleTextBlockStyle is Windows 11's Title (28/36
+         semibold), ProgressRing is the control the WPF copy redraws, and the
+         success mark is the glyph pair InfoBar's own template draws. -->
+    <UserControl.Resources>
+        <Style x:Key="PageBody" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+            <Setter Property="Margin" Value="0,12,0,20" />
+        </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style x:Key="RowTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+        </Style>
+        <Style x:Key="RowDescription" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style x:Key="FooterButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="MinWidth" Value="120" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+        <Style x:Key="AccentFooterButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+            <Setter Property="MinWidth" Value="120" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid x:Name="Root" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="24,20,24,12">
+                <TextBlock Text="Connect your source" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Style="{StaticResource PageBody}"
+                           Text="Complete these fields in the service that you're connecting to Issun." />
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="QR code" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            <Button Content="Show" HorizontalAlignment="Right" MinWidth="64" AutomationProperties.AutomationId="ToggleQr" />
+                        </Grid>
+                        <!-- Placeholder: the WPF page blurs the real code with
+                             BlurEffect, which WinUI 3 has no equivalent of. -->
+                        <Rectangle Width="200" Height="200" Margin="0,12,0,0" HorizontalAlignment="Left"
+                                   Fill="{ThemeResource ControlFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="Endpoint" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            <Button Content="Copy" HorizontalAlignment="Right" AutomationProperties.Name="Copy endpoint" />
+                        </Grid>
+                        <TextBox x:Name="Endpoint" Text="https://demo-pc.example-tailnet.ts.net/now-playing" Margin="0,8,0,0"
+                                 FontFamily="Cascadia Mono, Consolas" AutomationProperties.Name="Endpoint" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Key" Style="{StaticResource RowTitle}" />
+                            <TextBlock x:Name="KeyText" Text="d3m0-k3y-n0t-r3al-0000000000000000" FontFamily="Cascadia Mono, Consolas" FontSize="12"
+                                       Margin="0,3,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <Button Content="Show" MinWidth="64" Margin="0,0,8,0" AutomationProperties.Name="Show or hide key" />
+                            <Button x:Name="CopyKey" Content="Copy" Click="OnCopyKey" AutomationProperties.Name="Copy key" />
+                            <Button Content="[text]" Margin="8,0,0,0" AutomationProperties.AutomationId="NewKey" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Waiting: WinUI's own ProgressRing, 16 x 16, where the WPF
+                     page has src/Issun/Views/ProgressRing.cs. Connected: the
+                     InfoBar's success mark exactly as its template draws it,
+                     F136 in SystemFillColorSuccessBrush under F13E in
+                     TextFillColorInverseBrush, 16 px. -->
+                <Border Style="{StaticResource Card}">
+                    <Grid>
+                        <StackPanel x:Name="WaitingRow" Orientation="Horizontal">
+                            <ProgressRing x:Name="Ring" Width="16" Height="16" MinWidth="16" MinHeight="16" IsActive="True"
+                                          VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <TextBlock Text="Waiting..." Style="{StaticResource RowDescription}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <StackPanel x:Name="ConnectedRow" Orientation="Horizontal" Visibility="Collapsed">
+                            <Grid Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,12,0">
+                                <FontIcon Glyph="&#xF136;" FontSize="16" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                                <FontIcon Glyph="&#xF13E;" FontSize="16" Foreground="{ThemeResource TextFillColorInverseBrush}" />
+                            </Grid>
+                            <TextBlock Text="Connected" Style="{StaticResource RowDescription}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- For reference only: WinUI's real InfoBar at Success, whose
+                     icon the row above copies. Not on the WPF page. -->
+                <InfoBar x:Name="RealInfoBar" Severity="Success" IsOpen="True" IsClosable="False" Title="Connected"
+                         Margin="0,12,0,0" Visibility="Collapsed" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12,24,24">
+            <Button Content="Back" Style="{StaticResource FooterButton}" />
+            <Button Content="Next" Style="{StaticResource AccentFooterButton}" />
+            <Button Content="Cancel" Style="{StaticResource FooterButton}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

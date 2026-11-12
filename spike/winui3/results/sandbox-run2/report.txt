@@ -1,0 +1,72 @@
+03:40:05.561 == clean PC
+03:40:06.463      os Microsoft Windows 11 Enterprise 10.0.26100 build 26100
+03:40:06.803      Windows App Runtime packages: Microsoft.WindowsAppRuntime.CBS.1.6 6000.900.156.100; Microsoft.WindowsAppRuntime.CBS.2 2.2.0.100
+03:40:06.827      (inbox, part of Windows itself: 2 package(s); not installed by anyone)
+03:40:09.553  ok   no .NET runtime is installed (dotnet: False, desktop runtime folder: False)
+03:40:09.563  ok   nothing unpacked yet under %TEMP%\.net
+03:40:09.595      IssunSpike.exe 82022903 bytes (78.22 MB); Issun.exe (WPF) 86170329 bytes (82.18 MB)
+03:40:09.610 == done
+03:40:12.300 == cold start (first run unpacks into %TEMP%\.net), then 5 warm starts each
+03:40:16.055      WinUI spike first run: 3687 ms
+03:40:16.078  ok   WinUI spike opened a window on a clean PC
+03:40:16.214      unpacked: 589 files, 180 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=
+03:40:17.683      WinUI spike warm 1: 558 ms
+03:40:19.222      WinUI spike warm 2: 643 ms
+03:40:20.718      WinUI spike warm 3: 603 ms
+03:40:22.240      WinUI spike warm 4: 628 ms
+03:40:23.740      WinUI spike warm 5: 598 ms
+03:40:24.647      WinUI spike: first 3687 ms, warm median 603 ms (min 558, max 643)
+03:40:29.062      WPF Issun --demo first run: 4401 ms
+03:40:29.077  ok   WPF Issun --demo opened a window on a clean PC
+03:40:29.095      unpacked: 6 files, 8.2 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\Issun\ghON4HMrtABb_aKyKdmULf5JvnrXMU0=
+03:40:32.253      WPF Issun --demo warm 1: 2280 ms
+03:40:35.340      WPF Issun --demo warm 2: 2225 ms
+03:40:38.579      WPF Issun --demo warm 3: 2365 ms
+03:40:41.791      WPF Issun --demo warm 4: 2357 ms
+03:40:44.915      WPF Issun --demo warm 5: 2264 ms
+03:40:45.778      WPF Issun --demo: first 4401 ms, warm median 2280 ms (min 2225, max 2365)
+03:40:48.631      WPF baseline (one Fluent page) first run: 2842 ms
+03:40:48.631  ok   WPF baseline (one Fluent page) opened a window on a clean PC
+03:40:48.658      unpacked: 6 files, 8.2 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\BaselineWpf\onDY_KlzwokPFBea72TuBFaaPN6R0R0=
+03:40:51.271      WPF baseline (one Fluent page) warm 1: 1775 ms
+03:40:54.093      WPF baseline (one Fluent page) warm 2: 1961 ms
+03:40:56.772      WPF baseline (one Fluent page) warm 3: 1812 ms
+03:40:59.467      WPF baseline (one Fluent page) warm 4: 1851 ms
+03:41:02.178      WPF baseline (one Fluent page) warm 5: 1849 ms
+03:41:03.025      WPF baseline (one Fluent page): first 2842 ms, warm median 1849 ms (min 1775, max 1961)
+03:41:03.088      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.WindowsAppRuntime.dll 2.6
+03:41:03.102      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Xaml.dll 3.3.0.0 (4F2267338B14(ContainerAdministrator)-ac3d7a70b113e6cb21c626bd6c765f4bfd4ae6a6)
+03:41:03.115      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.Internal.FrameworkUdk.dll 12.6.5.0
+03:41:03.128      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Windowing.Core.dll 12.6.5.0
+03:41:03.135      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Xaml.Controls.dll 3.3.0.0 (4F2267338B14(ContainerAdministrator)-ac3d7a70b113e6cb21c626bd6c765f4bfd4ae6a6)
+03:41:03.153      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.dll 12.6.5.0
+03:41:03.167      2026-11-12 03:40:15.860 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\dcompi.dll 12.6.5.0
+03:41:03.178      2026-11-12 03:40:15.860 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Composition.OSSupport.dll 12.6.5.0
+03:41:03.197  ok   the spike loaded its own Windows App SDK DLLs (from %TEMP%\.net), none of Windows' inbox ones
+03:41:03.216      spike log: 2026-11-12 03:40:15.832 [start] first frame 2423 ms after process start
+03:41:03.230      spike log: 2026-11-12 03:40:17.639 [start] first frame 501 ms after process start
+03:41:03.240      spike log: 2026-11-12 03:40:19.155 [start] first frame 559 ms after process start
+03:41:03.247      spike log: 2026-11-12 03:40:20.663 [start] first frame 538 ms after process start
+03:41:03.262      spike log: 2026-11-12 03:40:22.157 [start] first frame 532 ms after process start
+03:41:03.283      spike log: 2026-11-12 03:40:23.686 [start] first frame 536 ms after process start
+03:41:03.294 == done
+03:41:05.963 == UI Automation and a live picture of the spike's window
+03:41:06.615  ok   found the spike's window (Issun, class WinUIDesktopWin32WindowClass)
+03:41:08.647  ok   found the Copy key button by name
+03:41:09.722  ok   invoking it ran its handler (the spike logged the click)
+03:41:09.727  ok   found the [text] button by AutomationId NewKey
+03:41:09.765  ok   read the Endpoint box's value: https://demo-pc.example-tailnet.ts.net/now-playing
+03:41:09.819      buttons UI Automation sees: Show | Copy endpoint | Show or hide key | Copy key | [text] | Back | Next | Cancel
+03:41:09.838      the ProgressRing appears as: ProgressBar 'Busy '
+03:41:12.223 == done
+03:41:15.056 == tray icon and menu
+03:41:17.720  ok   the spike opened its own tray menu and captured it (exit 0)
+03:41:17.746      icon rect: 1338,775 32x48; menu rect: 1320,718 200x81
+03:41:17.756 == the icon survives Explorer restarting
+03:41:21.849      UI Automation finds an element named Issun: ControlType.Window class WinUIDesktopWin32WindowClass
+03:41:29.909  ok   the spike saw TaskbarCreated and added its icon again
+03:41:29.934      NIM_ADD ok lines in the log so far: 10
+03:41:29.950 == done
+03:41:32.649 == offscreen --screenshot on a clean PC
+03:41:34.745  ok   --screenshot wrote a PNG (exit 0)
+03:41:34.759 == done

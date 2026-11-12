@@ -1,0 +1,8 @@
+03:41:15.056 == tray icon and menu
+03:41:17.720  ok   the spike opened its own tray menu and captured it (exit 0)
+03:41:17.746      icon rect: 1338,775 32x48; menu rect: 1320,718 200x81
+03:41:17.756 == the icon survives Explorer restarting
+03:41:21.849      UI Automation finds an element named Issun: ControlType.Window class WinUIDesktopWin32WindowClass
+03:41:29.909  ok   the spike saw TaskbarCreated and added its icon again
+03:41:29.934      NIM_ADD ok lines in the log so far: 10
+03:41:29.950 == done

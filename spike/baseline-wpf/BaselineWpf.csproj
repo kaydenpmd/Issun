@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The fair baseline for cold start: a WPF window with the Fluent theme and
+       a few controls, published exactly as Issun is, carrying Issun.Core too.
+       Issun's own demo mode does real work before its window is up. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Issun.Core\Issun.Core.csproj" />
+  </ItemGroup>
+</Project>

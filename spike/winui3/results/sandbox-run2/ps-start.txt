@@ -1,0 +1,26 @@
+03:40:12.300 == cold start (first run unpacks into %TEMP%\.net), then 5 warm starts each
+03:40:16.078  ok   WinUI spike opened a window on a clean PC
+03:40:16.214      unpacked: 589 files, 180 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=
+03:40:24.647      WinUI spike: first 3687 ms, warm median 603 ms (min 558, max 643)
+03:40:29.077  ok   WPF Issun --demo opened a window on a clean PC
+03:40:29.095      unpacked: 6 files, 8.2 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\Issun\ghON4HMrtABb_aKyKdmULf5JvnrXMU0=
+03:40:45.778      WPF Issun --demo: first 4401 ms, warm median 2280 ms (min 2225, max 2365)
+03:40:48.631  ok   WPF baseline (one Fluent page) opened a window on a clean PC
+03:40:48.658      unpacked: 6 files, 8.2 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\BaselineWpf\onDY_KlzwokPFBea72TuBFaaPN6R0R0=
+03:41:03.025      WPF baseline (one Fluent page): first 2842 ms, warm median 1849 ms (min 1775, max 1961)
+03:41:03.088      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.WindowsAppRuntime.dll 2.6
+03:41:03.102      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Xaml.dll 3.3.0.0 (4F2267338B14(ContainerAdministrator)-ac3d7a70b113e6cb21c626bd6c765f4bfd4ae6a6)
+03:41:03.115      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.Internal.FrameworkUdk.dll 12.6.5.0
+03:41:03.128      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Windowing.Core.dll 12.6.5.0
+03:41:03.135      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Xaml.Controls.dll 3.3.0.0 (4F2267338B14(ContainerAdministrator)-ac3d7a70b113e6cb21c626bd6c765f4bfd4ae6a6)
+03:41:03.153      2026-11-12 03:40:15.859 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.dll 12.6.5.0
+03:41:03.167      2026-11-12 03:40:15.860 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\dcompi.dll 12.6.5.0
+03:41:03.178      2026-11-12 03:40:15.860 [env] loaded C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\NwKh_2HIgVrrJr1nu8m5+XxVRNLdytc=\Microsoft.UI.Composition.OSSupport.dll 12.6.5.0
+03:41:03.197  ok   the spike loaded its own Windows App SDK DLLs (from %TEMP%\.net), none of Windows' inbox ones
+03:41:03.216      spike log: 2026-11-12 03:40:15.832 [start] first frame 2423 ms after process start
+03:41:03.230      spike log: 2026-11-12 03:40:17.639 [start] first frame 501 ms after process start
+03:41:03.240      spike log: 2026-11-12 03:40:19.155 [start] first frame 559 ms after process start
+03:41:03.247      spike log: 2026-11-12 03:40:20.663 [start] first frame 538 ms after process start
+03:41:03.262      spike log: 2026-11-12 03:40:22.157 [start] first frame 532 ms after process start
+03:41:03.283      spike log: 2026-11-12 03:40:23.686 [start] first frame 536 ms after process start
+03:41:03.294 == done

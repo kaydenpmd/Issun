@@ -1,0 +1,14 @@
+03:34:25.508 == cold start (first run unpacks into %TEMP%\.net), then 5 warm starts each
+03:34:29.356  ok   WinUI spike opened a window on a clean PC
+03:34:29.512      unpacked: 578 files, 179.7 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\TYs1y5LshDnlap9z8KBv9bX_AqpBnrA=
+03:34:37.668      WinUI spike: first 3755 ms, warm median 544 ms (min 533, max 569)
+03:34:42.229  ok   WPF Issun --demo opened a window on a clean PC
+03:34:42.245      unpacked: 6 files, 8.2 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\Issun\ghON4HMrtABb_aKyKdmULf5JvnrXMU0=
+03:34:58.809      WPF Issun --demo: first 4532 ms, warm median 2225 ms (min 2161, max 2414)
+03:34:58.878      spike log: 2026-11-12 03:34:29.132 [start] first frame 2470 ms after process start
+03:34:58.887      spike log: 2026-11-12 03:34:30.969 [start] first frame 495 ms after process start
+03:34:58.906      spike log: 2026-11-12 03:34:32.404 [start] first frame 502 ms after process start
+03:34:58.918      spike log: 2026-11-12 03:34:33.819 [start] first frame 489 ms after process start
+03:34:58.934      spike log: 2026-11-12 03:34:35.247 [start] first frame 495 ms after process start
+03:34:58.936      spike log: 2026-11-12 03:34:36.719 [start] first frame 526 ms after process start
+03:34:58.949 == done

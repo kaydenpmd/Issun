@@ -1,0 +1,17 @@
+03:35:01.871 == UI Automation and a live picture of the spike's window
+03:35:02.524  ok   found the spike's window (Issun, class WinUIDesktopWin32WindowClass)
+03:35:04.574  ok   found the Copy key button by name
+03:35:05.637  ok   invoking it ran its handler (the spike logged the click)
+03:35:05.653  ok   found the [text] button by AutomationId NewKey
+Exception calling "GetCurrentPattern" with "1" argument(s): "Unsupported 
+Pattern."
+At C:\IssunIn\test.ps1:110 char:9
++         $v = $edit.GetCurrentPattern([System.Windows.Automation.Value ...
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : InvalidOperationException
+ 
+03:35:05.851  FAIL read the Endpoint box's value: 
+03:35:05.901      buttons UI Automation sees: Show | Copy endpoint | Show or hide key | Copy key | [text] | Back | Next | Cancel
+03:35:05.921      the ProgressRing appears as: ProgressBar 'Busy '
+03:35:08.336 == done

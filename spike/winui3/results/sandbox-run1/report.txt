@@ -1,0 +1,54 @@
+03:34:18.927 == clean PC
+03:34:19.762      os Microsoft Windows 11 Enterprise 10.0.26100 build 26100
+03:34:20.053      Windows App Runtime packages: Microsoft.WindowsAppRuntime.CBS.1.6 6000.900.156.100; Microsoft.WindowsAppRuntime.CBS.2 2.2.0.100
+03:34:20.083  FAIL no Windows App SDK runtime is installed
+03:34:22.725  ok   no .NET runtime is installed (dotnet: False, desktop runtime folder: False)
+03:34:22.741  ok   nothing unpacked yet under %TEMP%\.net
+03:34:22.788      IssunSpike.exe 81732173 bytes (77.95 MB); Issun.exe (WPF) 86170329 bytes (82.18 MB)
+03:34:22.788 == done
+03:34:25.508 == cold start (first run unpacks into %TEMP%\.net), then 5 warm starts each
+03:34:29.328      WinUI spike first run: 3755 ms
+03:34:29.356  ok   WinUI spike opened a window on a clean PC
+03:34:29.512      unpacked: 578 files, 179.7 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\IssunSpike\TYs1y5LshDnlap9z8KBv9bX_AqpBnrA=
+03:34:31.012      WinUI spike warm 1: 547 ms
+03:34:32.433      WinUI spike warm 2: 544 ms
+03:34:33.856      WinUI spike warm 3: 533 ms
+03:34:35.282      WinUI spike warm 4: 542 ms
+03:34:36.757      WinUI spike warm 5: 569 ms
+03:34:37.668      WinUI spike: first 3755 ms, warm median 544 ms (min 533, max 569)
+03:34:42.224      WPF Issun --demo first run: 4532 ms
+03:34:42.229  ok   WPF Issun --demo opened a window on a clean PC
+03:34:42.245      unpacked: 6 files, 8.2 MB in C:\Users\WDAGUtilityAccount\AppData\Local\Temp\.net\Issun\ghON4HMrtABb_aKyKdmULf5JvnrXMU0=
+03:34:45.284      WPF Issun --demo warm 1: 2161 ms
+03:34:48.347      WPF Issun --demo warm 2: 2192 ms
+03:34:51.438      WPF Issun --demo warm 3: 2225 ms
+03:34:54.725      WPF Issun --demo warm 4: 2414 ms
+03:34:57.934      WPF Issun --demo warm 5: 2347 ms
+03:34:58.809      WPF Issun --demo: first 4532 ms, warm median 2225 ms (min 2161, max 2414)
+03:34:58.878      spike log: 2026-11-12 03:34:29.132 [start] first frame 2470 ms after process start
+03:34:58.887      spike log: 2026-11-12 03:34:30.969 [start] first frame 495 ms after process start
+03:34:58.906      spike log: 2026-11-12 03:34:32.404 [start] first frame 502 ms after process start
+03:34:58.918      spike log: 2026-11-12 03:34:33.819 [start] first frame 489 ms after process start
+03:34:58.934      spike log: 2026-11-12 03:34:35.247 [start] first frame 495 ms after process start
+03:34:58.936      spike log: 2026-11-12 03:34:36.719 [start] first frame 526 ms after process start
+03:34:58.949 == done
+03:35:01.871 == UI Automation and a live picture of the spike's window
+03:35:02.524  ok   found the spike's window (Issun, class WinUIDesktopWin32WindowClass)
+03:35:04.574  ok   found the Copy key button by name
+03:35:05.637  ok   invoking it ran its handler (the spike logged the click)
+03:35:05.653  ok   found the [text] button by AutomationId NewKey
+03:35:05.851  FAIL read the Endpoint box's value: 
+03:35:05.901      buttons UI Automation sees: Show | Copy endpoint | Show or hide key | Copy key | [text] | Back | Next | Cancel
+03:35:05.921      the ProgressRing appears as: ProgressBar 'Busy '
+03:35:08.336 == done
+03:35:11.201 == tray icon and menu
+03:35:13.947  ok   the spike opened its own tray menu and captured it (exit 0)
+03:35:13.981      icon rect: 1338,775 32x48; menu rect: 1320,718 200x81
+03:35:13.996 == the icon survives Explorer restarting
+03:35:18.060      UI Automation finds an element named Issun: ControlType.Window class WinUIDesktopWin32WindowClass
+03:35:26.144  ok   the spike saw TaskbarCreated and added its icon again
+03:35:26.164      NIM_ADD ok lines in the log so far: 10
+03:35:26.186 == done
+03:35:29.104 == offscreen --screenshot on a clean PC
+03:35:31.199  ok   --screenshot wrote a PNG (exit 0)
+03:35:31.208 == done

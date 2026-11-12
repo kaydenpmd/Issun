@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Throwaway proof of concept on the winui3-spike branch, never merged:
+       can Issun's window move from WPF to WinUI 3 (Windows App SDK) without
+       losing a single self-contained .exe, the tray icon, offscreen
+       screenshots and UI Automation? spike/winui3/REPORT.md has the answers.
+       Not in Issun.sln, so CI never builds it. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <RootNamespace>IssunSpike</RootNamespace>
+    <AssemblyName>IssunSpike</AssemblyName>
+    <UseWinUI>true</UseWinUI>
+    <!-- Unpackaged (no MSIX) and carrying its own copy of the Windows App SDK,
+         so nothing has to be installed first: Issun's model. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\src\Issun\Assets\issun.ico</ApplicationIcon>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Only WinUI and what it depends on (Base, Foundation, InteractiveExperiences,
+         WebView2), not the Microsoft.WindowsAppSDK metapackage, which also
+         brings the AI, ML, Search and Widgets packages: onnxruntime, DirectML
+         and the semantic index, about 60 MB of the single file. Set
+         -p:SpikeFull=true to publish with the metapackage for comparison. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.5" Condition="'$(SpikeFull)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.6.5" Condition="'$(SpikeFull)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" Condition="'$(SpikeFull)' == 'true'" />
+  </ItemGroup>
+
+  <!-- Issun.Core (Kestrel, the server, Discord IPC, everything not UI), so the
+       single file's size is what a WinUI Issun would weigh, not a bare page. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Issun.Core\Issun.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\src\Issun\Assets\issun.ico" Link="issun.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

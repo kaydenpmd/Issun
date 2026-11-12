@@ -1,0 +1,114 @@
+[
+  {
+    "text": "Connect your source",
+    "x": 30,
+    "y": 25,
+    "w": 329,
+    "h": 47
+  },
+  {
+    "text": "Complete these fields in the service that you\u0027re connecting to Issun.",
+    "x": 30,
+    "y": 88,
+    "w": 521,
+    "h": 23
+  },
+  {
+    "text": "QR code",
+    "x": 51,
+    "y": 161,
+    "w": 66,
+    "h": 23
+  },
+  {
+    "text": "Show",
+    "x": 638,
+    "y": 160,
+    "w": 42,
+    "h": 23
+  },
+  {
+    "text": "Endpoint",
+    "x": 51,
+    "y": 504,
+    "w": 70,
+    "h": 23
+  },
+  {
+    "text": "Copy",
+    "x": 644,
+    "y": 502,
+    "w": 40,
+    "h": 23
+  },
+  {
+    "text": "https://demo-pc.example-tailnet.ts.net/now-playing",
+    "x": 51,
+    "y": 545,
+    "w": 648,
+    "h": 40
+  },
+  {
+    "text": "Key",
+    "x": 51,
+    "y": 622,
+    "w": 28,
+    "h": 23
+  },
+  {
+    "text": "d3m0-k3y-n0t-r3al-0000000000000000",
+    "x": 51,
+    "y": 650,
+    "w": 299,
+    "h": 17
+  },
+  {
+    "text": "Show",
+    "x": 478,
+    "y": 632,
+    "w": 42,
+    "h": 23
+  },
+  {
+    "text": "Copy",
+    "x": 564,
+    "y": 632,
+    "w": 40,
+    "h": 23
+  },
+  {
+    "text": "[text]",
+    "x": 644,
+    "y": 632,
+    "w": 40,
+    "h": 23
+  },
+  {
+    "text": "Waiting...",
+    "x": 86,
+    "y": 708,
+    "w": 62,
+    "h": 20
+  },
+  {
+    "text": "Back",
+    "x": 308,
+    "y": 786,
+    "w": 36,
+    "h": 23
+  },
+  {
+    "text": "Next",
+    "x": 468,
+    "y": 786,
+    "w": 36,
+    "h": 23
+  },
+  {
+    "text": "Cancel",
+    "x": 620,
+    "y": 786,
+    "w": 51,
+    "h": 23
+  }
+]

@@ -520,8 +520,11 @@ if ($Step -eq "shots") {
     }
     foreach ($name in $runs.Keys) {
         $a = @("--screenshot", (Join-Path $dir "$name.png"), "--theme", "dark") + $runs[$name]
-        $p = Start-Process $download.FullName -ArgumentList $a -PassThru -Wait
-        Expect "$name rendered" ($p.ExitCode -eq 0 -and (Test-Path (Join-Path $dir "$name.png")))
+        $err = Join-Path $dir "$name.err.txt"
+        $p = Start-Process $download.FullName -ArgumentList $a -PassThru -Wait -RedirectStandardError $err
+        $ok = $p.ExitCode -eq 0 -and (Test-Path (Join-Path $dir "$name.png"))
+        Expect "$name rendered" $ok
+        if (-not $ok) { Get-Content $err -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { Say "  $_" } }
     }
 }
 Say "##### done ($Step)"

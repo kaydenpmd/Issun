@@ -778,9 +778,32 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    is: asked whether to put it on the wording page, the owner said "Leave it".
    Cancel stays: the owner wanted it only if it's standard in this
    kind of window, and Microsoft's wizard guidance puts Cancel in every
-   wizard's command area, title-bar X or not. The six commits from
-   `8b556b8` to `7d902f8` aren't pushed, because a push releases, and the
-   Tailscale cards are still Claude's drafts.
+   wizard's command area, title-bar X or not.
+   **Where it stood at the handoff of 12 Nov 2026 (06:20).** The pages were
+   reworked through the day to the owner's specifications (the setup window
+   section has the four pages): the winget command link, Next checking the
+   address and Funnel, Skip, the editable endpoint with Regenerate, the
+   read-only key with its new-key button, Waiting.../Connected, and the last
+   page's Yes and No radio buttons with Next labelled "Finish" (the owner:
+   "radiobuttons for yes and no", "make sure Next is still there", "Yes,
+   Finish"). `tools/sandbox/run.ps1 -Steps first` passed all 17 checks on
+   af291a7 at 06:20, the last page included; the other steps (again, update,
+   uninstall, winget, tailscale, address, qrrules) passed on earlier commits
+   that day. **24 commits on `main`, none pushed**, because a push releases and
+   the window still has `[text]` placeholders: Skip, the install link's title
+   and progress line, the new-key button, and the errors (no winget, install
+   failed, no address, Funnel off, endpoint invalid, save failed, new key
+   failed), besides the Tailscale cards above. Before asking the owner, check
+   that the wording page has a field for every `[text]` in `SetupView.xaml` and
+   `SetupViewModel.cs`, and add any that's missing. Push only after their
+   words are in and they've said it can go out.
+   **Also waiting on the owner: WinUI 3 or not.** The `winui3-spike` branch
+   (pushed, never to be merged; `spike/winui3/REPORT.md`, fce7811) found a
+   move loses nothing Issun depends on and packages as MSIX, at the cost of
+   rewriting both windows (about 4,800 lines) and the tray. Its advice:
+   migrate if the window keeps growing and wanting Windows 11 controls, else
+   stay on WPF. If they choose WinUI 3, make further setup-window changes after
+   the move rather than twice.
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;

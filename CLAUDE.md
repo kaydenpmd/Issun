@@ -95,8 +95,11 @@ as throwaway work for exactly that reason.
 
 So Issun generates its own key on first run, registers its own autostart, reads
 Tailscale's state instead of asking for a URL, offers to turn Funnel on, and
-imports a relay-era `.env` so the owner's phone keeps working without
-re-pairing.
+imported a relay-era `.env` so the owner's phone kept working without
+re-pairing. The window's import row ("Coming from relay.py") went on 12 Nov
+2026, the owner: "i'm the only person on the planet who ever used that";
+`EnvImporter` and `IIssunHost.ImportEnvAsync` stay in Issun.Core, unused by
+the window.
 
 **The shape is unchanged, deliberately.** Discord has no Rich Presence SDK on
 iOS. Setting presence from a phone directly would mean a Gateway WebSocket with
@@ -267,7 +270,8 @@ the phone.
 
 **On WinUI 3: every step passes** (12 Nov 2026, build 83 at fdc31e2, the
 `winui3` branch): 35 checks in the default run, 7 in `address`, 11 in
-`qrrules`, 0 failed. The run caught one bug, the tray menu's Start with
+`qrrules`, 0 failed; build 90 (08c4c18) again passed the default run's 35
+and `shots`' 9. The run caught one bug, the tray menu's Start with
 Windows unticked after setup's Yes (the main view model read it once,
 before setup ran; WPF had the same gap), fixed in fdc31e2.
 
@@ -357,7 +361,8 @@ it, and moving it must not lose anything.
 
 **Settings.** `SettingsStore` writes atomically (a temp file in the same folder,
 then replace). A missing file means first run: a fresh key, saved, and
-`FirstRun` set so the window shows the Connect your source banner. An existing file with
+`FirstRun` set, which opens the setup window (the main window's Connect your
+source tip went on 12 Nov 2026, at the owner's word). An existing file with
 an empty key gets one generated. A corrupt file is moved aside to
 `settings.json.bad-<yyyyMMddHHmmss>`, not overwritten, and the log says loudly
 that the source will need the new key ("Your source will need the new key
@@ -409,7 +414,8 @@ owner's order of 12 Nov 2026:
 3. **Connect your source**: the QR code, the endpoint as an editable field
    (filled from Tailscale until edited), the key read-only with Show, Copy and
    a button that makes a new key at once (no confirmation, unlike the main
-   window's New key…), and the source's live status. Editing the endpoint shows
+   window's New key, which asks in place first; "New key…" lost its ellipsis on
+   12 Nov 2026, the owner's word), and the source's live status. Editing the endpoint shows
    a reload button beside Show, as an edited field shows Restart in Ammy; it
    saves the field as the public address (or clears it when it's Tailscale's
    own, so Issun keeps following Tailscale) and redraws the code. Leaving the
@@ -502,6 +508,19 @@ their shape. What had no direct WinUI equivalent, and what took its place:
   rather than the metapackage, move the rows onto it (flags instead of
   values), and note its open issue #391: the card has no Invoke pattern, so
   UI Automation can't click it and the sandbox test would need the mouse.
+- **The .pri is named resources.pri.** WinUI finds the compiled XAML and
+  styles in `<exe name>.pri`, else `resources.pri`. Named `Issun.pri`, a
+  renamed copy (a release download is `Issun-<version>-b<build>-<sha>.exe`)
+  found neither: every ThemeResource failed and no view loaded. Users never
+  met it, since a download only installs itself as `Issun.exe` and shows
+  nothing that needs XAML first, but `--screenshot` from a download in the
+  sandbox did. `ProjectPriFileName` in `Issun.csproj` fixes it.
+- **No screenshots from a disconnected session.** With the owner's Remote
+  Desktop session disconnected (a 1080 x 2272 virtual display), WinUI drew
+  the main window at twice the size with checkboxes and section arrows in
+  states they weren't in. `--screenshot` now refuses with a message then. The
+  sandbox test's `shots` step (`run.ps1 -Steps shots`) renders every screen
+  in Windows Sandbox instead, into `out\shots`.
 - **Looks**: the WinUI renders match the WPF ones within a few pixels on
   every page (dark, 12 Nov 2026). The check-in history, which WPF drew
   double-spaced, now reads as written.

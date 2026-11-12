@@ -242,20 +242,34 @@ unpacked 8 MB.
 `pwsh tools/sandbox/run.ps1` (from PowerShell, not Claude Code's Bash) builds a
 release-numbered `.exe`, opens Windows Sandbox, and runs `tools/sandbox/test.ps1`
 inside it through `wsb exec`: first run, the setup window page by page, the
-self-install's Apps, Start menu and Run entries, a second launch, an update over
-the running copy, and uninstall as Settings › Apps runs it. Every check prints
+self-install's Apps, Start menu and Run entries, a second launch, the tray
+icon (found by its tooltip, a click opens the window, closing the window
+leaves Issun running, the menu's Quit ends it), an update over the running
+copy, and uninstall as Settings › Apps runs it. Every check prints
 `ok` or `FAIL`; the report, screenshots and Issun's logs land in
 `%LOCALAPPDATA%\IssunSandbox\<time>\out`. `-Keep` leaves the sandbox open,
-`-Steps first,update` runs some steps. About two minutes. The sandbox has its
+`-Steps first,update` runs some steps; `address` and `qrrules`, not in the
+default run, each need a fresh sandbox of their own. About two minutes a run. The sandbox has its
 own network and registry, so it is the one place a self-installing build can
 run on this PC; never open its `.exe` outside it. Enabled on 12 Nov 2026
 (`dism /online /enable-feature /featurename:Containers-DisposableClientVM
 /all`, from an elevated shell; `Enable-WindowsOptionalFeature` failed in
 PowerShell 7 with "Class not registered"). Computer use can't see the Sandbox
 window (its owner, `WindowsSandboxRemoteSession`, can't be granted), which is
-why the test drives itself: UI Automation for the WinUI windows, keystrokes for message boxes,
-whose buttons UI Automation didn't find from there. It can't test Discord,
-Tailscale, Funnel or the phone.
+why the test drives itself: UI Automation for the WinUI windows, BM_CLICK sent
+to message boxes' own buttons (keystrokes stopped reaching them once the tray
+step's real mouse clicks had moved Windows' foreground), real mouse clicks on
+the tray icon, and Up and Enter posted to the tray menu, whose items UI
+Automation doesn't list from there (`tray-menu.png` shows them). WinUI reports
+what's scrolled out of view as off screen, as WPF didn't, so the test scrolls
+before it looks below the fold. It can't test Discord, Tailscale, Funnel or
+the phone.
+
+**On WinUI 3: every step passes** (12 Nov 2026, build 83 at fdc31e2, the
+`winui3` branch): 35 checks in the default run, 7 in `address`, 11 in
+`qrrules`, 0 failed. The run caught one bug, the tray menu's Start with
+Windows unticked after setup's Yes (the main view model read it once,
+before setup ran; WPF had the same gap), fixed in fdc31e2.
 
 ### Testing without touching the live setup
 
@@ -857,7 +871,8 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    Finish"). `tools/sandbox/run.ps1 -Steps first` passed all 17 checks on
    af291a7 at 06:20, the last page included; the other steps (again, update,
    uninstall, winget, tailscale, address, qrrules) passed on earlier commits
-   that day. **24 commits on `main`, none pushed**, because a push releases and
+   that day. The same steps pass on the WinUI build (see "Testing on a clean
+   PC" above). **24 commits on `main`, none pushed**, because a push releases and
    the window still has `[text]` placeholders: Skip, the install link's title
    and progress line, the new-key button, and the errors (no winget, install
    failed, no address, Funnel off, endpoint invalid, save failed, new key

@@ -83,6 +83,11 @@ function Click($el, $name) {
 function ClickId($el, $id) {
     $b = $el.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id)))
     if (-not $b) { Say "FAIL no element with id '$id'"; return $false }
+    # WinUI reports what's scrolled out of view as off screen: bring it in.
+    if ($b.Current.IsOffscreen) {
+        try { $b.GetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern).ScrollIntoView(); Start-Sleep -Milliseconds 500 }
+        catch { Say "couldn't scroll '$id' into view: $($_.Exception.Message)" }
+    }
     if (-not $b.Current.IsEnabled -or $b.Current.IsOffscreen) { Say "FAIL '$id' isn't available"; return $false }
     $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
     Say "clicked '$id'"
@@ -249,7 +254,10 @@ public static class TrayMouse {
         $cond = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
         $taskbar = $AE::RootElement.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, "Shell_TrayWnd")))
         if (-not $taskbar) { return $null }
-        foreach ($b in $taskbar.FindAll($Tree::Descendants, $cond)) { if ($b.Current.Name -like "Issun*") { return $b } }
+        # The icon's name is its tooltip, "Issun" and an en dash; the taskbar's
+        # button for the window is "Issun - 1 running window", with a hyphen.
+        $prefix = "Issun " + [char]0x2013
+        foreach ($b in $taskbar.FindAll($Tree::Descendants, $cond)) { if ($b.Current.Name.StartsWith($prefix)) { return $b } }
         return $null
     }
     $icon = $null; $deadline = (Get-Date).AddSeconds(20)
@@ -272,7 +280,7 @@ public static class TrayMouse {
         [TrayMouse]::Right($cx, $cy); Start-Sleep 2
         $menu = $AE::RootElement.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, "#32768")))
         if (-not $menu) { $menu = $AE::RootElement.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Menu))) }
-        if (-not $menu) { Say "FAIL no menu on a right click"; Shot "tray-no-menu" $null }
+        if (-not $menu) { Say "FAIL no menu on a right click"; Shot "tray-no-menu" $null; (New-Object -ComObject WScript.Shell).SendKeys("{ESC}") }
         else {
             Shot "tray-menu" $menu
             $items = $menu.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem)))

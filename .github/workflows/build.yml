@@ -42,7 +42,7 @@ defaults:
 
 jobs:
   build:
-    # WPF and the tests both need Windows: the autostart tests write a
+    # WinUI 3 and the tests both need Windows: the autostart tests write a
     # throwaway key under HKCU and the Discord tests open named pipes. Windows
     # minutes bill at 2x on a private repo and are free on a public one.
     runs-on: windows-latest
@@ -110,13 +110,13 @@ jobs:
       - name: Test
         run: dotnet test Issun.sln
 
-      # --self-contained: nothing to install first; the .NET runtime is inside.
-      # PublishSingleFile + IncludeNativeLibrariesForSelfExtract: one file. WPF's
-      # native DLLs would otherwise sit beside the .exe; with this they are
-      # bundled and unpacked under %TEMP%\.net on first launch.
-      # EnableCompressionInSingleFile: the bundled assemblies are compressed.
-      # Self-contained WPF plus ASP.NET Core is large; on the scaffold this took
-      # the .exe from 161 MB to 74 MB.
+      # --self-contained: nothing to install first; the .NET runtime and the
+      # Windows App SDK (WinUI 3, since 12 Nov 2026) are inside.
+      # PublishSingleFile + IncludeNativeLibrariesForSelfExtract: one file. The
+      # Windows App SDK makes the single file unpack everything under
+      # %TEMP%\.net on first launch (Issun.csproj says why), about 180 MB.
+      # EnableCompressionInSingleFile: the bundled files are compressed. The
+      # WPF build's .exe was 86 MB; the WinUI one is about 82.
       #
       # IssunBuild and IssunCommit feed Directory.Build.props, which stamps them
       # into assembly metadata for IssunInfo to read back. They are global

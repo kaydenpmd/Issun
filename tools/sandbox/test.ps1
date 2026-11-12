@@ -487,18 +487,18 @@ if ($Step -eq "qrrules") {
 
     $value.SetValue("two.example.com"); Start-Sleep 1
     Mark; ClickId $w "NewKey" | Out-Null; Start-Sleep 2
-    Expect "a new key mid-edit waits for the button" (LogHas "new key during an endpoint edit")
-    Expect "and doesn't redraw the code" (-not (LogHas "QR code redrawn with the new key"))
+    Expect "a new key mid-edit waits for the button" (LogHas "[setup] new key during an endpoint edit")
+    Expect "and doesn't redraw the code" (-not (LogHas "[setup] QR code redrawn with the new key"))
     $value.SetValue($original); Start-Sleep 3
     Expect "undoing the edit leaves the button up" (ReloadShown)
-    Expect "and still doesn't redraw the code" (-not (LogHas "QR code redrawn"))
+    Expect "and still doesn't redraw the code" (-not (LogHas "[setup] QR code redrawn"))
     Shot "qrrules-stuck" $w
     Mark; ClickId $w "ReloadQr" | Out-Null; Start-Sleep 2
     Expect "pressing it hides it" (-not (ReloadShown))
-    Expect "and redraws the code" (LogHas "QR code redrawn without an endpoint")
+    Expect "and redraws the code" (LogHas "[setup] QR code redrawn without an endpoint")
 
     Mark; ClickId $w "NewKey" | Out-Null; Start-Sleep 2
-    Expect "a new key with no edit redraws at once" (LogHas "QR code redrawn with the new key")
+    Expect "a new key with no edit redraws at once" (LogHas "[setup] QR code redrawn with the new key")
     Expect "with no button" (-not (ReloadShown))
     SaveLogs "qrrules"
 }

@@ -490,6 +490,18 @@ their shape. What had no direct WinUI equivalent, and what took its place:
 - **Single file**: needs `EnableMsixTooling` (for the embedded
   resources.pri; no MSIX is made) and unpacks about 180 MB on first run,
   which `StaleUnpacks` cleans up after updates.
+- **Settings cards are drawn by hand, on purpose, for now.** Windows 11
+  Settings' rows are `SettingsCard` and `SettingsExpander`, which WinUI
+  doesn't have; Microsoft's settings guidance points to the Windows Community
+  Toolkit's (`CommunityToolkit.WinUI.Controls.SettingsControls`). Its stable
+  8.2.251219 depends on the whole Windows App SDK 1.6 metapackage, which
+  would sit beside Issun's 2.6.5; the 8.3 previews (8.3.260402-preview2,
+  checked 12 Nov 2026) depend on `Microsoft.WindowsAppSDK.WinUI` 1.8 or
+  later, which would work. The owner, 12 Nov 2026: "just wait for that to
+  become stable". So when a stable 8.3 or later depends on the WinUI package
+  rather than the metapackage, move the rows onto it (flags instead of
+  values), and note its open issue #391: the card has no Invoke pattern, so
+  UI Automation can't click it and the sandbox test would need the mouse.
 - **Looks**: the WinUI renders match the WPF ones within a few pixels on
   every page (dark, 12 Nov 2026). The check-in history, which WPF drew
   double-spaced, now reads as written.

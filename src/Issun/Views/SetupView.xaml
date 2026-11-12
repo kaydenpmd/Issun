@@ -324,7 +324,7 @@
             <Button Content="[text]" Command="{Binding SkipCommand}" Style="{StaticResource FooterButton}"
                     AutomationProperties.AutomationId="Skip"
                     Visibility="{Binding ShowSkip, Converter={StaticResource Visible}}" />
-            <Button Content="Next" Command="{Binding NextCommand}" Style="{StaticResource AccentFooterButton}" IsDefault="True"
+            <Button Content="{Binding NextLabel}" Command="{Binding NextCommand}" Style="{StaticResource AccentFooterButton}" IsDefault="True"
                     Visibility="{Binding ShowNext, Converter={StaticResource Visible}}" />
             <Button Content="{Binding CloseLabel}" Command="{Binding CloseCommand}" Style="{StaticResource FooterButton}" IsCancel="True" />
         </StackPanel>

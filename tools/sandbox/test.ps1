@@ -196,9 +196,9 @@ if ($Step -in @("all","first")) {
     Pick "LaunchNo"; Start-Sleep 2
     Expect "No removes Issun from startup" (-not (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)
     Pick "LaunchYes"; Start-Sleep 2
-    Click $w "Next" | Out-Null
+    Click $w "Finish" | Out-Null
     Start-Sleep 3
-    Expect "Next finishes setup" (-not (FindWindow "Set up Issun" 1))
+    Expect "Finish finishes setup" (-not (FindWindow "Set up Issun" 1))
     Expect "Start with Windows registered (ticked by default)" ((Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)
     $main = FindWindow "Issun" 10
     if ($main) { CheckFits $main "main"; Shot "main" $main }

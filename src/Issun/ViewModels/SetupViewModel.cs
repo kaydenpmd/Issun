@@ -191,6 +191,9 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public bool ShowNext => true;
 
+    /// <summary>Finish on the last page, where it ends setup (the owner's yes, 12 Nov 2026, after Microsoft's wizard guidance); Next elsewhere.</summary>
+    public string NextLabel => _page == SetupPage.StartWithWindows ? "Finish" : "Next";
+
     /// <summary>
     /// Skip is always on the Tailscale page and on Connect your source (the
     /// owner, 12 Nov 2026). On the first it goes on without Next's check, for
@@ -236,7 +239,7 @@ public sealed class SetupViewModel : Observable, IDisposable
                 Go(SetupPage.Source);
                 break;
             case SetupPage.StartWithWindows:
-                Log.Write("[setup] Next on the last page: setup finished");
+                Log.Write("[setup] Finish: setup finished");
                 CloseRequested?.Invoke();
                 break;
             default:
@@ -268,6 +271,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         Raise(nameof(OnSourcePage));
         Raise(nameof(CloseLabel));
         Raise(nameof(ShowNext));
+        Raise(nameof(NextLabel));
         Raise(nameof(ShowSkip));
         if (page == SetupPage.Tailscale)
             CheckTailscaleCommand.Execute(null);

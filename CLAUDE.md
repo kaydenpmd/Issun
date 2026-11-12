@@ -506,18 +506,26 @@ their shape. What had no direct WinUI equivalent, and what took its place:
 - **Single file**: needs `EnableMsixTooling` (for the embedded
   resources.pri; no MSIX is made) and unpacks about 180 MB on first run,
   which `StaleUnpacks` cleans up after updates.
-- **Settings cards are drawn by hand, on purpose, for now.** Windows 11
-  Settings' rows are `SettingsCard` and `SettingsExpander`, which WinUI
-  doesn't have; Microsoft's settings guidance points to the Windows Community
-  Toolkit's (`CommunityToolkit.WinUI.Controls.SettingsControls`). Its stable
-  8.2.251219 depends on the whole Windows App SDK 1.6 metapackage, which
-  would sit beside Issun's 2.6.5; the 8.3 previews (8.3.260402-preview2,
-  checked 12 Nov 2026) depend on `Microsoft.WindowsAppSDK.WinUI` 1.8 or
-  later, which would work. The owner, 12 Nov 2026: "just wait for that to
-  become stable". So when a stable 8.3 or later depends on the WinUI package
-  rather than the metapackage, move the rows onto it (flags instead of
-  values), and note its open issue #391: the card has no Invoke pattern, so
-  UI Automation can't click it and the sandbox test would need the mouse.
+- **Settings rows are the toolkit's SettingsCard** (since 12 Nov 2026).
+  Windows 11 Settings' rows are `SettingsCard` and `SettingsExpander`, which
+  WinUI doesn't have; Microsoft's settings guidance points to the Windows
+  Community Toolkit's (`CommunityToolkit.WinUI.Controls.SettingsControls`),
+  which began as PowerToys' own Setting controls. Its stable 8.2.251219 asks
+  for `Microsoft.WindowsAppSDK` 1.6 or later. With only the WinUI and Runtime
+  packages referenced, that pulled 1.6's whole SDK in beside 2.6.5, so the
+  owner first chose "just wait for that to become stable"; then PowerToys
+  turned out to use that same toolkit with `Microsoft.WindowsAppSDK` 2.6.5
+  referenced whole, which satisfies it, and the owner chose "switch". The
+  cost is the AI, ML, Search and Widgets packages in the `.exe`. Rows with a
+  title, a description and a control on the right are SettingsCards (Set up
+  again is clickable, with E8A7, Open in new window, as its action icon). The
+  cards that can't be (a picture or a field under the title, a status dot)
+  are Borders in the `Card` style, which takes SettingsCard's own resources
+  (`SettingsCardPadding`, `SettingsCardMinHeight`, its background, border
+  and thickness) from the toolkit's dictionary merged in `App.xaml`, and a
+  single line in one is centred, as SettingsCard centres its content. The
+  toolkit's open issue #391: SettingsCard has no Invoke pattern, so UI
+  Automation can't click Set up again; the sandbox test doesn't need to.
 - **The .pri is named resources.pri.** WinUI finds the compiled XAML and
   styles in `<exe name>.pri`, else `resources.pri`. Named `Issun.pri`, a
   renamed copy (a release download is `Issun-<version>-b<build>-<sha>.exe`)
@@ -825,8 +833,10 @@ the scaffold, the published `.exe` was 74 MB compressed (161 MB without
 `EnableCompressionInSingleFile`), FileVersion `0.1.0.2`, and `Issun.Core`
 carried the SHA, so the CI properties do reach `IssunInfo` through the project
 reference. Trimming is not an option: WPF didn't support it, and WinUI's
-XAML binding isn't checked for it either. The WinUI build's single file is
-about 82 MB, a little smaller than WPF's 86.
+XAML binding isn't checked for it either. The WinUI build's single file was
+about 82 MB with only the WinUI package, a little smaller than WPF's 86, and
+is 108,086,185 bytes (about 103 MB, build 97) with the whole Windows App SDK
+since SettingsCard came in.
 
 The repo is public, which keeps Windows runner minutes free; they bill at 2× on
 a private repo.

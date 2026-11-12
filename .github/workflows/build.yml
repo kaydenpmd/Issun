@@ -116,7 +116,8 @@ jobs:
       # Windows App SDK makes the single file unpack everything under
       # %TEMP%\.net on first launch (Issun.csproj says why), about 180 MB.
       # EnableCompressionInSingleFile: the bundled files are compressed. The
-      # WPF build's .exe was 86 MB; the WinUI one is about 82.
+      # WPF build's .exe was 86 MB; the WinUI one is about 103 (the whole
+      # Windows App SDK, for the toolkit's SettingsCard).
       #
       # IssunBuild and IssunCommit feed Directory.Build.props, which stamps them
       # into assembly metadata for IssunInfo to read back. They are global

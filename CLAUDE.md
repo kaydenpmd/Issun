@@ -536,7 +536,9 @@ this file.
 
 Four more since build 48 (11 Nov 2026), all in the uptime log's verdicts and
 the phone's diag, from a census of every log since 24 Aug 2026 (Ammy's
-CLAUDE.md, "The census of 11 Nov 2026"):
+CLAUDE.md, "The census of 11 Nov 2026"). The owner's go-ahead was "Yes, do
+Issun", to a proposal to log Ammy 167's journal and fix the two labelling
+bugs the census found:
 
 - **A process too old to have started during the gap stayed up.** relay.py
   called any gain under 90% of the gap a death. Issun does so only when the
@@ -762,8 +764,9 @@ rename the running `Issun.exe` to `Issun.exe.b43.bak`, copy the new one in and
 check its hash, `Stop-Process -Force`, start it with `--background`, then ask
 `/version`, which answered `issun 0.1.0 (46)`.
 
-**11 Nov 2026, build 46 to 48 (4.1 s down): the same order, as one PowerShell
-script**, with build 46 kept as `Issun.exe.b46.bak`. If the copy or its hash
+**11 Nov 2026, build 46 to 48 (4.1 s down), at the owner's "Yes, install it":
+the same order, as one PowerShell script**, with build 46 kept as
+`Issun.exe.b46.bak`. If the copy or its hash
 check failed, the script was to delete the copy and rename the backup back
 before stopping anything. `/version` answered `issun 0.1.0 (48)`; Discord
 reconnected and the phone's next push (Ammy 1.0 (167)) landed within 2 s of

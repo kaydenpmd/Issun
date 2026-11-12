@@ -266,23 +266,6 @@
                 </Grid>
             </Border>
 
-            <Expander IsExpanded="{x:Bind ViewModel.AdvancedExpanded, Mode=TwoWay}" Margin="0,0,0,4"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                <Expander.Header>
-                    <StackPanel Margin="0,12">
-                        <TextBlock Text="Advanced" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="Public address" Style="{StaticResource RowDescription}" />
-                    </StackPanel>
-                </Expander.Header>
-                <StackPanel>
-                    <TextBlock Text="Public address" Style="{StaticResource RowTitle}" />
-                    <TextBlock Style="{StaticResource RowDescription}"
-                               Text="Leave empty to use this PC's Tailscale address. Set it if something other than Tailscale Funnel reaches this PC. Discord's servers fetch uploaded covers from here." />
-                    <TextBox Margin="0,8,0,0" Text="{x:Bind ViewModel.PublicBase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="Public address" />
-                </StackPanel>
-            </Expander>
-
             <StackPanel Padding="2,8,2,4" Margin="0,0,0,4">
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Apply" Command="{x:Bind ViewModel.ApplySettingsCommand}"

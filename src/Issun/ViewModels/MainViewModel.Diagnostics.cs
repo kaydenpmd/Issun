@@ -130,7 +130,6 @@ public sealed partial class MainViewModel
     /// <summary>For --screenshot --expanded: open everything that starts collapsed.</summary>
     public void ExpandAll()
     {
-        AdvancedExpanded = true;
         LogExpanded = true;
         DiagnosticsExpanded = true;
     }

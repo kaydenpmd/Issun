@@ -5,22 +5,23 @@ namespace Issun.Presentation;
 
 /// <summary>
 /// The settings the window lets a person edit, as the text they typed. Only
-/// these fields: the key has its own controls, and building a Settings from a
-/// stale copy of it would quietly undo a key regenerated since the form loaded.
+/// these fields: the key and the public address have their own controls in
+/// Connect your source, and building a Settings from a stale copy of either
+/// would quietly undo a change made there since the form loaded. (The public
+/// address had a field here, under Advanced, until 12 Nov 2026: the owner had
+/// it removed once the endpoint field did the same.)
 /// </summary>
 public sealed record SettingsFields
 {
     public string DiscordClientId { get; init; } = "";
     public bool PublicRead { get; init; }
     public string Port { get; init; } = "8787";
-    public string PublicBase { get; init; } = "";
 
     public static SettingsFields From(Settings s) => new()
     {
         DiscordClientId = s.DiscordClientId,
         PublicRead = s.PublicRead,
         Port = s.Port.ToString(CultureInfo.InvariantCulture),
-        PublicBase = s.PublicBase,
     };
 }
 
@@ -53,16 +54,6 @@ public static class SettingsForm
         if (!int.TryParse(f.Port.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var port) || port is < 1 or > 65535)
             errors.Add("The port must be a whole number from 1 to 65535.");
 
-        var publicBase = f.PublicBase.Trim().TrimEnd('/');
-        if (publicBase.Length > 0 &&
-            (!Uri.TryCreate(publicBase, UriKind.Absolute, out var uri)
-             || uri.Scheme is not ("https" or "http")
-             || uri.Host.Length == 0
-             || uri.Query.Length > 0 || uri.Fragment.Length > 0))
-        {
-            errors.Add("The public address must be a full address like https://your-pc.example-tailnet.ts.net, or empty.");
-        }
-
         if (errors.Count > 0)
             return new(null, errors);
 
@@ -71,7 +62,6 @@ public static class SettingsForm
             DiscordClientId = clientId,
             PublicRead = f.PublicRead,
             Port = port,
-            PublicBase = publicBase,
         }, errors);
     }
 

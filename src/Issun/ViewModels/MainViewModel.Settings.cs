@@ -65,7 +65,6 @@ public sealed partial class MainViewModel
         DiscordClientId = _clientId,
         PublicRead = _publicRead,
         Port = _port,
-        PublicBase = _publicBase,
     };
 
     private void LoadFields(Settings s)
@@ -77,7 +76,6 @@ public sealed partial class MainViewModel
             ClientId = f.DiscordClientId;
             PublicRead = f.PublicRead;
             Port = f.Port;
-            PublicBase = f.PublicBase;
         }
         finally
         {
@@ -124,11 +122,6 @@ public sealed partial class MainViewModel
     public string Port { get => _port; set { if (Set(ref _port, value ?? "")) Edited(); } }
     private string _port = "";
 
-    public string PublicBase { get => _publicBase; set { if (Set(ref _publicBase, value ?? "")) Edited(); } }
-    private string _publicBase = "";
-
-    public bool AdvancedExpanded { get => _advancedExpanded; set => Set(ref _advancedExpanded, value); }
-    private bool _advancedExpanded;
 
     // ─────────────────────────── Start with Windows ───────────────────────────
 

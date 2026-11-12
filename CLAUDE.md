@@ -424,7 +424,11 @@ owner's order of 12 Nov 2026:
    main window's own old rows went with it: the read-only endpoint, the dotted
    key, the in-place "Replace the key?" question and the Copied notes. Its
    endpoint edit is applied when the window closes, as leaving the page
-   applies setup's. "New key" is the owner's word, given for the main window. Editing the endpoint shows
+   applies setup's. "New key" is the owner's word, given for the main window.
+   The endpoint field is also the only place the public address is set: the
+   main window's Settings › Advanced, which held a Public address field, went
+   on 12 Nov 2026 (the owner: "remove advanced"), and Apply no longer touches
+   that setting (`SettingsForm` has no field for it). Editing the endpoint shows
    a reload button beside Show, as an edited field shows Restart in Ammy; it
    saves the field as the public address (or clears it when it's Tailscale's
    own, so Issun keeps following Tailscale) and redraws the code. Leaving the

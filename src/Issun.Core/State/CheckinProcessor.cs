@@ -48,7 +48,14 @@ public sealed class CheckinProcessor : ICheckinProcessor
             // track — relay.py's state.set(body if body.get("playing") else None).
             var result = _state.Apply(push.Track, push.Seq, diag.CurrentUptime, now);
 
-            _uptime.NoteCheckin(previous, now, diag.PreviousUptime, diag.Current);
+            // Ammy's Stop says goodbye with playing:false and no diag, and every
+            // other push it sends carries one. The gap that follows a goodbye is
+            // the person's doing, and the uptime log says so. A source that has
+            // never sent a diag has no goodbye to tell apart from a pause. A
+            // push the seq dropped was overtaken by the one applied before it,
+            // so it can't say whether the session was still running.
+            bool? goodbye = result.Applied ? !push.Playing && push.Diag is null && _diag.LatestAt > 0 : null;
+            _uptime.NoteCheckin(previous, now, diag.PreviousUptime, diag.Current, goodbye);
             return result;
         }
     }

@@ -29,9 +29,21 @@ public sealed class UptimeLog : IUptimeLog
     private readonly IClock _clock;
     private readonly double _startedAt;
 
+    /// <summary>
+    /// How far a new app process's uptime can run past the gap it started in.
+    /// It launched after the old process sent the last push that arrived, and
+    /// Ammy gives up on any request after 20 s (timeoutIntervalForResource), so
+    /// that push left the phone at most 20 s before it got here.
+    /// </summary>
+    internal const double InFlightSlack = 20.0;
+
     // Set when the silence starting at this last-seen time has been logged,
     // cleared when the phone is heard from again.
     private double? _silenceLoggedAt;
+
+    // Whether the last check-in was the source's goodbye (see NoteCheckin).
+    // Guarded by _silenceGate.
+    private bool _stopped;
 
     /// <param name="path">The log file. Created on first write, with its folder.</param>
     /// <param name="diag">Supplies the phone build for the stamp and the snapshot for silence lines.</param>
@@ -96,6 +108,7 @@ public sealed class UptimeLog : IUptimeLog
             return;
 
         var silentFor = _clock.Now - lastSeen;
+        bool stopped;
         lock (_silenceGate)
         {
             if (silentFor <= Timing.GapThreshold)
@@ -106,13 +119,18 @@ public sealed class UptimeLog : IUptimeLog
             if (_silenceLoggedAt == lastSeen)
                 return;                 // already recorded this silence
             _silenceLoggedAt = lastSeen;
+            stopped = _stopped;
         }
 
         var when = UnixTime.ToLocal(lastSeen).ToString("HH:mm:ss", CultureInfo.InvariantCulture);
         // What the phone was last doing is the whole point of this line. Without
         // it a death is only a timestamp, which is how the September 2026
         // keepalive regression went four days without anyone being able to say why.
-        Line($"phone stopped checking in  last seen {when}  last state: {_diag.Summary()}");
+        // Not relay.py's: a silence that began with the goodbye says so, or the
+        // last state, a running session's, reads like a death. It still says
+        // "stopped checking in", so the summary counts it as it always has.
+        var how = stopped ? ", stopped on the phone" : "";
+        Line($"phone stopped checking in  last seen {when}{how}  last state: {_diag.Summary()}");
     }
 
     /// <summary>
@@ -124,8 +142,22 @@ public sealed class UptimeLog : IUptimeLog
     /// <param name="previous">The check-in before this one; 0 = none since Issun started.</param>
     /// <param name="previousUptime">app_uptime_s from the diag snapshot this push replaced.</param>
     /// <param name="current">This push's diag snapshot; null when it carried none.</param>
-    internal void NoteCheckin(double previous, double now, PyValue previousUptime, PyDict? current)
+    /// <param name="goodbye">
+    /// Whether this push is the source's goodbye: Ammy's Stop sends playing:false
+    /// with no diag, and every other push it sends carries one. Null leaves the
+    /// last answer standing, for a push that seq dropped as late, which says
+    /// nothing about what the phone did last.
+    /// </param>
+    internal void NoteCheckin(double previous, double now, PyValue previousUptime, PyDict? current, bool? goodbye = null)
     {
+        bool afterStop;
+        lock (_silenceGate)
+        {
+            afterStop = _stopped;
+            if (goodbye is { } g)
+                _stopped = g;
+        }
+
         if (previous <= 0)
             return;
 
@@ -135,7 +167,7 @@ public sealed class UptimeLog : IUptimeLog
 
         var uptime = now - _startedAt;
         var wasDown = uptime < gap;
-        var verdict = GapVerdict(gap, wasDown, previousUptime, current);
+        var verdict = GapVerdict(gap, wasDown, previousUptime, current, afterStop);
         Line(wasDown
             ? $"gap {FormatGap(gap)}  relay was down for {FormatGap(gap - uptime)} of it{verdict}"
             : $"gap {FormatGap(gap)}  phone silent, relay up throughout{verdict}");
@@ -159,8 +191,16 @@ public sealed class UptimeLog : IUptimeLog
     /// <c>push_fails</c> corroborates from the other direction: an app that spent
     /// the silence failing to send knows it was alive, and says so. The two
     /// agree or the verdict is worth distrusting.
+    ///
+    /// Three verdicts are Issun's, not relay.py's: a process too old to have
+    /// started during the gap stayed up, however little its uptime gained; one
+    /// that stayed up without a failed push was suspended, not cut off; and a
+    /// gap that began with the goodbye (<paramref name="afterStop"/>) was a Stop
+    /// on the phone. A death names when the dead process last ran, when its
+    /// successor carries that (Ammy build 167 on).
     /// </summary>
-    internal static string GapVerdict(double gap, bool relayWasDown, PyValue previousUptime, PyDict? current)
+    internal static string GapVerdict(double gap, bool relayWasDown, PyValue previousUptime, PyDict? current,
+        bool afterStop = false)
     {
         // An app build predating this, the first push, or — unlike relay.py,
         // which fell back on whatever snapshot it last held — a push that
@@ -184,14 +224,60 @@ public sealed class UptimeLog : IUptimeLog
 
         // 10% of slack absorbs integer truncation and ordinary clock drift. The
         // backwards case is checked separately because it is unambiguous on its own.
-        if (up < prev || PyText.LessThan(up - prev, gap * 0.9))
-            return $", app restarted {previousUptime}s -> {now}s — it died{tried}";
+        //
+        // Not relay.py's: gaining less than that is still the same process when
+        // the uptime is more than any process started during the gap could
+        // have. relay.py called those deaths, and Issun wrote two itself before
+        // this (16 Oct 2026, 89081s -> 89165s over 93 s; 8 Nov, 6211s -> 6242s
+        // over 133 s): the push that ended the gap carried a snapshot taken a
+        // minute or more before it arrived, built before iOS froze the app and
+        // sent when it woke.
+        var restarted = up < prev
+            || (PyText.LessThan(up - prev, gap * 0.9) && PyText.LessThan(up, gap + InFlightSlack));
+
+        // A gap that began with the goodbye is explained by it, whatever came
+        // after: no keepalive runs once a session is stopped, so iOS suspends
+        // the app and may end it, and neither is a fault.
+        if (afterStop)
+            return $", app {(restarted ? "restarted" : "stayed up")} {previousUptime}s -> {now}s — stopped on the phone{tried}";
+        if (restarted)
+            return $", app restarted {previousUptime}s -> {now}s — it died{LastRan(current)}{tried}";
         // When the receiver was the thing that was down, that already explains
         // the silence; repeating "the path failed" would be editorialising over
         // a cause the same line has just stated.
         if (relayWasDown)
             return $", app stayed up {previousUptime}s -> {now}s{tried}";
+        // Not relay.py's: an app that ran through the gap without one failed
+        // push wasn't trying to send, and a running app sends at least every
+        // 30 s, so it wasn't running: iOS had suspended it. relay.py blamed the
+        // path for these too; the census of 11 Nov 2026 found 24 in the history.
+        // A build too old to count failed pushes can't tell the two apart, and
+        // keeps relay.py's words.
+        if (fails.IsInt && fails.IntValue.IsZero)
+            return $", app stayed up {previousUptime}s -> {now}s — suspended, no pushes failed";
         return $", app stayed up {previousUptime}s -> {now}s — the path failed, not the app{tried}";
+    }
+
+    /// <summary>
+    /// ", last ran 18:52:10 engine=no": the last tick of the dead process's
+    /// keepalive, which its successor carries (<c>prev_alive</c>, Ammy build
+    /// 167 on). The tick runs every 10 s while the keepalive is on and can't
+    /// while the app is suspended, so this is when the process stopped
+    /// running, and whether its silence was still playing then. Empty when
+    /// the push carries none.
+    /// </summary>
+    private static string LastRan(PyDict current)
+    {
+        var alive = current.Get("prev_alive");
+        if (alive.Kind != PyKind.Str)
+            return "";
+        var text = PhoneDiagnostics.OneLine(PyText.Clip(alive.ToString(), 64));
+        if (text.Length == 0)
+            return "";
+        if (PhoneDiagnostics.SplitStamp(text) is not { } s)
+            return $", last ran {text}";
+        var at = s.Local.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        return s.After.Length == 0 ? $", last ran {at}" : $", last ran {at} {s.After}";
     }
 
     /// <summary>relay.py's <c>_format_gap()</c>: whole seconds as H:MM:SS, hours unbounded.</summary>

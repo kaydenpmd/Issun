@@ -462,6 +462,10 @@ the tag changed, from `[relay 1.9.0 / app ...]` to `[issun ... / app ...]`.
 recorded, and Issun lines, and counts both "relay started" and "issun started".
 **Don't split the log per version**, for Ammy's reason: the phone's build decides
 survival, and a stamped line can be grouped any way later.
+Since build 48 some verdicts and silence lines carry Issun's own words (see
+"Where Issun deliberately differs from relay.py"). The summary reads only "gap
+HH:MM:SS", "phone silent", "stopped checking in" and the two kinds of start, so
+new words go after those, never in their place.
 
 **Diag values follow Python's types.** relay.py compared with
 `isinstance(x, int)`, so a JSON bool is not an int and neither is a JSON float.
@@ -530,6 +534,48 @@ this file.
   whether relay.py is still running, the likely culprit for anyone moving over
   from it, and the window shows it.
 
+Four more since build 48 (11 Nov 2026), all in the uptime log's verdicts and
+the phone's diag, from a census of every log since 24 Aug 2026 (Ammy's
+CLAUDE.md, "The census of 11 Nov 2026"):
+
+- **A process too old to have started during the gap stayed up.** relay.py
+  called any gain under 90% of the gap a death. Issun does so only when the
+  uptime is also under the gap plus 20 s (`UptimeLog.InFlightSlack`: Ammy gives
+  up on a request after 20 s, so the last push that arrived left the phone no
+  earlier than that), because an older process was already running before the
+  gap began. Issun wrote two false deaths before this, on 16 Oct 2026 at
+  21:56:52 (89081s -> 89165s over 93 s) and 8 Nov at 16:11:50 (6211s -> 6242s
+  over 133 s): each push that ended the gap carried a snapshot built before iOS
+  froze the app and sent when it woke. The 14 Sept race above now reads as
+  stayed up too.
+- **No failed pushes is a suspension, not the path.** A running Ammy sends at
+  least every 30 s, so a process that stayed up through a gap with `push_fails`
+  at 0 wasn't running: iOS had suspended it. The verdict is "— suspended, no
+  pushes failed" where relay.py said "— the path failed, not the app", and the
+  census found 24 of those in the history. A push without `push_fails` keeps
+  relay.py's words, since it can't tell the two apart.
+- **Ammy's Stop is the person's doing.** Stop sends `playing: false` with no
+  diag, and no other push Ammy sends lacks one, so `CheckinProcessor` takes
+  that as a goodbye: only from a source that has sent a diag before, and a push
+  the seq dropped changes nothing. The silence after it reads "last seen
+  HH:MM:SS, stopped on the phone", and the gap it ends "— stopped on the
+  phone", whether or not the process lived through it. Both still say
+  "stopped checking in" and "phone silent", so the summary counts them as
+  relay.py did, and a Stop that's never followed by Start still counts as
+  "never came back".
+- **A death names when the dead process last ran.** From Ammy build 167, a new
+  process sends its predecessor's last keepalive tick (`prev_alive`, written
+  every 10 s while the keepalive is on, so its last value is when that process
+  stopped running) and the last 25 lines of its keepalive journal (`prev_tail`)
+  on every push until one lands. "— it died" gets ", last ran HH:MM:SS
+  engine=yes|no", and issun.log gets the stamp and every journal line, in local
+  time, once per launch (`[keepalive] previous run last ran ...`, then
+  `[keepalive] journal: ...`). The other fields build 167 added go on the diag
+  summary beside the ones they explain, only when sent: `failrun`, `failstage`,
+  `failcode`, `sincefail` and `down` after `fails=`, and `intlate`,
+  `intreason`, `sincebegan` and `sinceended` after `int=`. `int_on_resume`
+  and `int_reason` are also logged as they change.
+
 ## CI and releases
 
 `.github/workflows/build.yml`, one job on `windows-latest`, bash throughout like
@@ -580,7 +626,10 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;
    - a bad `PUBLIC_BASE` in a `.env` fails the whole import;
-   - the uptime verdict problems in `UptimeLog`;
+   - the uptime verdict problems in `UptimeLog`. What the review found was
+     never written down. Build 48 fixed the three a census of the logs found
+     (see "Where Issun deliberately differs from relay.py"), so check whether
+     any of the review's are left;
    - CI builds with the .NET 10 SDK, which needs pinning.
 
 ## Working with the owner

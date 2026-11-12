@@ -70,15 +70,155 @@ public class UptimeLogTests : IDisposable
             Assert.Equal(expected, UptimeLog.FormatGap(seconds));
     }
 
+    private static PyValue Int(string json) => PyValue.FromJson(JsonNode.Parse(json));
+
+    private static PyDict Dict(string json) => PyDict.FromJson(JsonNode.Parse(json)!.AsObject());
+
+    /// <summary>A UTC ISO 8601 instant in this machine's local time, as the log prints it.</summary>
+    private static string Local(string utc, string format) =>
+        DateTimeOffset.Parse(utc, CultureInfo.InvariantCulture).ToLocalTime().ToString(format, CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// relay.py's verdicts that Issun deliberately doesn't repeat (CLAUDE.md,
+    /// "Where Issun deliberately differs from relay.py"), keyed by the case's
+    /// inputs, with what Issun says instead.
+    /// </summary>
+    private static readonly Dictionary<(double Gap, bool Down, string Prev, string Diag), string> IssunVerdicts = new()
+    {
+        // Each of these processes is older than one started during its gap
+        // could be, so it is the same process, however little it gained.
+        [(2270.0, false, "3358", "{\"app_uptime_s\": 3359}")] =
+            ", app stayed up 3358s -> 3359s — the path failed, not the app",
+        [(100.0, false, "1000", "{\"app_uptime_s\": 1089}")] =
+            ", app stayed up 1000s -> 1089s — the path failed, not the app",
+        [(157.0, false, "20852", "{\"app_uptime_s\": 20852}")] =
+            ", app stayed up 20852s -> 20852s — the path failed, not the app",
+        [(91.3, false, "500", "{\"app_uptime_s\": 582}")] =
+            ", app stayed up 500s -> 582s — the path failed, not the app",
+        // Not one push failed, so the app wasn't trying to send: it was suspended.
+        [(157.0, false, "20695", "{\"app_uptime_s\": 20852, \"push_fails\": 0, \"offline_s\": 156}")] =
+            ", app stayed up 20695s -> 20852s — suspended, no pushes failed",
+    };
+
     [Fact]
-    public void Gap_verdict_matches_relay()
+    public void Gap_verdict_matches_relay_except_where_issun_deliberately_differs()
     {
         foreach (var (gap, down, prevJson, diagJson, expected) in RelayParityData.Verdicts)
         {
-            var prev = PyValue.FromJson(JsonNode.Parse(prevJson));
-            var diag = PyDict.FromJson(JsonNode.Parse(diagJson)!.AsObject());
-            Assert.Equal(expected, UptimeLog.GapVerdict(gap, down, prev, diag));
+            var issun = IssunVerdicts.GetValueOrDefault((gap, down, prevJson, diagJson), expected);
+            Assert.Equal(issun, UptimeLog.GapVerdict(gap, down, Int(prevJson), Dict(diagJson)));
         }
+
+        // Every difference is still one of relay.py's cases, and still differs.
+        foreach (var (key, issun) in IssunVerdicts)
+        {
+            var relay = Assert.Single(RelayParityData.Verdicts, v => (v.Gap, v.RelayWasDown, v.PrevJson, v.DiagJson) == key);
+            Assert.NotEqual(relay.Expected, issun);
+        }
+    }
+
+    [Theory]
+    // The two "it died" lines Issun wrote itself, 16 Oct and 8 Nov 2026: each
+    // push that ended the gap carried a snapshot taken well before it arrived.
+    [InlineData(93.0, 89081, 89165)]
+    [InlineData(133.0, 6211, 6242)]
+    public void A_process_older_than_its_gap_stayed_up(double gap, int prev, int up)
+    {
+        var diag = Dict($"{{\"app_uptime_s\": {up}, \"push_fails\": 0}}");
+        Assert.Equal($", app stayed up {prev}s -> {up}s — suspended, no pushes failed",
+            UptimeLog.GapVerdict(gap, false, Int($"{prev}"), diag));
+    }
+
+    [Fact]
+    public void A_process_young_enough_to_have_started_in_the_gap_is_judged_by_what_it_gained()
+    {
+        // A 100 s gap: a process started in it can be at most 100 + 20 s old.
+        Assert.Equal(", app restarted 50s -> 119s — it died",
+            UptimeLog.GapVerdict(100, false, Int("50"), Dict("{\"app_uptime_s\": 119, \"push_fails\": 0}")));
+        Assert.Equal(", app stayed up 50s -> 120s — suspended, no pushes failed",
+            UptimeLog.GapVerdict(100, false, Int("50"), Dict("{\"app_uptime_s\": 120, \"push_fails\": 0}")));
+        // Uptime that went backwards is a new process at any age.
+        Assert.Equal(", app restarted 90000s -> 5000s — it died",
+            UptimeLog.GapVerdict(100, false, Int("90000"), Dict("{\"app_uptime_s\": 5000, \"push_fails\": 0}")));
+    }
+
+    [Fact]
+    public void Staying_up_without_a_failed_push_is_a_suspension()
+    {
+        var prev = Int("20695");
+        Assert.Equal(", app stayed up 20695s -> 20852s — suspended, no pushes failed",
+            UptimeLog.GapVerdict(157, false, prev, Dict("{\"app_uptime_s\": 20852, \"push_fails\": 0}")));
+        Assert.Equal(", app stayed up 20695s -> 20852s — the path failed, not the app, 4 pushes failed over 00:02:36",
+            UptimeLog.GapVerdict(157, false, prev, Dict("{\"app_uptime_s\": 20852, \"push_fails\": 4, \"offline_s\": 156}")));
+        // A build that doesn't count failed pushes can't tell the two apart.
+        Assert.Equal(", app stayed up 20695s -> 20852s — the path failed, not the app",
+            UptimeLog.GapVerdict(157, false, prev, Dict("{\"app_uptime_s\": 20852}")));
+        // The receiver being down explains the silence by itself.
+        Assert.Equal(", app stayed up 20695s -> 20852s",
+            UptimeLog.GapVerdict(157, true, prev, Dict("{\"app_uptime_s\": 20852, \"push_fails\": 0}")));
+    }
+
+    [Fact]
+    public void A_death_says_when_the_dead_process_last_ran()
+    {
+        var at = Local("2026-11-04T18:50:06Z", "HH:mm:ss");
+        var prev = Int("6554");
+
+        Assert.Equal($", app restarted 6554s -> 12s — it died, last ran {at} engine=no",
+            UptimeLog.GapVerdict(3000, false, prev,
+                Dict("{\"app_uptime_s\": 12, \"push_fails\": 0, \"prev_alive\": \"2026-11-04T18:50:06Z engine=no\"}")));
+        // The new process's own failed pushes come after.
+        Assert.Equal($", app restarted 6554s -> 12s — it died, last ran {at} engine=yes, 2 pushes failed over 00:00:10",
+            UptimeLog.GapVerdict(3000, false, prev,
+                Dict("{\"app_uptime_s\": 12, \"push_fails\": 2, \"offline_s\": 10, \"prev_alive\": \"2026-11-04T18:50:06Z engine=yes\"}")));
+        // A stamp that doesn't parse goes on as it came, on one line.
+        Assert.Equal(", app restarted 6554s -> 12s — it died, last ran soon after noon",
+            UptimeLog.GapVerdict(3000, false, prev, Dict("{\"app_uptime_s\": 12, \"prev_alive\": \"soon\\nafter noon\"}")));
+        Assert.Equal(", app restarted 6554s -> 12s — it died",
+            UptimeLog.GapVerdict(3000, false, prev, Dict("{\"app_uptime_s\": 12, \"prev_alive\": 5}")));
+        // A process that stayed up had no predecessor, whatever it carries.
+        Assert.Equal(", app stayed up 6554s -> 9554s — suspended, no pushes failed",
+            UptimeLog.GapVerdict(3000, false, prev,
+                Dict("{\"app_uptime_s\": 9554, \"push_fails\": 0, \"prev_alive\": \"2026-11-04T18:50:06Z engine=no\"}")));
+    }
+
+    [Fact]
+    public void A_gap_after_the_goodbye_was_a_stop_on_the_phone()
+    {
+        var prev = Int("1000");
+        Assert.Equal(", app stayed up 1000s -> 4600s — stopped on the phone",
+            UptimeLog.GapVerdict(3600, false, prev, Dict("{\"app_uptime_s\": 4600, \"push_fails\": 0}"), afterStop: true));
+        // Ended while stopped: no death, and no last run to name.
+        Assert.Equal(", app restarted 1000s -> 30s — stopped on the phone",
+            UptimeLog.GapVerdict(3600, false, prev,
+                Dict("{\"app_uptime_s\": 30, \"push_fails\": 0, \"prev_alive\": \"2026-11-04T18:50:06Z engine=yes\"}"), afterStop: true));
+    }
+
+    [Fact]
+    public void A_silence_after_the_goodbye_says_so_and_the_next_push_ends_it()
+    {
+        var clock = new ManualClock(Base);
+        var diag = new FakeDiagnostics { PhoneVersion = "1.0 (80)", SummaryText = "engine=yes want=yes" };
+        var log = new UptimeLog(_temp.File("stop.log"), diag, clock, Base - 100_000);
+
+        using var capture = Log.Capture();
+        log.NoteCheckin(0, Base, PyValue.None, null, goodbye: true);
+        clock.Advance(120);
+        log.NoteSilence(Base);
+        // Started again; and this time the silence is nobody's doing.
+        log.NoteCheckin(Base, clock.Now, PyValue.None, null, goodbye: false);
+        clock.Advance(120);
+        log.NoteSilence(Base + 120);
+
+        Assert.Equal(new[]
+        {
+            $"phone stopped checking in  last seen {When(Base)}, stopped on the phone  last state: engine=yes want=yes",
+            "gap 00:02:00  phone silent, relay up throughout",
+            $"phone stopped checking in  last seen {When(Base + 120)}  last state: engine=yes want=yes",
+        }, UptimeTexts(capture.Lines, "1.0 (80)"));
+
+        // Still counted as a silence and a gap, as relay.py counted them.
+        Assert.StartsWith("relay starts            : 0\nsilences detected live  : 2\n", log.Summarize());
     }
 
     [Fact]

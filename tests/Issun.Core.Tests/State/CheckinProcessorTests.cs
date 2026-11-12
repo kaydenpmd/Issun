@@ -315,6 +315,85 @@ public class CheckinProcessorTests : IDisposable
         Assert.EndsWith($"gap 00:37:50  phone silent, relay up throughout  [{IssunInfo.Wire} / app 1.0 (80)]", gap);
     }
 
+    // ─────────────────── the goodbye, and the journal, from Ammy ───────────────────
+
+    [Fact]
+    public void A_gap_after_the_goodbye_is_a_stop_not_a_suspension()
+    {
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 1000, "\"push_fails\": 0"));
+        _clock.Advance(5);
+        _checkins.Accept(Push(false, BaseMs + 5_000, diag: false));     // Stop
+        _clock.Advance(3600);
+        _uptime.NoteSilence(_state.LastCheckinAt);
+        _checkins.Accept(Push(true, BaseMs + 3_605_000, 4605, "\"push_fails\": 0"));   // Start
+
+        Assert.Contains("gap 01:00:00  phone silent, relay up throughout, app stayed up 1000s -> 4605s \x2014 stopped on the phone  [",
+            Assert.Single(GapLines()));
+        Assert.Contains(UptimeLines(), l => l.Contains(", stopped on the phone  last state: ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_late_push_after_the_goodbye_does_not_undo_it()
+    {
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 1000, "\"push_fails\": 0"));
+        _clock.Advance(1);
+        _checkins.Accept(Push(false, BaseMs + 2_000, diag: false));     // the goodbye
+        _clock.Advance(0.5);
+        // A heartbeat sent before it, overtaken in flight.
+        Assert.False(_checkins.Accept(Push(true, BaseMs + 1_000, 1001, "\"push_fails\": 0")).Applied);
+        _clock.Advance(3600);
+        _checkins.Accept(Push(true, BaseMs + 3_700_000, 4700, "\"push_fails\": 0"));
+
+        Assert.Contains("\x2014 stopped on the phone  [", Assert.Single(GapLines()));
+    }
+
+    [Fact]
+    public void A_push_with_diag_after_the_goodbye_ends_the_stop()
+    {
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 1000, "\"push_fails\": 0"));
+        _clock.Advance(5);
+        _checkins.Accept(Push(false, BaseMs + 5_000, diag: false));     // Stop
+        _clock.Advance(10);
+        _checkins.Accept(Push(true, BaseMs + 15_000, 1015, "\"push_fails\": 0"));     // and Start again
+        _clock.Advance(600);
+        _checkins.Accept(Push(true, BaseMs + 615_000, 1615, "\"push_fails\": 0"));
+
+        Assert.Contains("app stayed up 1015s -> 1615s \x2014 suspended, no pushes failed  [", Assert.Single(GapLines()));
+    }
+
+    [Fact]
+    public void A_source_that_never_sends_diag_has_no_goodbye()
+    {
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(false, BaseMs, diag: false));
+        _clock.Advance(120);
+        _uptime.NoteSilence(_state.LastCheckinAt);
+
+        var silence = Assert.Single(UptimeLines());
+        Assert.Contains("phone stopped checking in  last seen ", silence);
+        Assert.DoesNotContain("stopped on the phone", silence);
+    }
+
+    [Fact]
+    public void A_relaunch_carrying_the_journal_names_when_the_old_process_last_ran()
+    {
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 6554, "\"push_fails\": 0"));
+        _clock.Advance(3000);
+        _checkins.Accept(Push(true, BaseMs + 3_000_000, 12,
+            "\"push_fails\": 0, \"prev_alive\": \"2026-11-04T18:50:06Z engine=no\", " +
+            "\"prev_tail\": [\"2026-11-04T18:49:58Z failed, 1 in a row: engine.start: refused [2003329396 'what']\"]"));
+
+        var at = DateTimeOffset.Parse("2026-11-04T18:50:06Z", System.Globalization.CultureInfo.InvariantCulture)
+            .ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains($"app restarted 6554s -> 12s \x2014 it died, last ran {at} engine=no  [", Assert.Single(GapLines()));
+        Assert.Contains(capture.Lines, l => l.StartsWith("[keepalive] journal: ", StringComparison.Ordinal)
+                                            && l.EndsWith(" failed, 1 in a row: engine.start: refused [2003329396 'what']", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void A_dropped_push_still_ends_a_silence()
     {

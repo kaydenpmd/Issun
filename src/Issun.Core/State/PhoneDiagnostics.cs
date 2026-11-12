@@ -44,7 +44,12 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
 {
     // Logged the moment they change, rather than only at a death.
     private static readonly string[] Flags =
-        ["engine_running", "running", "low_power", "app_state", "route", "thermal"];
+    [
+        "engine_running", "running", "low_power", "app_state", "route", "thermal",
+        // Ammy build 167 on: the reason the last interruption gave, raw
+        // (AVAudioSessionInterruptionReasonKey).
+        "int_reason",
+    ];
 
     // Counters only ever climb, so any increase is an event that just happened.
     private static readonly string[] Counters =
@@ -60,7 +65,15 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
         // motivated counting them separately was the one thing the log could
         // not show.
         "int_began", "int_ended",
+        // Ammy build 167 on: .began notices iOS delivered late, when it woke
+        // the app. Each one is a suspension the app lived through.
+        "int_on_resume",
     ];
+
+    // Ammy sends at most 25 journal lines; these only bound a source that
+    // sends something else.
+    private const int MaxJournalLines = 100;
+    private const int MaxJournalLineLength = 500;
 
     private readonly object _gate = new();
 
@@ -72,6 +85,11 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
     private PyDict _diag = PyDict.Empty;
     private JsonObject? _diagJson;
     private double _diagAt;
+
+    // The previous-run account last logged, so one that arrives twice is
+    // logged once: Ammy sends it until a push lands, and a push can land here
+    // while the phone, timing out, counts it as failed and sends it again.
+    private string? _previousRunKey;
 
     public string PhoneVersion
     {
@@ -207,8 +225,81 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
 
         foreach (var line in Changes(previous, current))
             Log.Write(line);
+        foreach (var line in PreviousRun(current))
+            Log.Write(line);
         return record;
     }
+
+    /// <summary>
+    /// Ammy's account of how its previous process ended, from build 167 on:
+    /// <c>prev_alive</c>, the last stamp its keepalive's 10 s tick wrote, and
+    /// <c>prev_tail</c>, the last 25 lines of its keepalive journal. A new
+    /// process sends them on every push until one lands, so they arrive once
+    /// per launch, with the first push that gets through. Nothing else can say
+    /// what happened after the previous process's last push, since a suspended
+    /// or killed app reports nothing, and the next snapshot replaces this one,
+    /// so the log is the only place they are kept.
+    /// </summary>
+    private List<string> PreviousRun(PyDict d)
+    {
+        var alive = d.Get("prev_alive");
+        var tail = d.Get("prev_tail");
+        if (alive.Kind == PyKind.None && tail.Kind == PyKind.None)
+            return [];
+
+        var key = alive.Repr() + "\n" + tail.Repr();
+        lock (_gate)
+        {
+            if (key == _previousRunKey)
+                return [];
+            _previousRunKey = key;
+        }
+
+        var lines = tail.ListValue?.Select(v => v.ToString()).ToList()
+                    ?? (tail.Kind == PyKind.None ? [] : [tail.ToString()]);
+        var ran = alive.Kind == PyKind.None
+            ? "previous run left no last-ran stamp"
+            : $"previous run last ran {OneLine(LocalStamp(PyText.Clip(alive.ToString(), MaxJournalLineLength)))}";
+        var output = new List<string>
+        {
+            lines.Count == 0
+                ? $"[keepalive] {ran}; its journal was empty"
+                : string.Create(CultureInfo.InvariantCulture, $"[keepalive] {ran}; its journal's last {lines.Count} lines follow"),
+        };
+        foreach (var line in lines.Take(MaxJournalLines))
+            output.Add($"[keepalive] journal: {OneLine(LocalStamp(PyText.Clip(line, MaxJournalLineLength)))}");
+        if (lines.Count > MaxJournalLines)
+            output.Add(string.Create(CultureInfo.InvariantCulture, $"[keepalive] journal: {lines.Count - MaxJournalLines} more lines not logged"));
+        return output;
+    }
+
+    /// <summary>
+    /// A leading UTC stamp, as Ammy writes them in its journal
+    /// ("2026-11-04T18:50:06Z failed ..."), split from the rest of
+    /// <paramref name="text"/> and turned into local time, which is what
+    /// Issun's logs use. Null when the text doesn't start with one.
+    /// </summary>
+    internal static (DateTime Local, string After)? SplitStamp(string text)
+    {
+        var space = text.IndexOf(' ');
+        var head = space < 0 ? text : text[..space];
+        if (!DateTime.TryParseExact(head, "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var utc))
+            return null;
+        return (utc.ToLocalTime(), space < 0 ? "" : text[(space + 1)..]);
+    }
+
+    /// <summary><paramref name="text"/> with a leading UTC stamp rewritten in local time, as Issun's own lines are stamped.</summary>
+    internal static string LocalStamp(string text)
+    {
+        if (SplitStamp(text) is not { } s)
+            return text;
+        var at = s.Local.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture);
+        return s.After.Length == 0 ? at : $"{at} {s.After}";
+    }
+
+    // A line break inside a value would start a log line with no tag.
+    internal static string OneLine(string text) => text.ReplaceLineEndings(" ");
 
     private static IEnumerable<string> Changes(PyDict previous, PyDict value)
     {
@@ -271,10 +362,45 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
             $"route={Value("route")}",
             $"resumes={Value("resumes")}",
             $"fails={Value("resume_failures")}",
+        };
+
+        // Fields a build may leave out, printed only when it sent them (and not
+        // as null), so a line from a build without them reads as it always has.
+        void Optional(string key, string name, string unit = "")
+        {
+            if (d.Get(key).Kind != PyKind.None)
+                parts.Add($"{name}={d.Get(key)}{unit}");
+        }
+
+        // Ammy build 167 on, beside the failure count: the run of failed tries
+        // (now and longest), the step and code of the last failure and its age,
+        // and how long the engine has been down. The step and code stay after a
+        // recovery, which last_error doesn't.
+        if (d.ContainsKey("fail_run") || d.ContainsKey("fail_run_max"))
+            parts.Add($"failrun={Value("fail_run")}/{Value("fail_run_max")}");
+        Optional("fail_stage", "failstage");
+        Optional("fail_code", "failcode");
+        Optional("secs_since_fail", "sincefail", "s");
+        Optional("down_s", "down", "s");
+
+        parts.AddRange(
+        [
             $"heals={Value("self_heals")}",
             $"cfg={Value("config_changes")}",
             $"routechg={Value("route_changes")}",
             $"int={Value("int_began")}/{Value("int_ended")}",
+        ]);
+
+        // Build 167 on, beside the interruption counts: .began notices iOS
+        // delivered late (each a suspension the app lived through), the last
+        // one's reason, and how long ago an interruption last began and ended.
+        Optional("int_on_resume", "intlate");
+        Optional("int_reason", "intreason");
+        Optional("secs_since_began", "sincebegan", "s");
+        Optional("secs_since_ended", "sinceended", "s");
+
+        parts.AddRange(
+        [
             $"mem={Value("mem_mb")}MB",
             $"avail={Value("mem_avail_mb")}MB",
             $"availmin={Value("mem_avail_min_mb")}MB",
@@ -285,7 +411,7 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
             $"appup={Value("app_uptime_s")}s",
             $"devup={Value("device_uptime_s")}s",
             $"pushfail={Value("push_fails")}/{Value("push_fails_total")}",
-        };
+        ]);
 
         // Present only while the phone is failing to send, so seeing it at all
         // is the signal. On a death line it is absent by definition — the last

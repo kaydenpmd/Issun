@@ -71,6 +71,9 @@ internal sealed class PyValue
 
     public PyDict? DictValue => _dict;
 
+    /// <summary>The items, when this is a list; null otherwise.</summary>
+    public IReadOnlyList<PyValue>? ListValue => _list;
+
     /// <summary>Python's <c>bool(x)</c>.</summary>
     public bool Truthy => Kind switch
     {

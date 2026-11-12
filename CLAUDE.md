@@ -680,6 +680,18 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    the Setup row, the install and uninstall messages, and Ammy's scan screens and
    camera prompt. The Discord application ID stays a text box (the owner, the
    same day).
+   **Still waiting on the owner (12 Nov 2026):** the Tailscale page's two
+   cards. They asked to see the whole page first and to go over Tailscale's own
+   setup again; the page now shows it in all four states (`--demo-tailscale
+   0..3`, screens `setup-1a` to `setup-1d`), and the refresher was given in
+   chat. Its new fields (`tailscale.check`, `tailscale.funnel`,
+   `tailscale.unattended.*`) have no answers yet. `discord.id.saveFailed` is
+   "[have me write error messages myself eventually]": the sample stays until
+   they do. Cancel stays: the owner wanted it only if it's standard in this
+   kind of window, and Microsoft's wizard guidance puts Cancel in every
+   wizard's command area, title-bar X or not. The six commits from
+   `8b556b8` to `7d902f8` aren't pushed, because a push releases, and the
+   Tailscale cards are still Claude's drafts.
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;

@@ -20,6 +20,7 @@ public sealed partial class MainView : UserControl
     {
         ViewModel = viewModel;
         InitializeComponent();
+        PairingHost.Content = new PairingCards(viewModel.Pairing);
         viewModel.LogUpdated += OnLogUpdated;
         LogBox.Text = viewModel.LogText;
         LogBox.Loaded += (_, _) =>

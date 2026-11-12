@@ -60,15 +60,19 @@ public sealed class SetupViewModel : Observable, IDisposable
             _ = ApplyClientIdAsync();
         };
 
-        EndpointCopied = new Flash(dispatcher);
-        KeyCopied = new Flash(dispatcher);
+        Pairing = new PairingViewModel(host, dispatcher, "setup");
+        Pairing.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PairingViewModel.SourceConnected))
+                SourceConnectedChanged();
+        };
 
         BackCommand = new Command(() => Go(_page - 1), () => _page > SetupPage.Discord, this);
         NextCommand = new AsyncCommand("setup: next", NextAsync, ex =>
         {
             Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
             if (_page == SetupPage.Tailscale) TailscaleError = $"[text] {ex.Message}";
-        }, () => _page != SetupPage.Source || SourceConnected);
+        }, () => _page != SetupPage.Source || Pairing.SourceConnected);
         SkipCommand = new Command(() =>
         {
             Log.Write(_page == SetupPage.Tailscale ? "[setup] skipped the Tailscale check" : "[setup] skipped connecting a source");
@@ -116,40 +120,6 @@ public sealed class SetupViewModel : Observable, IDisposable
             if (!ok)
                 TailscaleError = output;
         }, ex => TailscaleError = $"Couldn't turn on Run unattended: {ex.Message}");
-
-        CopyEndpointCommand = new AsyncCommand("setup: copy endpoint", async () =>
-        {
-            if (_endpointText.Trim() is { Length: > 0 } url)
-                EndpointCopied.Show(await DesktopShell.CopyAsync(url, "endpoint") ? "Copied" : "Couldn't copy — try again");
-        }, _ => EndpointCopied.Show("Couldn't copy — try again"), () => _endpointText.Trim().Length > 0);
-
-        ReloadQrCommand = new AsyncCommand("setup: reload QR code", async () => { await ApplyEndpointAsync(); },
-            ex => EndpointProblem = $"[text] {ex.Message}");
-
-        // A new key straight away: the owner asked for the button, not a
-        // confirmation (12 Nov 2026). The main window's New key… asks first.
-        NewKeyCommand = new AsyncCommand("setup: new key", async () =>
-        {
-            KeyProblem = null;
-            Log.Write("[setup] making a new key");
-            await _host.RegenerateKeyAsync();
-            KeyShown = true;
-            Raise(nameof(KeyText));
-            KeyChanged();
-        }, ex =>
-        {
-            Log.Write($"[setup] couldn't make a new key: {ex.Message}");
-            KeyProblem = $"[text] {ex.Message}";
-        });
-
-        CopyKeyCommand = new AsyncCommand("setup: copy key", async () =>
-        {
-            KeyCopied.Show(await DesktopShell.CopyAsync(_host.Settings.Key, "key") ? "Copied" : "Couldn't copy — try again");
-        }, _ => KeyCopied.Show("Couldn't copy — try again"));
-
-        ToggleKeyCommand = new Command(() => KeyShown = !KeyShown);
-        ToggleQrCommand = new Command(() => QrShown = !QrShown, () => _qrPixels is not null, this);
-        // Show and Hide, the owner's words; the same pair for the key and the code.
 
         _clientId = host.Settings.DiscordClientId;
         _host.Changed += OnHostChanged;
@@ -206,7 +176,7 @@ public sealed class SetupViewModel : Observable, IDisposable
     /// it goes while a source is connected, since Next then does the same, and
     /// comes back if the connection drops (the owner, 12 Nov 2026).
     /// </summary>
-    public bool ShowSkip => _page == SetupPage.Tailscale || (_page == SetupPage.Source && !_sourceConnected);
+    public bool ShowSkip => _page == SetupPage.Tailscale || (_page == SetupPage.Source && !Pairing.SourceConnected);
 
     public Command BackCommand { get; }
     public AsyncCommand NextCommand { get; }
@@ -258,8 +228,8 @@ public sealed class SetupViewModel : Observable, IDisposable
         if (page < SetupPage.Discord || page > SetupPage.StartWithWindows || page == _page)
             return;
         // Leaving Connect your source with an edited endpoint still applies it.
-        if (_page == SetupPage.Source && (_endpointDirty || _qrKeyStale))
-            _ = ApplyEndpointAsync();
+        if (_page == SetupPage.Source)
+            _ = Pairing.ApplyPendingAsync();
         // Leaving the Discord page with a half-typed ID still applies what is there.
         if (_page == SetupPage.Discord && _applyId.IsRunning)
         {
@@ -352,26 +322,6 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     // ───────────────────────────── Tailscale ─────────────────────────────
 
-    /// <summary>
-    /// What the typed text means as a public base, or null when it can't be one.
-    /// "https://" is assumed when no scheme is typed, and a pasted endpoint
-    /// loses its "/now-playing", since that is added back for the source.
-    /// </summary>
-    internal static string? NormaliseAddress(string typed)
-    {
-        var text = typed.Trim().TrimEnd('/');
-        if (text.Length == 0)
-            return "";
-        if (!text.Contains("://", StringComparison.Ordinal))
-            text = "https://" + text;
-        if (text.EndsWith("/now-playing", StringComparison.OrdinalIgnoreCase))
-            text = text[..^"/now-playing".Length].TrimEnd('/');
-        return Uri.TryCreate(text, UriKind.Absolute, out var uri)
-               && uri.Scheme == Uri.UriSchemeHttps && uri.Host.Contains('.')
-               && uri.Query.Length == 0 && uri.Fragment.Length == 0
-            ? text
-            : null;
-    }
 
 
     public AsyncCommand GetTailscaleCommand { get; }
@@ -463,297 +413,11 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     // ───────────────────────────── Source ─────────────────────────────
 
-    public Flash EndpointCopied { get; }
-    public Flash KeyCopied { get; }
-    public AsyncCommand CopyEndpointCommand { get; }
-    public AsyncCommand CopyKeyCommand { get; }
-    public Command ToggleKeyCommand { get; }
-    public Command ToggleQrCommand { get; }
-
-    public AsyncCommand ReloadQrCommand { get; }
-    public AsyncCommand NewKeyCommand { get; }
-
-    private string _endpointText = "";
-
-    /// <summary>The endpoint the QR code carries, as last applied; null for none.</summary>
-    private string? _qrEndpoint;
-
-    /// <summary>
-    /// The key the QR code carries. Not read live from the settings: a new key
-    /// made while the endpoint is being edited waits for the reload button
-    /// (the owner, 12 Nov 2026).
-    /// </summary>
-    private string? _qrKey;
-
-    /// <summary>The field's text when it was last filled in or applied; an edit back to it is undone.</summary>
-    private string _appliedEndpointText = "";
-
-    /// <summary>The field differs from what was last applied.</summary>
-    private bool _endpointDirty;
-
-    /// <summary>
-    /// A new key was made while the endpoint was being edited, so the code
-    /// still carries the old one. Keeps the reload button up even if the edit
-    /// is undone, until it is pressed.
-    /// </summary>
-    private bool _qrKeyStale;
-
-    /// <summary>Edited at all in this window: Tailscale no longer fills the field in.</summary>
-    private bool _endpointTouched;
-
-    /// <summary>
-    /// The endpoint field (the owner, 12 Nov 2026): Tailscale's endpoint when
-    /// it has one, editable whether or not it does. An edit shows the QR
-    /// code's reload button, as an edited field in Ammy shows Restart.
-    /// </summary>
-    public string EndpointText
-    {
-        get => _endpointText;
-        set
-        {
-            if (!Set(ref _endpointText, value ?? ""))
-                return;
-            _endpointTouched = true;
-            EndpointProblem = null;
-            // As in Ammy: typing back what was there undoes the edit, and the
-            // button goes, unless a new key is waiting to go into the code.
-            var dirty = _endpointText != _appliedEndpointText;
-            if (dirty != _endpointDirty)
-                Log.Write(dirty ? "[setup] endpoint edited" : "[setup] endpoint edit undone");
-            _endpointDirty = dirty;
-            Raise(nameof(ShowReload));
-            Raise(nameof(QrBlur));
-            UpdateQrImage();
-            CopyEndpointCommand.RaiseCanExecuteChanged();
-        }
-    }
-
-    /// <summary>Fills the field without counting it as an edit.</summary>
-    private void FillEndpoint(string? endpoint)
-    {
-        _qrEndpoint = endpoint;
-        _appliedEndpointText = endpoint ?? "";
-        if (Set(ref _endpointText, _appliedEndpointText, nameof(EndpointText)))
-            CopyEndpointCommand.RaiseCanExecuteChanged();
-        UpdateQr();
-    }
-
-    public bool ShowReload => _endpointDirty || _qrKeyStale;
-
-    /// <summary>
-    /// The key changed (this page's button, or the main window's New key…).
-    /// Not mid-edit, the code is redrawn with it at once; mid-edit, the code
-    /// waits for the reload button, since the endpoint may not be finished.
-    /// </summary>
-    private void KeyChanged()
-    {
-        var key = _host.Settings.Key;
-        if (key == _qrKey)
-            return;
-        if (_qrKey is null)
-        {
-            // The first look at the key, when the window opens: not a change.
-            _qrKey = key;
-            UpdateQr();
-            return;
-        }
-        // Mid-edit, or after an edit that was undone while a new key waited:
-        // the button stays the only way to redraw (the owner, 12 Nov 2026).
-        if (_endpointDirty || _qrKeyStale)
-        {
-            if (!_qrKeyStale)
-                Log.Write("[setup] new key during an endpoint edit: the QR code waits for the reload button");
-            _qrKeyStale = true;
-            Raise(nameof(ShowReload));
-            Raise(nameof(QrBlur));
-            UpdateQrImage();
-            return;
-        }
-        _qrKey = key;
-        UpdateQr();
-        Log.Write("[setup] QR code redrawn with the new key");
-    }
-
-    public string? EndpointProblem { get => _endpointProblem; private set => Set(ref _endpointProblem, value); }
-    private string? _endpointProblem;
-
-    public string? KeyProblem { get => _keyProblem; private set => Set(ref _keyProblem, value); }
-    private string? _keyProblem;
-
-    /// <summary>
-    /// Applies the field: saves it as Settings' Public address (empty when it
-    /// is Tailscale's own or blank, so Issun keeps following Tailscale) and
-    /// redraws the QR code with it. A blank field leaves the endpoint out of
-    /// the code, so the source keeps its own.
-    /// </summary>
-    private async Task<bool> ApplyEndpointAsync()
-    {
-        var typed = _endpointText;
-        var address = NormaliseAddress(typed);
-        if (address is null)
-        {
-            EndpointProblem = "[text]";
-            Log.Write($"[setup] not applying an endpoint of {typed.Trim().Length} characters: not an https address");
-            return false;
-        }
-        var tailscale = _host.Snapshot.Tailscale?.PublicBase?.TrimEnd('/');
-        var setting = address == tailscale ? "" : address;
-        if (setting != _host.Settings.PublicBase)
-        {
-            Log.Write(setting.Length == 0
-                ? "[setup] endpoint applied: Issun follows Tailscale's address"
-                : $"[setup] endpoint applied: a public address of {setting.Length} characters{(setting.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) ? ", a Tailscale name" : "")}");
-            await _host.UpdateSettingsAsync(_host.Settings with { PublicBase = setting });
-        }
-        else
-        {
-            Log.Write("[setup] endpoint applied: the setting was already that");
-        }
-        _endpointDirty = false;
-        _qrKeyStale = false;
-        _qrKey = _host.Settings.Key;
-        Raise(nameof(ShowReload));
-            Raise(nameof(QrBlur));
-            UpdateQrImage();
-        FillEndpoint(address.Length > 0 ? address + "/now-playing" : null);
-        Log.Write($"[setup] QR code redrawn {(address.Length > 0 ? "with" : "without")} an endpoint");
-        return true;
-    }
-
-    public bool KeyShown
-    {
-        get => _keyShown;
-        private set
-        {
-            if (Set(ref _keyShown, value))
-            {
-                Raise(nameof(KeyBlur));
-                Raise(nameof(ToggleKeyLabel));
-                Log.Write($"[setup] key {(value ? "shown" : "hidden")}");
-            }
-        }
-    }
-    private bool _keyShown;
-
-    /// <summary>The key itself, drawn blurred until Show (<see cref="KeyBlur"/>), as the owner asked.</summary>
-    public string KeyText => _host.Settings.Key;
-    public double KeyBlur => _keyShown ? 0 : BlurRadius;
-    public string ToggleKeyLabel => _keyShown ? "Hide" : "Show";
-
-    /// <summary>
-    /// A Gaussian blur this wide on 13 px text or a 200 px code leaves nothing
-    /// legible or scannable. It hides the key from a glance or a screenshot;
-    /// it isn't encryption.
-    /// </summary>
-    private const double BlurRadius = 14;
-
-    /// <summary>
-    /// The QR code carries the key, so like the key it is blurred until Show:
-    /// a screenshot of this window shouldn't give the key away.
-    /// </summary>
-    public bool QrShown
-    {
-        get => _qrShown;
-        private set
-        {
-            if (!Set(ref _qrShown, value))
-                return;
-            Raise(nameof(ToggleQrLabel));
-            Raise(nameof(QrBlur));
-            UpdateQrImage();
-            Log.Write($"[setup] QR code {(value ? "shown" : "hidden")}");
-        }
-    }
-    private bool _qrShown;
+    /// <summary>Connect your source's cards: the same ones the main window shows.</summary>
+    public PairingViewModel Pairing { get; }
 
     /// <summary>--screenshot --expanded: draw the QR code too. Only ever on the demo host's made-up key.</summary>
-    public void ShowQrForScreenshot() => QrShown = true;
-
-    public string ToggleQrLabel => _qrShown ? "Hide" : "Show";
-
-    /// <summary>
-    /// Blurred while hidden, and while it needs regenerating (the owner,
-    /// 12 Nov 2026): a code that's out of date shouldn't be scanned, and
-    /// Regenerate stands where Show was.
-    /// </summary>
-    public double QrBlur => _qrShown && !ShowReload ? 0 : BlurRadius;
-
-    /// <summary>The code as drawn: sharp, or blurred while <see cref="QrBlur"/> says so.</summary>
-    public ImageSource? Qr { get => _qr; private set => Set(ref _qr, value); }
-    private ImageSource? _qr;
-
-    public bool HasQr => _qrPixels is not null;
-
-    /// <summary>The code's pixels, sharp; the image shown is made from these.</summary>
-    private Pixels? _qrPixels;
-    private Pixels? _qrPixelsBlurred;
-
-    /// <summary>The Image the code is drawn in is 200 wide (SetupView).</summary>
-    private const double QrWidth = 200;
-
-    private void SetQrPixels(Pixels? pixels)
-    {
-        _qrPixels = pixels;
-        _qrPixelsBlurred = null;
-        _qrImageBlurred = null;
-        Raise(nameof(HasQr));
-        UpdateQrImage();
-    }
-
-    private bool? _qrImageBlurred;
-
-    /// <summary>Puts up the sharp code or the blurred one, whichever QrBlur asks for now.</summary>
-    private void UpdateQrImage()
-    {
-        if (_qrPixels is not { } sharp)
-        {
-            _qrImageBlurred = null;
-            Qr = null;
-            return;
-        }
-        var blurred = QrBlur > 0;
-        if (blurred == _qrImageBlurred)
-            return;
-        _qrImageBlurred = blurred;
-        if (blurred)
-            _qrPixelsBlurred ??= Blur.Gaussian(sharp, QrBlur * sharp.Width / QrWidth);
-        Qr = Images.FromPixels(blurred ? _qrPixelsBlurred! : sharp);
-    }
-
-    private string? _qrFor;
-
-    private void UpdateQr()
-    {
-        // Either half may be missing; the source fills in only what the code
-        // carries (the owner, 12 Nov 2026).
-        _qrKey ??= _host.Settings.Key;
-        var key = _qrKey is { Length: > 0 } k ? k : null;
-        if (_qrEndpoint is null && key is null)
-        {
-            SetQrPixels(null);
-            _qrFor = null;
-            return;
-        }
-        var payload = PairingCode.Payload(_qrEndpoint, key);
-        // White on black in dark mode (the owner, 12 Nov 2026), so the drawn
-        // code follows a theme switch too: Refresh runs every second.
-        var dark = AppTheme.IsDark;
-        var drawn = (dark ? "dark:" : "light:") + payload;
-        if (drawn == _qrFor)
-            return;
-        try
-        {
-            SetQrPixels(PairingCode.Render(payload, dark));
-            if (_qrFor is not null && _qrFor[.._qrFor.IndexOf(':')] != drawn[..drawn.IndexOf(':')])
-                Log.Write($"[setup] QR code redrawn for the {(dark ? "dark" : "light")} theme");
-            _qrFor = drawn;
-        }
-        catch (Exception ex)
-        {
-            Log.Write($"[setup] couldn't draw the QR code: {ex.Message}");
-            SetQrPixels(null);
-        }
-    }
+    public void ShowQrForScreenshot() => Pairing.ShowQrForScreenshot();
 
     public StatusLine SourceStatus { get => _sourceStatus; private set => Set(ref _sourceStatus, value); }
     private StatusLine _sourceStatus = new("Waiting for the first push", StatusLevel.Neutral);
@@ -778,24 +442,16 @@ public sealed class SetupViewModel : Observable, IDisposable
     private bool _sourceSeenLogged;
 
     /// <summary>
-    /// A source is checking in now. Until it is, Connect your source shows a
-    /// ProgressRing and the owner's "Waiting...", and Next stays greyed out; then
-    /// Windows' success mark and "Connected", and Next works (the owner,
-    /// 12 Nov 2026: the check runs by itself, so Next only follows it).
+    /// Next on Connect your source follows whether a source is checking in
+    /// (the owner, 12 Nov 2026: the check runs by itself, so Next only follows
+    /// it), and Skip goes while one is.
     /// </summary>
-    public bool SourceConnected
+    private void SourceConnectedChanged()
     {
-        get => _sourceConnected;
-        private set
-        {
-            if (!Set(ref _sourceConnected, value))
-                return;
-            Log.Write(value ? "[setup] Connect your source: connected, Next available" : "[setup] Connect your source: waiting, Next greyed out");
-            NextCommand.RaiseCanExecuteChanged();
-            Raise(nameof(ShowSkip));
-        }
+        Log.Write(Pairing.SourceConnected ? "[setup] Connect your source: connected, Next available" : "[setup] Connect your source: waiting, Next greyed out");
+        NextCommand.RaiseCanExecuteChanged();
+        Raise(nameof(ShowSkip));
     }
-    private bool _sourceConnected;
     private string? _discordLogged;
 
     private void Refresh()
@@ -819,13 +475,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         Raise(nameof(ShowSkip));
         OfferUnattended = s.Tailscale is { Running: true, Unattended: false };
 
-        // Until the field is edited, it follows what Issun knows: Tailscale's
-        // endpoint, or the public address already set.
-        if (!_endpointTouched && s.EndpointUrl != _qrEndpoint)
-            FillEndpoint(s.EndpointUrl);
-        Raise(nameof(KeyText));
-        KeyChanged();
-        UpdateQr();
+        Pairing.Refresh(s);
         Tick();
     }
 
@@ -833,7 +483,7 @@ public sealed class SetupViewModel : Observable, IDisposable
     {
         var s = _snapshot;
         SourceStatus = StatusText.Phone(s, SystemClock.Instance.Now, DateTime.Now);
-        SourceConnected = s.LastCheckinAt > 0 && !s.PhoneSilent;
+        Pairing.Tick(s);
         if (!_sourceSeenLogged && s.LastCheckinAt > 0 && !s.PhoneSilent)
         {
             _sourceSeenLogged = true;
@@ -858,8 +508,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         // An ID typed in the last 0.6 s before closing still counts.
         if (_clientId.Trim() != _host.Settings.DiscordClientId && LooksLikeId(_clientId.Trim()))
             _ = ApplyClientIdAsync();
-        if (_endpointDirty || _qrKeyStale)
-            _ = ApplyEndpointAsync();
+        _ = Pairing.ApplyPendingAsync();
         Log.Write($"[setup] closed on the {Describe(_page)} page");
     }
 }

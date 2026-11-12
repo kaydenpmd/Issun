@@ -49,8 +49,7 @@ public sealed partial class MainViewModel : Observable, IDisposable
         _ticker.Interval = TimeSpan.FromSeconds(1);
         _ticker.Tick += (_, _) => Tick();
 
-        EndpointCopied = new Flash(dispatcher);
-        KeyCopied = new Flash(dispatcher);
+        Pairing = new PairingViewModel(host, dispatcher, "ui");
         LogCopied = new Flash(dispatcher);
         SettingsSaved = new Flash(dispatcher, TimeSpan.FromSeconds(4));
 
@@ -124,7 +123,7 @@ public sealed partial class MainViewModel : Observable, IDisposable
         if (s.Server.Listening)
             StartupError = null;
 
-        RefreshPairing(s);
+        Pairing.Refresh(s);
         RefreshSettings();
         RefreshDiagnostics(s);
         Tick();
@@ -139,6 +138,7 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
         PhoneStatus = StatusText.Phone(s, now, nowLocal);
         TrayTooltip = TrayText.Tooltip(s, nowLocal);
+        Pairing.Tick(s);
     }
 
     // ───────────────────────────── Now playing ─────────────────────────────

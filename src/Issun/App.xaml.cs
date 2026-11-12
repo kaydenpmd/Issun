@@ -284,6 +284,10 @@ public partial class App : Application
         e.Cancel = true;
         sender.Hide();
         _vm?.SetWindowVisible(false);
+        // Closing the window applies an edited endpoint, as leaving the
+        // setup page does.
+        if (_vm is not null)
+            _ = _vm.Pairing.ApplyPendingAsync();
 
         // Said once, ever. Without it the first close looks like quitting, and
         // the person wonders later why Discord still shows their music.
@@ -303,6 +307,8 @@ public partial class App : Application
         Log.Write("[ui] quitting");
 
         _setupWindow?.Close();
+        if (_vm is not null)
+            await _vm.Pairing.ApplyPendingAsync();
         _window?.Close();
         _tray?.Dispose();
         _vm?.Dispose();

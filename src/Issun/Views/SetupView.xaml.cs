@@ -9,6 +9,7 @@ public sealed partial class SetupView : UserControl
     {
         ViewModel = viewModel;
         InitializeComponent();
+        PairingHost.Content = new PairingCards(viewModel.Pairing);
     }
 
     public SetupViewModel ViewModel { get; }

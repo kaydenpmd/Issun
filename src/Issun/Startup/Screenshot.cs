@@ -59,7 +59,10 @@ public static class Screenshot
             await host.StartAsync();
             vm = new MainViewModel(host, dispatcher);
             if (options.Expanded)
+            {
                 vm.ExpandAll();
+                vm.Pairing.ShowQrForScreenshot();
+            }
 
             // --setup-page N renders the setup window's content instead, at
             // its own width, the whole page whatever its height.
@@ -100,16 +103,27 @@ public static class Screenshot
             vm.RefreshNow();
             await Task.Delay(TimeSpan.FromMilliseconds(400));
 
-            // Rendered at 1.25x, as the WPF build's screenshots were. Without
-            // this RenderAsync draws at 1x and stretches the result.
-            page.RasterizationScale = Scale;
+            // Rendered at 1.25x, as the WPF build's screenshots were, whatever
+            // the screen's own scaling. Without setting it RenderAsync draws
+            // at 1x and stretches the result; set to 1.25 outright, it came
+            // out at 1.25 times the screen's scaling (2.19x on a 175% screen,
+            // 12 Nov 2026), and a long page passed RenderTargetBitmap's
+            // 4096 px limit and was cut off.
+            // An element's RasterizationScale multiplies its XamlRoot's, which
+            // follows the screen, and RenderAsync multiplies the size it's
+            // asked for by the same (measured on a 175% screen: asked for 750
+            // wide, it drew 1313). So both are divided by it.
+            var root = page.XamlRoot?.RasterizationScale is > 0 and var r ? r : 1;
+            page.RasterizationScale = Scale / root;
             page.UpdateLayout();
             await Task.Delay(TimeSpan.FromMilliseconds(400));
 
             var rtb = new RenderTargetBitmap();
-            int wide = (int)Math.Ceiling(page.ActualWidth * Scale), high = (int)Math.Ceiling(page.ActualHeight * Scale);
+            int wide = (int)Math.Ceiling(page.ActualWidth * Scale / root), high = (int)Math.Ceiling(page.ActualHeight * Scale / root);
             await rtb.RenderAsync(page, wide, high);
             var pixels = (await rtb.GetPixelsAsync()).ToArray();
+            if (rtb.PixelHeight >= 4096 || rtb.PixelWidth >= 4096)
+                throw new InvalidOperationException($"the render reached RenderTargetBitmap's 4096 px limit ({rtb.PixelWidth}x{rtb.PixelHeight}) and would be cut off");
 
             // A locked or disconnected session renders nothing: every pixel
             // comes back transparent, and a blank PNG would pass for a picture

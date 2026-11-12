@@ -420,6 +420,61 @@ public sealed partial class TailscaleCli : ITailscale
         return (true, output);
     }
 
+    /// <summary>An install downloads about 30 MB and waits on a UAC prompt.</summary>
+    public static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(15);
+
+    /// <summary>
+    /// winget's exit code when the package is already installed and there is
+    /// nothing newer (APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE): Tailscale
+    /// is there, which is what the button asked for.
+    /// </summary>
+    public const int WingetAlreadyInstalled = unchecked((int)0x8A15002B);
+
+    public static readonly string[] WingetInstallArguments =
+    [
+        "install", "--id", "Tailscale.Tailscale", "--exact", "--source", "winget",
+        "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity",
+    ];
+
+    public async Task<TailscaleInstallResult> InstallAsync(CancellationToken ct)
+    {
+        // winget is an app execution alias in WindowsApps, which is on PATH for a
+        // normal sign-in; the full path covers a PATH that lost it.
+        var alias = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            @"Microsoft\WindowsApps\winget.exe");
+        var winget = File.Exists(alias) ? alias : "winget";
+        Say($"[tailscale] installing with {winget} {string.Join(' ', WingetInstallArguments)}");
+        var result = await _runner.RunAsync(winget, WingetInstallArguments, InstallTimeout, ct).ConfigureAwait(false);
+        var output = WingetText(Combine(result.StdOut, result.StdErr));
+        if (!result.Started)
+        {
+            Say($"[tailscale] winget couldn't start: {result.StartError}");
+            return new TailscaleInstallResult(false, true, result.StartError ?? "");
+        }
+        Say($"[tailscale] winget exited {WingetCode(result.ExitCode)}{(result.TimedOut ? " (timed out)" : "")}: {Clip(OneLine(output))}");
+        if (result.TimedOut)
+            return new TailscaleInstallResult(false, false, $"winget didn't finish within {Num(InstallTimeout.TotalMinutes)} minutes");
+        if (result.ExitCode is 0 or WingetAlreadyInstalled)
+            return new TailscaleInstallResult(true, false, output);
+        var last = output.Split('\n').Select(l => l.Trim()).LastOrDefault(l => l.Length > 0);
+        return new TailscaleInstallResult(false, false, last ?? $"winget exited with code {WingetCode(result.ExitCode)}");
+    }
+
+    private static string WingetCode(int? code) => code is { } c ? $"0x{c:X8}" : "(none)";
+
+    /// <summary>
+    /// winget redraws its progress bar and spinner with carriage returns; keep
+    /// only what each line finally said, without the bar's block characters.
+    /// </summary>
+    internal static string WingetText(string raw)
+    {
+        var lines = raw.Replace("\r\n", "\n").Split('\n')
+            .Select(l => l.Split('\r').Last())
+            .Select(l => new string(l.Where(ch => ch is not ('█' or '▒' or '\b')).ToArray()).Trim())
+            .Where(l => l.Length > 1 && l is not ("-" or "\\" or "|" or "/"));
+        return string.Join(Environment.NewLine, lines);
+    }
+
     private static string Combine(string stdout, string stderr)
     {
         var a = stdout.TrimEnd();

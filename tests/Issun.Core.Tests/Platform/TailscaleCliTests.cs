@@ -216,6 +216,68 @@ public class TailscaleCliTests
         Assert.Contains(log.Lines, l => l.StartsWith("[tailscale] tailscale set --unattended failed: Access denied"));
     }
 
+    private static readonly string WingetArgs = string.Join(" ", TailscaleCli.WingetInstallArguments);
+
+    [Fact]
+    public async Task Installing_asks_winget_for_tailscale_by_its_exact_id()
+    {
+        var runner = new FakeRunner().Answer(WingetArgs, "Successfully installed");
+        using var log = Log.Capture();
+
+        var result = await Cli(runner).InstallAsync(CancellationToken.None);
+
+        Assert.True(result.Ok);
+        var call = Assert.Single(runner.Calls);
+        Assert.True(call.File == "winget" || call.File.EndsWith(@"\WindowsApps\winget.exe", StringComparison.OrdinalIgnoreCase), call.File);
+        Assert.Contains("--id Tailscale.Tailscale --exact", WingetArgs);
+        Assert.Equal(TailscaleCli.InstallTimeout, call.Timeout);
+        Assert.Contains(log.Lines, l => l.StartsWith("[tailscale] winget exited 0x00000000"));
+    }
+
+    [Fact]
+    public async Task Already_installed_counts_as_installed()
+    {
+        var runner = new FakeRunner().Answer(WingetArgs, new ProcessResult(true, TailscaleCli.WingetAlreadyInstalled, "No available upgrade found.", "", false));
+
+        var result = await Cli(runner).InstallAsync(CancellationToken.None);
+
+        Assert.True(result.Ok);
+    }
+
+    [Fact]
+    public async Task No_winget_says_so_so_the_download_page_can_open()
+    {
+        var runner = new FakeRunner().Answer(WingetArgs, ProcessResult.NotStarted("The system cannot find the file specified."));
+        using var log = Log.Capture();
+
+        var result = await Cli(runner).InstallAsync(CancellationToken.None);
+
+        Assert.False(result.Ok);
+        Assert.True(result.WingetMissing);
+        Assert.Contains(log.Lines, l => l.StartsWith("[tailscale] winget couldn't start"));
+    }
+
+    [Fact]
+    public async Task A_failed_install_gives_wingets_last_line()
+    {
+        var runner = new FakeRunner().Answer(WingetArgs,
+            new ProcessResult(true, unchecked((int)0x8A150011), "Found Tailscale\r\n  ██▒▒ 10%\r  ████ 100%\r\nInstaller failed with exit code: 1602\r\n", "", false));
+
+        var result = await Cli(runner).InstallAsync(CancellationToken.None);
+
+        Assert.False(result.Ok);
+        Assert.False(result.WingetMissing);
+        Assert.Equal("Installer failed with exit code: 1602", result.Output);
+    }
+
+    [Fact]
+    public void Wingets_progress_bars_are_dropped()
+    {
+        var text = TailscaleCli.WingetText("Found Tailscale\r\n   - \r   \\ \r\n  ██▒▒ 10 MB / 30 MB\r  ████ 30 MB / 30 MB\r\nSuccessfully installed\r\n");
+
+        Assert.Equal(["Found Tailscale", "30 MB / 30 MB", "Successfully installed"], text.Split(Environment.NewLine));
+    }
+
     [Fact]
     public async Task Funnel_off_on_a_tailnet_that_has_not_allowed_it_warns_about_the_link()
     {

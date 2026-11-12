@@ -120,6 +120,16 @@ function SaveLogs($tag) {
     }
 }
 
+# Screenshots shown to the owner are in dark mode (their rule, 12 Nov 2026), and
+# Issun follows Windows' setting.
+$personalize = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+if ((Get-ItemProperty $personalize -ErrorAction SilentlyContinue).AppsUseLightTheme -ne 0) {
+    New-Item -Force $personalize | Out-Null
+    Set-ItemProperty $personalize AppsUseLightTheme 0 -Type DWord
+    Set-ItemProperty $personalize SystemUsesLightTheme 0 -Type DWord
+    Say "switched Windows to dark mode"
+}
+
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\Issun"
 $installed = Join-Path $installDir "Issun.exe"
 $download = Get-ChildItem "$env:USERPROFILE\Downloads\Issun-*.exe" | Select-Object -First 1
@@ -201,5 +211,58 @@ if ($Step -in @("all","uninstall")) {
     Expect "Issun quit" (-not (Get-Process Issun* -ErrorAction SilentlyContinue))
     Expect "settings kept" (Test-Path "$env:APPDATA\Issun\settings.json")
     SaveLogs "uninstall"
+}
+# Not in "all": Windows Sandbox has no winget, so this installs it from
+# Microsoft's own PowerShell module (PSGallery's Microsoft.WinGet.Client) first.
+if ($Step -eq "winget") {
+    Say "##### installing winget in the sandbox"
+    try {
+        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser | Out-Null
+        Install-Module Microsoft.WinGet.Client -Force -Scope CurrentUser -Repository PSGallery
+        Repair-WinGetPackageManager -Latest -Force -ErrorAction Stop | Out-Null
+    } catch { Say "FAIL couldn't install winget: $($_.Exception.Message)" }
+    $w = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\winget.exe"
+    Expect "winget present" (Test-Path $w)
+    if (Test-Path $w) { Say ("winget " + (& $w --version)) }
+}
+
+# A first run that stops on the Tailscale page and presses its install button.
+if ($Step -eq "tailscale") {
+    Say "##### first run, then the Tailscale page's install button"
+    Start-Process $download.FullName
+    $w = FindWindow "Set up Issun" 90
+    if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
+    Start-Sleep 3
+    Click $w "Next" | Out-Null
+    Start-Sleep 3
+    Dump $w "Tailscale page before"
+    Shot "tailscale-before" $w
+    $ts = Get-ChildItem "$env:LOCALAPPDATA\Issun" -ErrorAction SilentlyContinue | Out-Null
+    $buttons = $w.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+    $get = $buttons | Where-Object { $_.Current.Name -notin @("Check again","Back","Next","Cancel","Close","Turn on Funnel","Turn on") -and -not $_.Current.IsOffscreen } | Select-Object -First 1
+    if (-not $get) { Say "FAIL no install button"; exit 1 }
+    Say "pressing '$($get.Current.Name)'"
+    $get.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    $bar = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::ProgressBar)
+    Start-Sleep 2
+    $p = $w.FindFirst($Tree::Descendants, $bar)
+    Expect "progress shown while installing" ($p -and -not $p.Current.IsOffscreen)
+    Shot "tailscale-installing" $w
+    $deadline = (Get-Date).AddMinutes(14); $shotUac = $false
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep 5
+        $p = $w.FindFirst($Tree::Descendants, $bar)
+        if (-not $p -or $p.Current.IsOffscreen) { break }
+        if (-not $shotUac -and (Get-Process consent -ErrorAction SilentlyContinue)) { Say "a UAC prompt is up"; Shot "tailscale-uac" $null; $shotUac = $true }
+    }
+    Say "install finished or gave up"
+    Start-Sleep 8
+    Dump $w "Tailscale page after"
+    Shot "tailscale-after" $w
+    Shot "tailscale-after-desktop" $null
+    Expect "Tailscale installed" (Test-Path "$env:ProgramFiles\Tailscale\tailscale.exe")
+    Get-Process tailscale* -ErrorAction SilentlyContinue | ForEach-Object { Say "  process: $($_.Name) $($_.Path)" }
+    Get-Service Tailscale -ErrorAction SilentlyContinue | ForEach-Object { Say "  service: $($_.Name) $($_.Status) $($_.StartType)" }
+    SaveLogs "tailscale"
 }
 Say "##### done ($Step)"

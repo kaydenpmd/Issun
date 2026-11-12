@@ -195,6 +195,16 @@ public sealed class DemoHost : IIssunHost
         return (true, "");
     }
 
+    public async Task<TailscaleInstallResult> InstallTailscaleAsync()
+    {
+        await Task.Delay(4000);
+        lock (_gate)
+            _tailscale = new TailscaleStatus(true, false, null, false, false, Core.Platform.TailscaleCli.DescribeBackendState("NeedsLogin"));
+        Log.Write("[demo] Tailscale installed (pretend)");
+        Tick();
+        return new TailscaleInstallResult(true, false, "");
+    }
+
     public async Task<(bool Ok, string Output)> EnableFunnelAsync()
     {
         await Task.Delay(1200);

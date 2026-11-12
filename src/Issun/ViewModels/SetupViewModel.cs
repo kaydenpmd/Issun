@@ -59,7 +59,22 @@ public sealed class SetupViewModel : Observable, IDisposable
         NextCommand = new Command(() => Go(_page + 1), () => _page < SetupPage.Source);
         CloseCommand = new Command(() => CloseRequested?.Invoke());
         OpenPortalCommand = new Command(() => Open(DeveloperPortal, "the Discord Developer Portal"));
-        GetTailscaleCommand = new Command(() => Open(TailscaleDownload, "Tailscale's download page"));
+        // Installs with winget, as the owner asked (12 Nov 2026). Where there is
+        // no winget (some Windows 10 and LTSC installs, Windows Sandbox) it opens
+        // the download page instead, as the button did before. The words are
+        // the owner's to write: [text] marks each until they do.
+        GetTailscaleCommand = new AsyncCommand("setup: install Tailscale", async () =>
+        {
+            TailscaleError = null;
+            var result = await _host.InstallTailscaleAsync();
+            if (result.WingetMissing)
+            {
+                Open(TailscaleDownload, "Tailscale's download page (no winget)");
+                TailscaleError = "[text]";
+            }
+            else if (!result.Ok)
+                TailscaleError = $"[text] {result.Output}";
+        }, ex => TailscaleError = $"[text] {ex.Message}");
 
         CheckTailscaleCommand = new AsyncCommand("setup: check Tailscale", async () =>
         {
@@ -224,7 +239,7 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     // ───────────────────────────── Tailscale ─────────────────────────────
 
-    public Command GetTailscaleCommand { get; }
+    public AsyncCommand GetTailscaleCommand { get; }
     public AsyncCommand CheckTailscaleCommand { get; }
     public AsyncCommand EnableFunnelCommand { get; }
     public AsyncCommand EnableUnattendedCommand { get; }

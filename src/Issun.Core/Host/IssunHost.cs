@@ -260,6 +260,16 @@ public sealed class IssunHost : IIssunHost
         return result;
     }
 
+    public async Task<TailscaleInstallResult> InstallTailscaleAsync()
+    {
+        Log.Write("[tailscale] installing Tailscale with winget (requested from the window)");
+        using var timeout = new CancellationTokenSource(TailscaleCli.InstallTimeout + TimeSpan.FromSeconds(30));
+        var result = await _tailscale.InstallAsync(timeout.Token);
+        Log.Write($"[tailscale] install {(result.Ok ? "finished" : result.WingetMissing ? "not started: no winget" : "failed")}");
+        await RefreshTailscaleAsync();
+        return result;
+    }
+
     public bool StartWithWindows
     {
         get

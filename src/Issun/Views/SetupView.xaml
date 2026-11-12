@@ -121,6 +121,14 @@
                                                 Visibility="{Binding OfferFunnel, Converter={StaticResource Visible}}" />
                                         <Button Content="Check again" Command="{Binding CheckTailscaleCommand}" />
                                     </StackPanel>
+                                    <!-- While winget installs Tailscale: an indeterminate
+                                         bar, as Windows Settings shows while it adds a
+                                         feature, and a line of the owner's words. -->
+                                    <StackPanel Margin="0,12,0,0"
+                                                Visibility="{Binding GetTailscaleCommand.IsRunning, Converter={StaticResource Visible}}">
+                                        <ProgressBar IsIndeterminate="True" />
+                                        <TextBlock Text="[text]" Style="{StaticResource RowDescription}" Margin="0,6,0,0" />
+                                    </StackPanel>
                                 </StackPanel>
                             </DockPanel>
                             <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{DynamicResource ControlCornerRadius}"

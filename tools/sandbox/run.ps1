@@ -22,6 +22,8 @@ param(
     [switch]$NoBuild
 )
 $ErrorActionPreference = "Stop"
+# pwsh -File passes "-Steps first,update" as one string.
+$Steps = @($Steps | ForEach-Object { $_ -split "," } | Where-Object { $_ })
 $repo = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $work = Join-Path $env:LOCALAPPDATA ("IssunSandbox\" + (Get-Date -Format "yyyyMMdd-HHmmss"))
 $in = Join-Path $work "in"; $out = Join-Path $work "out"; $pub = Join-Path $env:LOCALAPPDATA "IssunSandbox\publish"

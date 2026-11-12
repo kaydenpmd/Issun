@@ -304,7 +304,17 @@ public interface ITailscale
 
     /// <summary><c>tailscale set --unattended</c>. Only ever run because the person clicked a button.</summary>
     Task<(bool Ok, string Output)> EnableUnattendedAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Installs Tailscale with winget (<c>winget install --id Tailscale.Tailscale
+    /// --exact</c>). The id, not the name: "tailscale" matches four packages, and
+    /// winget stops to ask which. Only ever run because the person clicked a button.
+    /// </summary>
+    Task<TailscaleInstallResult> InstallAsync(CancellationToken ct);
 }
+
+/// <param name="WingetMissing">winget couldn't be started at all, so the download page is the way in.</param>
+public sealed record TailscaleInstallResult(bool Ok, bool WingetMissing, string Output);
 
 public interface IAutostart
 {
@@ -391,6 +401,9 @@ public interface IIssunHost : IAsyncDisposable
 
     /// <summary>Turns on Tailscale's Run unattended, then re-probes.</summary>
     Task<(bool Ok, string Output)> EnableUnattendedAsync();
+
+    /// <summary>Installs Tailscale with winget, then re-probes.</summary>
+    Task<TailscaleInstallResult> InstallTailscaleAsync();
 
     bool StartWithWindows { get; set; }
 

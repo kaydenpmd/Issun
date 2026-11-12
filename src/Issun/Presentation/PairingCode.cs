@@ -1,6 +1,4 @@
-using System.IO;
 using System.Text.Json;
-using System.Windows.Media.Imaging;
 using QRCoder;
 
 namespace Issun.Presentation;
@@ -36,29 +34,31 @@ public static class PairingCode
     /// Error correction M, the common default. Light-on-dark codes are the
     /// "inverted" kind the QR standard allows; whether Ammy's scanner reads
     /// them is for the phone to show.
+    ///
+    /// Drawn here as pixels rather than as a PNG for WPF to decode: WinUI has
+    /// no blur effect, so the hidden code is blurred in these pixels
+    /// (<see cref="Blur"/>) and the view shows whichever it needs.
     /// </summary>
-    public static BitmapSource Render(string payload, bool dark)
+    public static Pixels Render(string payload, bool dark, int pixelsPerModule = 12)
     {
         using var generator = new QRCodeGenerator();
         using var data = generator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M);
-        byte[] black = [0, 0, 0, 255], white = [255, 255, 255, 255];
-        var png = dark
-            ? new PngByteQRCode(data).GetGraphic(8, white, black, drawQuietZones: true)
-            : new PngByteQRCode(data).GetGraphic(8, black, white, drawQuietZones: true);
-        var image = new BitmapImage();
-        image.BeginInit();
-        image.CacheOption = BitmapCacheOption.OnLoad;
-        image.StreamSource = new MemoryStream(png);
-        image.EndInit();
-        image.Freeze();
-        return image;
+        var modules = data.ModuleMatrix;        // quiet zone included
+        var n = modules.Count;
+        var size = n * pixelsPerModule;
+        var bgra = new byte[size * size * 4];
+        byte ink = dark ? (byte)255 : (byte)0, paper = dark ? (byte)0 : (byte)255;
+        for (var y = 0; y < size; y++)
+        {
+            var row = modules[y / pixelsPerModule];
+            for (var x = 0; x < size; x++)
+            {
+                var v = row[x / pixelsPerModule] ? ink : paper;
+                var i = (y * size + x) * 4;
+                bgra[i] = bgra[i + 1] = bgra[i + 2] = v;
+                bgra[i + 3] = 255;
+            }
+        }
+        return new Pixels(bgra, size, size);
     }
-
-    /// <summary>
-    /// Whether the window is drawn dark: the Fluent theme's primary text
-    /// colour is light then. Follows --theme as well as Windows' setting.
-    /// </summary>
-    public static bool ThemeIsDark() =>
-        System.Windows.Application.Current?.TryFindResource("TextFillColorPrimaryBrush") is System.Windows.Media.SolidColorBrush { Color: var c }
-        && 0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B > 128;
 }

@@ -1,11 +1,13 @@
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Windows;
 using Issun.Core;
 using Issun.Core.Platform;
+using Issun.Platform;
+using Issun.Presentation;
 using Issun.Startup;
 using Issun.Tray;
 using Issun.ViewModels;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 
 namespace Issun;
 
@@ -18,17 +20,21 @@ namespace Issun;
 ///   Issun.exe --background      tray only — what Start with Windows runs
 ///   Issun.exe --demo            made-up data; binds nothing, writes nothing real
 ///   Issun.exe --uninstall       what Settings › Apps runs: asks, then removes Issun
-///   Issun.exe --screenshot a.png [--theme light|dark] [--expanded] [--demo-phase N] [--setup-page N]
+///   Issun.exe --screenshot a.png [--theme light|dark] [--expanded] [--demo-phase N] [--setup-page N] [--demo-tailscale N]
 ///                               render the window's content, or a setup page, to a PNG and exit
 ///
 /// A release opened from anywhere but %LOCALAPPDATA%\Programs\Issun installs
 /// itself there first and hands over to the installed copy (SelfInstall).
+///
+/// WinUI 3 since 12 Nov 2026; this is the WPF build's App, step for step.
 /// </summary>
 public partial class App : Application
 {
     private const int StopTimeoutSeconds = 5;
 
-    private StartupOptions _options = new();
+    private readonly string[] _args;
+    private readonly StartupOptions _options;
+    private DispatcherQueue _dispatcher = null!;
     private SingleInstance? _instance;
     private IIssunHost? _host;
     private MainViewModel? _vm;
@@ -38,17 +44,26 @@ public partial class App : Application
     private UiState? _uiState;
     private bool _quitting;
 
-    protected override async void OnStartup(StartupEventArgs e)
+    public App()
     {
-        base.OnStartup(e);
-        _options = StartupOptions.Parse(e.Args);
-        ThemeMode = _options.Theme switch
+        _args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+        _options = StartupOptions.Parse(_args);
+        // Follows Windows' light/dark mode and accent colour unless --theme
+        // says otherwise. WinUI takes the theme only here, before anything
+        // is drawn.
+        switch (_options.Theme)
         {
-            ThemeChoice.Light => ThemeMode.Light,
-            ThemeChoice.Dark => ThemeMode.Dark,
-            _ => ThemeMode.System,      // follows Windows' light/dark and accent colour
-        };
+            case ThemeChoice.Light: RequestedTheme = ApplicationTheme.Light; break;
+            case ThemeChoice.Dark: RequestedTheme = ApplicationTheme.Dark; break;
+        }
+        AppTheme.Init(_options.Theme switch { ThemeChoice.Dark => true, ThemeChoice.Light => false, _ => null });
+        InitializeComponent();
         CrashHandlers.Install(this, quiet: _options.ScreenshotPath is not null);
+    }
+
+    protected override async void OnLaunched(LaunchActivatedEventArgs e)
+    {
+        _dispatcher = DispatcherQueue.GetForCurrentThread();
 
         // Until the tray icon exists, an exception here would leave a process
         // with no window, no icon and no way to quit it — running, invisible,
@@ -59,22 +74,18 @@ public partial class App : Application
             if (_options.ScreenshotPath is not null)
             {
                 // Unattended and invisible: no single-instance check (it must
-                // work beside a running Issun), no log file, no tray, no window.
-                Shutdown(await Screenshot.RunAsync(HostFactory.Create(e.Args), _options, Dispatcher));
+                // work beside a running Issun), no log file, no tray.
+                Shutdown(await Screenshot.RunAsync(HostFactory.Create(_args), _options, _dispatcher));
                 return;
             }
-            if (!Start(e.Args))
+            if (!Start(_args))
                 return;
         }
         catch (Exception ex)
         {
             Log.Write($"[ui] Issun couldn't start: {CrashHandlers.Describe(ex)}");
-            if (_options.ScreenshotPath is null)
-            {
-                var details = Log.FilePath is { } log ? $"\n\nThe details are in {log}." : "";
-                MessageBox.Show($"Issun couldn't start.\n\n{ex.Message}{details}",
-                    "Issun", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            var details = Log.FilePath is { } log ? $"\n\nThe details are in {log}." : "";
+            DesktopShell.Message($"Issun couldn't start.\n\n{ex.Message}{details}", "Issun", DesktopShell.Icon.Error);
             _tray?.Dispose();
             await StopHostAsync();
             Shutdown(1);
@@ -96,7 +107,13 @@ public partial class App : Application
         }
     }
 
-    /// <summary>Everything up to starting the host. False when another Issun is already running.</summary>
+    /// <summary>
+    /// Ends the process. WinUI's Exit() takes no exit code, and the sandbox
+    /// test and --screenshot callers read it, so the process ends here with it.
+    /// </summary>
+    private static void Shutdown(int code) => Environment.Exit(code);
+
+    /// <summary>Everything up to starting the host. False when this process is about to end.</summary>
     private bool Start(string[] args)
     {
         if (!_options.Demo)
@@ -134,13 +151,15 @@ public partial class App : Application
         Log.Write($"[ui] {IssunInfo.Wire} starting{(_options.Background ? " in the tray" : "")}");
         foreach (var problem in _options.Problems)
             Log.Write($"[ui] ignoring the command line: {problem}");
+        if (!_options.Demo)
+            StaleUnpacks.CleanUpInBackground();
 
         _host = HostFactory.Create(args);
         _uiState = UiState.Load(_host.DataFolder);
-        _vm = new MainViewModel(_host, Dispatcher) { OpenSetup = () => ShowSetup(afterwards: false) };
-        _tray = new TrayIcon(_vm, ShowMainWindow, () => _ = QuitAsync());
-        _instance.Listen(() => Dispatcher.BeginInvoke(ShowMainWindow));
-        _instance.ListenForQuit(() => Dispatcher.BeginInvoke(() => _ = QuitAsync()));
+        _vm = new MainViewModel(_host, _dispatcher) { OpenSetup = () => ShowSetup(afterwards: false) };
+        _tray = new TrayIcon(_vm, ShowMainWindow, () => _ = QuitAsync(), OnSessionEnding);
+        _instance.Listen(() => _dispatcher.TryEnqueue(ShowMainWindow));
+        _instance.ListenForQuit(() => _dispatcher.TryEnqueue(() => _ = QuitAsync()));
 
         // A first run opens the setup window instead of the main one, once
         // ever; the main window follows when setup closes.
@@ -163,7 +182,8 @@ public partial class App : Application
             return;
         if (_setupWindow is null)
         {
-            _setupWindow = new SetupWindow(new SetupViewModel(_host, Dispatcher));
+            var vm = new SetupViewModel(_host, _dispatcher);
+            _setupWindow = new SetupWindow(vm);
             _setupWindow.Closed += (_, _) =>
             {
                 _setupWindow = null;
@@ -172,11 +192,9 @@ public partial class App : Application
                 if (afterwards && !_quitting)
                     ShowMainWindow();
             };
-            _setupWindow.Show();
+            vm.SetVisible(true);
         }
-        if (_setupWindow.WindowState == WindowState.Minimized)
-            _setupWindow.WindowState = WindowState.Normal;
-        _setupWindow.Activate();
+        WindowFit.Bring(_setupWindow);
     }
 
     /// <summary>
@@ -189,9 +207,9 @@ public partial class App : Application
         Log.Write($"[install] {IssunInfo.Wire} opened from {install.ExePath}; installing to {install.InstallDir}");
         if (!SingleInstance.AskRunningToQuit("Issun", TimeSpan.FromSeconds(10)))
         {
-            MessageBox.Show(
+            DesktopShell.Message(
                 "Issun is already running, so this copy can't replace it yet.\n\nQuit Issun from its icon in the notification area, then open this file again.",
-                "Issun", MessageBoxButton.OK, MessageBoxImage.Information);
+                "Issun", DesktopShell.Icon.Information);
             return;
         }
         try
@@ -200,8 +218,8 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Issun couldn't install itself in {install.InstallDir}.\n\n{ex.Message}",
-                "Issun", MessageBoxButton.OK, MessageBoxImage.Error);
+            DesktopShell.Message($"Issun couldn't install itself in {install.InstallDir}.\n\n{ex.Message}",
+                "Issun", DesktopShell.Icon.Error);
             return;
         }
         try
@@ -215,8 +233,8 @@ public partial class App : Application
         catch (Exception ex)
         {
             Log.Write($"[install] couldn't start {install.InstalledExe}: {ex.Message}");
-            MessageBox.Show($"Issun is installed, but couldn't be started.\n\n{ex.Message}\n\nOpen it from the Start menu.",
-                "Issun", MessageBoxButton.OK, MessageBoxImage.Error);
+            DesktopShell.Message($"Issun is installed, but couldn't be started.\n\n{ex.Message}\n\nOpen it from the Start menu.",
+                "Issun", DesktopShell.Icon.Error);
         }
     }
 
@@ -228,18 +246,17 @@ public partial class App : Application
     private static void Uninstall(SelfInstall install)
     {
         Log.Write($"[install] uninstall requested ({IssunInfo.Wire}, {install.ExePath})");
-        var answer = MessageBox.Show(
-            "Uninstall Issun?\n\nYour settings, key and logs stay on this PC, so installing Issun again picks up where it left off.",
-            "Uninstall Issun", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
-        if (answer != MessageBoxResult.Yes)
+        if (!DesktopShell.AskYesNo(
+                "Uninstall Issun?\n\nYour settings, key and logs stay on this PC, so installing Issun again picks up where it left off.",
+                "Uninstall Issun"))
         {
             Log.Write("[install] uninstall cancelled");
             return;
         }
         if (!SingleInstance.AskRunningToQuit("Issun", TimeSpan.FromSeconds(10)))
         {
-            MessageBox.Show("Issun is still running. Quit it from its icon in the notification area, then uninstall it again.",
-                "Uninstall Issun", MessageBoxButton.OK, MessageBoxImage.Information);
+            DesktopShell.Message("Issun is still running. Quit it from its icon in the notification area, then uninstall it again.",
+                "Uninstall Issun", DesktopShell.Icon.Information);
             return;
         }
         install.Uninstall(new Autostart(), new StartMenuShortcut());
@@ -253,21 +270,19 @@ public partial class App : Application
         if (_window is null)
         {
             _window = new MainWindow(_vm);
-            _window.Closing += OnWindowClosing;
+            _window.AppWindow.Closing += OnWindowClosing;
         }
-        if (!_window.IsVisible)
-            _window.Show();
-        if (_window.WindowState == WindowState.Minimized)
-            _window.WindowState = WindowState.Normal;
-        _window.Activate();
+        WindowFit.Bring(_window);
+        _vm.SetWindowVisible(true);
     }
 
-    private void OnWindowClosing(object? sender, CancelEventArgs e)
+    private void OnWindowClosing(Microsoft.UI.Windowing.AppWindow sender, Microsoft.UI.Windowing.AppWindowClosingEventArgs e)
     {
         if (_quitting)
             return;
         e.Cancel = true;
-        _window?.Hide();
+        sender.Hide();
+        _vm?.SetWindowVisible(false);
 
         // Said once, ever. Without it the first close looks like quitting, and
         // the person wonders later why Discord still shows their music.
@@ -318,16 +333,18 @@ public partial class App : Application
         }
     }
 
-    protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+    /// <summary>
+    /// Windows is signing out or shutting down (WM_QUERYENDSESSION, which
+    /// the tray icon's window receives) and will end the process shortly
+    /// whatever happens. Stop cleanly while there is time, so the presence is
+    /// cleared and the log says why Issun stopped.
+    /// </summary>
+    private void OnSessionEnding(bool shutdown)
     {
-        // Windows is signing out or shutting down and will end the process
-        // shortly whatever happens. Stop cleanly while there is time, so the
-        // presence is cleared and the log says why Issun stopped.
-        base.OnSessionEnding(e);
         if (_quitting)
             return;
         _quitting = true;
-        Log.Write($"[ui] Windows is {(e.ReasonSessionEnding == ReasonSessionEnding.Shutdown ? "shutting down" : "signing out")}; stopping");
+        Log.Write($"[ui] Windows is {(shutdown ? "shutting down" : "signing out")}; stopping");
         _tray?.Dispose();
         _vm?.Dispose();
         if (_host is { } host)
@@ -346,12 +363,6 @@ public partial class App : Application
                 Log.Write($"[ui] error while stopping: {CrashHandlers.Describe(ex)}");
             }
         }
-    }
-
-    protected override void OnExit(ExitEventArgs e)
-    {
-        _tray?.Dispose();
         _instance?.Dispose();
-        base.OnExit(e);
     }
 }

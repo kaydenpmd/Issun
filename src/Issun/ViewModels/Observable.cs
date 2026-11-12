@@ -22,18 +22,34 @@ public abstract class Observable : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
 
-/// <summary>A button's action. Runs on the UI thread.</summary>
-public sealed class Command(Action execute, Func<bool>? canExecute = null) : ICommand
+/// <summary>
+/// A button's action. Runs on the UI thread.
+///
+/// WinUI has no CommandManager to requery every command after any input, as
+/// WPF's did, so a command whose <paramref name="canExecute"/> depends on a
+/// view model's state names that view model (<paramref name="requeryOn"/>) and
+/// is asked again whenever one of its properties changes.
+/// </summary>
+public sealed class Command : ICommand
 {
-    public event EventHandler? CanExecuteChanged
+    private readonly Action _execute;
+    private readonly Func<bool>? _canExecute;
+
+    public Command(Action execute, Func<bool>? canExecute = null, Observable? requeryOn = null)
     {
-        add => CommandManager.RequerySuggested += value;
-        remove => CommandManager.RequerySuggested -= value;
+        _execute = execute;
+        _canExecute = canExecute;
+        if (canExecute is not null && requeryOn is not null)
+            requeryOn.PropertyChanged += (_, _) => RaiseCanExecuteChanged();
     }
 
-    public bool CanExecute(object? parameter) => canExecute?.Invoke() ?? true;
+    public event EventHandler? CanExecuteChanged;
 
-    public void Execute(object? parameter) => execute();
+    public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
+
+    public void Execute(object? parameter) => _execute();
+
+    public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 }
 
 /// <summary>

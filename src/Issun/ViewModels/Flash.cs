@@ -1,4 +1,4 @@
-using System.Windows.Threading;
+using Microsoft.UI.Dispatching;
 
 namespace Issun.ViewModels;
 
@@ -9,15 +9,14 @@ namespace Issun.ViewModels;
 /// </summary>
 public sealed class Flash : Observable
 {
-    private readonly DispatcherTimer _timer;
+    private readonly DispatcherQueueTimer _timer;
     private string? _text;
 
-    public Flash(Dispatcher dispatcher, TimeSpan? duration = null)
+    public Flash(DispatcherQueue dispatcher, TimeSpan? duration = null)
     {
-        _timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
-        {
-            Interval = duration ?? TimeSpan.FromSeconds(3),
-        };
+        _timer = dispatcher.CreateTimer();
+        _timer.Interval = duration ?? TimeSpan.FromSeconds(3);
+        _timer.IsRepeating = false;
         _timer.Tick += (_, _) =>
         {
             _timer.Stop();

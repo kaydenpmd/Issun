@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
-using System.Windows.Media;
+
 using Issun.Core;
 
 namespace Issun.Demo;

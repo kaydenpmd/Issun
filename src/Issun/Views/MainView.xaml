@@ -1,29 +1,26 @@
 <UserControl x:Class="Issun.Views.MainView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:v="clr-namespace:Issun.Views"
-             xmlns:vm="clr-namespace:Issun.ViewModels"
-             mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-             d:DesignWidth="560">
+             xmlns:v="using:Issun.Views"
+             x:DefaultBindMode="OneWay"
+             IsTabStop="False">
 
     <!-- The whole window, top to bottom: now playing, status, pairing,
          settings, then the two collapsed sections. Everything scrolls; the
-         window never needs to be taller than the screen. -->
+         window never needs to be taller than the screen. Carried over from
+         the WPF build word for word and row for row. -->
     <ScrollViewer x:Name="Scroller"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled"
-                  Focusable="False">
+                  IsTabStop="False">
         <StackPanel Margin="24,12,24,24" MaxWidth="820">
 
             <!-- ───────────── Couldn't start ───────────── -->
             <Border Style="{StaticResource Card}"
-                    Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                     Margin="0,8,0,4"
-                    Visibility="{Binding StartupError, Converter={StaticResource Present}}">
-                <TextBlock Text="{Binding StartupError}" Style="{StaticResource RowTitle}" />
+                    Visibility="{x:Bind v:Bind.Present(ViewModel.StartupError)}">
+                <TextBlock Text="{x:Bind ViewModel.StartupError}" Style="{StaticResource RowTitle}" />
             </Border>
 
             <!-- ───────────── Now playing ───────────── -->
@@ -42,64 +39,61 @@
                          surface edge, and every value comes from Windows rather
                          than from here. Width 1: Microsoft Learn, "Layering and
                          elevation", gives every surface a stroke width of 1.
-                         Colour: the theme's ControlStrokeColorDefault, #0F000000
-                         in light and #12FFFFFF in dark in WPF's .NET 9 Fluent
-                         theme, the same stroke Windows puts on buttons and combo
-                         boxes. Corners: ControlCornerRadius, 4, which Microsoft
-                         Learn's "Geometry" page gives to in-page elements. It is
-                         drawn over the art, as Apple Music draws its own, so a
-                         cover the same colour as the card still has an edge.
-                         Checked against those sources 23 Sept 2026. -->
+                         Colour: the theme's ControlStrokeColorDefault, the same
+                         stroke Windows puts on buttons and combo boxes. Corners:
+                         ControlCornerRadius, 4, which Microsoft Learn's
+                         "Geometry" page gives to in-page elements. It is drawn
+                         over the art, as Apple Music draws its own, so a cover
+                         the same colour as the card still has an edge. -->
                     <Grid Width="112" Height="112" VerticalAlignment="Top">
-                        <Border CornerRadius="{DynamicResource ControlCornerRadius}" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                            <TextBlock Text="&#xE8D6;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                            <TextBlock Text="&#xE8D6;" FontFamily="{ThemeResource SymbolThemeFontFamily}"
                                        FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                        AutomationProperties.Name="No cover" />
                         </Border>
-                        <Border CornerRadius="{DynamicResource ControlCornerRadius}"
-                                Visibility="{Binding HasCover, Converter={StaticResource Visible}}">
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}"
+                                Visibility="{x:Bind v:Bind.Visible(ViewModel.HasCover)}">
                             <Border.Background>
-                                <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill" />
+                                <ImageBrush ImageSource="{x:Bind ViewModel.Cover}" Stretch="UniformToFill" />
                             </Border.Background>
                         </Border>
-                        <Border CornerRadius="{DynamicResource ControlCornerRadius}" BorderThickness="1" IsHitTestVisible="False"
-                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" IsHitTestVisible="False"
+                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" />
                     </Grid>
 
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
 
                         <!-- A track -->
-                        <StackPanel Visibility="{Binding HasTrack, Converter={StaticResource Visible}}">
+                        <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.HasTrack)}">
                             <!-- Two lines at most: some titles carry every remix credit.
                                  An explicit track's title ends in a typed 🅴;
                                  see NowPlayingText.CardTitle. -->
-                            <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold"
-                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                       LineStackingStrategy="BlockLineHeight" LineHeight="26" MaxHeight="52"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                       ToolTip="{Binding Title}" />
-                            <TextBlock Text="{Binding Artist}" FontSize="14" Margin="0,2,0,0"
-                                       TextTrimming="CharacterEllipsis"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <TextBlock Text="{x:Bind ViewModel.Title}" Style="{StaticResource SubtitleTextBlockStyle}"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                       ToolTipService.ToolTip="{x:Bind ViewModel.Title}" />
+                            <TextBlock Text="{x:Bind ViewModel.Artist}" Style="{StaticResource BodyTextBlockStyle}" Margin="0,2,0,0"
+                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                         </StackPanel>
 
                         <!-- No track -->
-                        <StackPanel Visibility="{Binding HasTrack, Converter={StaticResource Hidden}}">
-                            <TextBlock Text="Not playing" FontSize="20" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <TextBlock Text="{Binding NothingPlayingDetail}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                        <StackPanel Visibility="{x:Bind v:Bind.Hidden(ViewModel.HasTrack)}">
+                            <TextBlock Text="Not playing" Style="{StaticResource SubtitleTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                            <TextBlock Text="{x:Bind ViewModel.NothingPlayingDetail}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
                         </StackPanel>
 
-                        <WrapPanel Margin="0,8,0,0">
-                            <TextBlock Text="{Binding SourceVersion}" Style="{StaticResource Caption}"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                       Visibility="{Binding SourceVersion, Converter={StaticResource Present}}"
+                        <v:WrapPanel Margin="0,8,0,0">
+                            <TextBlock Text="{x:Bind ViewModel.SourceVersion}" Style="{StaticResource Caption}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       Visibility="{x:Bind v:Bind.Present(ViewModel.SourceVersion)}"
                                        Margin="0,0,12,0" />
-                            <TextBlock Text="{Binding OnDiscord}" Style="{StaticResource Caption}"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                       Visibility="{Binding OnDiscord, Converter={StaticResource Present}}" />
-                        </WrapPanel>
+                            <TextBlock Text="{x:Bind ViewModel.OnDiscord}" Style="{StaticResource Caption}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       Visibility="{x:Bind v:Bind.Present(ViewModel.OnDiscord)}" />
+                        </v:WrapPanel>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -108,64 +102,80 @@
             <TextBlock Text="Status" Style="{StaticResource SectionHeader}" />
 
             <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <Ellipse DataContext="{Binding PhoneStatus}" Style="{StaticResource StatusDot}" />
-                    <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <v:StatusDot Status="{x:Bind ViewModel.PhoneStatus}" />
+                    <StackPanel Grid.Column="1">
                         <TextBlock Text="Source" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{Binding PhoneStatus.Text}" Style="{StaticResource RowDescription}" />
+                        <TextBlock Text="{x:Bind ViewModel.PhoneStatus.Text}" Style="{StaticResource RowDescription}" />
                     </StackPanel>
-                </DockPanel>
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <Ellipse DataContext="{Binding DiscordStatus}" Style="{StaticResource StatusDot}" />
-                    <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <v:StatusDot Status="{x:Bind ViewModel.DiscordStatus}" />
+                    <StackPanel Grid.Column="1">
                         <TextBlock Text="Discord" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{Binding DiscordStatus.Text}" Style="{StaticResource RowDescription}" />
+                        <TextBlock Text="{x:Bind ViewModel.DiscordStatus.Text}" Style="{StaticResource RowDescription}" />
                     </StackPanel>
-                </DockPanel>
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <Ellipse DataContext="{Binding ReceiverStatus}" Style="{StaticResource StatusDot}" />
-                    <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <v:StatusDot Status="{x:Bind ViewModel.ReceiverStatus}" />
+                    <StackPanel Grid.Column="1">
                         <TextBlock Text="Receiver" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{Binding ReceiverStatus.Text}" Style="{StaticResource RowDescription}" />
+                        <TextBlock Text="{x:Bind ViewModel.ReceiverStatus.Text}" Style="{StaticResource RowDescription}" />
                     </StackPanel>
-                </DockPanel>
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <DockPanel>
-                        <Ellipse DataContext="{Binding TailscaleStatus}" Style="{StaticResource StatusDot}" />
-                        <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <v:StatusDot Status="{x:Bind ViewModel.TailscaleStatus}" />
+                        <StackPanel Grid.Column="1">
                             <TextBlock Text="Tailscale" Style="{StaticResource RowTitle}" />
-                            <TextBlock Text="{Binding TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
+                            <TextBlock Text="{x:Bind ViewModel.TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
                             <!-- Below the text rather than beside it: Tailscale's
                                  advice can run to a whole command line. -->
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                <Button Content="Turn on Funnel" Command="{Binding EnableFunnelCommand}"
-                                        Style="{DynamicResource AccentButtonStyle}" Margin="0,0,8,0"
-                                        Visibility="{Binding OfferFunnel, Converter={StaticResource Visible}}" />
-                                <Button Content="Refresh" Command="{Binding RefreshTailscaleCommand}" Margin="0,0,12,0" />
+                                <Button Content="Turn on Funnel" Command="{x:Bind ViewModel.EnableFunnelCommand}"
+                                        Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0"
+                                        Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferFunnel)}" />
+                                <Button Content="Refresh" Command="{x:Bind ViewModel.RefreshTailscaleCommand}" Margin="0,0,12,0" />
                                 <TextBlock Text="Working…" Style="{StaticResource Caption}" VerticalAlignment="Center"
-                                           Visibility="{Binding EnableFunnelCommand.IsRunning, Converter={StaticResource Visible}}" />
+                                           Visibility="{x:Bind v:Bind.Visible(ViewModel.EnableFunnelCommand.IsRunning)}" />
                             </StackPanel>
-                            <TextBlock Text="{Binding TailscaleError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
-                                       Visibility="{Binding TailscaleError, Converter={StaticResource Present}}" />
+                            <TextBlock Text="{x:Bind ViewModel.TailscaleError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
+                                       Visibility="{x:Bind v:Bind.Present(ViewModel.TailscaleError)}" />
                         </StackPanel>
-                    </DockPanel>
+                    </Grid>
 
                     <!-- What `tailscale funnel` said. On a tailnet that hasn't
                          allowed Funnel yet this is a link to the page that allows
                          it, so links are clickable. -->
-                    <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{DynamicResource ControlCornerRadius}"
-                            Background="{DynamicResource SubtleFillColorSecondaryBrush}"
-                            Visibility="{Binding FunnelOutput, Converter={StaticResource Present}}">
-                        <TextBlock v:LinkTextBlock.Text="{Binding FunnelOutput}" Style="{StaticResource MonoBlock}" />
+                    <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                            Visibility="{x:Bind v:Bind.Present(ViewModel.FunnelOutput)}">
+                        <TextBlock v:LinkTextBlock.Text="{x:Bind ViewModel.FunnelOutput}" Style="{StaticResource MonoBlock}" />
                     </Border>
                 </StackPanel>
             </Border>
@@ -174,75 +184,87 @@
             <TextBlock Text="Connect a source" Style="{StaticResource SectionHeader}" />
 
             <Border Style="{StaticResource Card}"
-                    Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
-                    Visibility="{Binding ShowFirstRunBanner, Converter={StaticResource Visible}}">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Got it" Command="{Binding DismissBannerCommand}"
-                            VerticalAlignment="Center" Margin="12,0,0,0" />
+                    Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
+                    Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowFirstRunBanner)}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Connect your source" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
                         <TextBlock Style="{StaticResource RowDescription}"
                                    Text="Put these two values into your source's settings: the address it sends to, and its key." />
                     </StackPanel>
-                </DockPanel>
+                    <Button Grid.Column="1" Content="Got it" Command="{x:Bind ViewModel.DismissBannerCommand}"
+                            VerticalAlignment="Center" Margin="12,0,0,0" />
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                        <TextBlock Text="{Binding EndpointCopied.Text}" Style="{StaticResource Caption}"
-                                   VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <Button Content="Copy" Command="{Binding CopyEndpointCommand}"
-                                AutomationProperties.Name="Copy endpoint" />
-                    </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Endpoint" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{Binding EndpointUrl}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
-                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding EndpointUrl}"
-                                   Visibility="{Binding HasEndpoint, Converter={StaticResource Visible}}" />
+                        <TextBlock Text="{x:Bind ViewModel.EndpointUrl}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
+                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ViewModel.EndpointUrl}"
+                                   Visibility="{x:Bind v:Bind.Visible(ViewModel.HasEndpoint)}" />
                         <TextBlock Style="{StaticResource RowDescription}"
-                                   Visibility="{Binding HasEndpoint, Converter={StaticResource Hidden}}"
+                                   Visibility="{x:Bind v:Bind.Hidden(ViewModel.HasEndpoint)}"
                                    Text="Not known yet. It appears here once Tailscale is running on this PC and Funnel is on — see Tailscale above." />
                     </StackPanel>
-                </DockPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock Text="{x:Bind ViewModel.EndpointCopied.Text}" Style="{StaticResource Caption}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <Button Content="Copy" Command="{x:Bind ViewModel.CopyEndpointCommand}"
+                                AutomationProperties.Name="Copy endpoint" />
+                    </StackPanel>
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <DockPanel>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <TextBlock Text="{Binding KeyCopied.Text}" Style="{StaticResource Caption}"
-                                       VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <Button Content="{Binding ToggleKeyLabel}" Command="{Binding ToggleKeyCommand}" Margin="0,0,8,0"
-                                    MinWidth="64" AutomationProperties.Name="Show or hide key" />
-                            <Button Content="Copy" Command="{Binding CopyKeyCommand}" Margin="0,0,8,0"
-                                    AutomationProperties.Name="Copy key" />
-                            <Button Content="New key…" Command="{Binding AskNewKeyCommand}" />
-                        </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Text="Key" Style="{StaticResource RowTitle}" />
-<TextBlock Text="{Binding KeyDisplay}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
+                            <TextBlock Text="{x:Bind ViewModel.KeyDisplay}" Style="{StaticResource MonoBlock}" Margin="0,3,0,0"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
-                    </DockPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <TextBlock Text="{x:Bind ViewModel.KeyCopied.Text}" Style="{StaticResource Caption}"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <Button Content="{x:Bind ViewModel.ToggleKeyLabel}" Command="{x:Bind ViewModel.ToggleKeyCommand}" Margin="0,0,8,0"
+                                    MinWidth="64" AutomationProperties.Name="Show or hide key" />
+                            <Button Content="Copy" Command="{x:Bind ViewModel.CopyKeyCommand}" Margin="0,0,8,0"
+                                    AutomationProperties.Name="Copy key" />
+                            <Button Content="New key…" Command="{x:Bind ViewModel.AskNewKeyCommand}" />
+                        </StackPanel>
+                    </Grid>
 
-                    <!-- Replacing the key cuts Ammy off until it has the new one,
-                         so it asks first, in place, rather than in a popup. -->
-                    <Border Margin="0,12,0,0" Padding="12,10" CornerRadius="{DynamicResource ControlCornerRadius}"
-                            Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
-                            Visibility="{Binding ConfirmingNewKey, Converter={StaticResource Visible}}">
+                    <!-- Replacing the key cuts the source off until it has the new
+                         one, so it asks first, in place, rather than in a popup. -->
+                    <Border Margin="0,12,0,0" Padding="12,10" CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                            Visibility="{x:Bind v:Bind.Visible(ViewModel.ConfirmingNewKey)}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource RowTitle}"
                                        Text="Replace the key? Your source's pushes will be refused until it has the new key." />
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                <Button Content="Replace key" Command="{Binding ConfirmNewKeyCommand}"
-                                        Style="{DynamicResource AccentButtonStyle}" Margin="0,0,8,0" />
-                                <Button Content="Cancel" Command="{Binding CancelNewKeyCommand}" />
+                                <Button Content="Replace key" Command="{x:Bind ViewModel.ConfirmNewKeyCommand}"
+                                        Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0" />
+                                <Button Content="Cancel" Command="{x:Bind ViewModel.CancelNewKeyCommand}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <TextBlock Text="{Binding KeyMessage}" Style="{StaticResource RowDescription}" Margin="0,8,0,0"
-                               Visibility="{Binding KeyMessage, Converter={StaticResource Present}}" />
+                    <TextBlock Text="{x:Bind ViewModel.KeyMessage}" Style="{StaticResource RowDescription}" Margin="0,8,0,0"
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.KeyMessage)}" />
                 </StackPanel>
             </Border>
 
@@ -250,180 +272,199 @@
             <TextBlock Text="Settings" Style="{StaticResource SectionHeader}" />
 
             <!-- The whole card is the button, as Windows 11 Settings' cards
-                 that open a page are, with the chevron at the right. The
-                 owner's words and layout, 12 Nov 2026. -->
-            <Button Style="{StaticResource NavigationCard}" Command="{Binding OpenSetupCommand}">
-                <DockPanel>
+                 that open a page are. The owner's words and layout, 12 Nov 2026. -->
+            <Button Style="{StaticResource NavigationCard}" Command="{x:Bind ViewModel.OpenSetupCommand}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Set up again" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
                     <!-- Setup opens in a window of its own, so not the chevron
                          (Settings' sign for a page in the same window) but the
                          sign Settings puts on a card that opens another window,
                          as on Sound's "More sound settings": E8A7 (Open in new
-                         window) at 14 px, ink 14 x 14, white, its right edge 18 px
-                         in from the card's outer edge. Measured at 96 dpi on
+                         window) at 14 px, ink 14 x 14, its right edge 18 px in
+                         from the card's outer edge. Measured at 96 dpi on
                          Windows 11 26H2. -->
-                    <TextBlock DockPanel.Dock="Right" Text="&#xE8A7;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                    <TextBlock Grid.Column="1" Text="&#xE8A7;" FontFamily="{ThemeResource SymbolThemeFontFamily}"
                                FontSize="14" VerticalAlignment="Center" Margin="14,0,0,0"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                    <TextBlock Text="Set up again" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
-                </DockPanel>
+                               Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                </Grid>
             </Button>
 
             <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="200" VerticalAlignment="Center" Margin="12,0,0,0"
-                             Text="{Binding ClientId, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="Discord application ID" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Discord application ID" Style="{StaticResource RowTitle}" />
                         <TextBlock Style="{StaticResource RowDescription}"
                                    Text="From your application in the Discord Developer Portal. Its name is what Discord shows after &quot;Listening to&quot;, so name it after where the music comes from, like Apple Music." />
                     </StackPanel>
-                </DockPanel>
+                    <TextBox Grid.Column="1" Width="200" VerticalAlignment="Center" Margin="12,0,0,0"
+                             Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="Discord application ID" />
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="0"
-                              IsChecked="{Binding PublicRead}" AutomationProperties.Name="Public now playing" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Public now playing" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="Lets a web page read what you're playing from this PC's address without the key." Style="{StaticResource RowDescription}" />
-                        <TextBlock Text="Anyone who has the address can then see what you're listening to." Margin="0,2,0,0">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource RowDescription}">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding PublicRead}" Value="True">
-                                            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
-                                            <Setter Property="FontWeight" Value="SemiBold" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <!-- In the caution colour and semibold while it's on. -->
+                        <TextBlock Text="Anyone who has the address can then see what you're listening to." Style="{StaticResource RowDescription}"
+                                   Visibility="{x:Bind v:Bind.Hidden(ViewModel.PublicRead)}" />
+                        <TextBlock Text="Anyone who has the address can then see what you're listening to." Style="{StaticResource RowDescription}"
+                                   Foreground="{ThemeResource SystemFillColorCautionBrush}" FontWeight="SemiBold"
+                                   Visibility="{x:Bind v:Bind.Visible(ViewModel.PublicRead)}" />
                     </StackPanel>
-                </DockPanel>
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="0" Padding="0"
+                              IsChecked="{x:Bind ViewModel.PublicRead, Mode=TwoWay}" AutomationProperties.Name="Public now playing" />
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="90" VerticalAlignment="Center" Margin="12,0,0,0"
-                             Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="Port" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Port" Style="{StaticResource RowTitle}" />
                         <TextBlock Style="{StaticResource RowDescription}"
                                    Text="Where Issun listens on this PC. Tailscale Funnel has to point at the same port." />
                     </StackPanel>
-                </DockPanel>
+                    <TextBox Grid.Column="1" Width="90" VerticalAlignment="Center" Margin="12,0,0,0"
+                             Text="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="Port" />
+                </Grid>
             </Border>
 
-            <Expander IsExpanded="{Binding AdvancedExpanded}" Margin="0,0,0,4" HorizontalAlignment="Stretch">
+            <Expander IsExpanded="{x:Bind ViewModel.AdvancedExpanded, Mode=TwoWay}" Margin="0,0,0,4"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <Expander.Header>
-                    <StackPanel Margin="4,2,0,2">
+                    <StackPanel Margin="0,12">
                         <TextBlock Text="Advanced" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="Public address" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
-                <StackPanel Margin="4,4,0,0">
+                <StackPanel>
                     <TextBlock Text="Public address" Style="{StaticResource RowTitle}" />
                     <TextBlock Style="{StaticResource RowDescription}"
                                Text="Leave empty to use this PC's Tailscale address. Set it if something other than Tailscale Funnel reaches this PC. Discord's servers fetch uploaded covers from here." />
-                    <TextBox Margin="0,8,0,0" Text="{Binding PublicBase, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox Margin="0,8,0,0" Text="{x:Bind ViewModel.PublicBase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.Name="Public address" />
                 </StackPanel>
             </Expander>
 
-            <Border Style="{StaticResource Card}" Background="Transparent" BorderThickness="0" Padding="2,8,2,4">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="Apply" Command="{Binding ApplySettingsCommand}"
-                                Style="{DynamicResource AccentButtonStyle}" MinWidth="88" Margin="0,0,8,0" />
-                        <Button Content="Undo changes" Command="{Binding RevertSettingsCommand}" Margin="0,0,12,0"
-                                Visibility="{Binding SettingsDirty, Converter={StaticResource Visible}}" />
-                        <TextBlock Text="{Binding SettingsSaved.Text}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding SettingsErrors}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
-                               Visibility="{Binding SettingsErrors, Converter={StaticResource Present}}" />
+            <StackPanel Padding="2,8,2,4" Margin="0,0,0,4">
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Apply" Command="{x:Bind ViewModel.ApplySettingsCommand}"
+                            Style="{StaticResource AccentButtonStyle}" MinWidth="88" Margin="0,0,8,0" />
+                    <Button Content="Undo changes" Command="{x:Bind ViewModel.RevertSettingsCommand}" Margin="0,0,12,0"
+                            Visibility="{x:Bind v:Bind.Visible(ViewModel.SettingsDirty)}" />
+                    <TextBlock Text="{x:Bind ViewModel.SettingsSaved.Text}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
                 </StackPanel>
-            </Border>
+                <TextBlock Text="{x:Bind ViewModel.SettingsErrors}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
+                           Visibility="{x:Bind v:Bind.Present(ViewModel.SettingsErrors)}" />
+            </StackPanel>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <DockPanel>
-                        <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="0"
-                                  IsChecked="{Binding StartWithWindows}" AutomationProperties.Name="Start with Windows" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Text="Start with Windows" Style="{StaticResource RowTitle}" />
                             <TextBlock Style="{StaticResource RowDescription}"
                                        Text="Starts Issun in the tray when you sign in. Takes effect straight away." />
                         </StackPanel>
-                    </DockPanel>
-                    <TextBlock Text="{Binding StartWithWindowsError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
-                               Visibility="{Binding StartWithWindowsError, Converter={StaticResource Present}}" />
+                        <CheckBox Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="0" Padding="0"
+                                  IsChecked="{x:Bind ViewModel.StartWithWindows, Mode=TwoWay}" AutomationProperties.Name="Start with Windows" />
+                    </Grid>
+                    <TextBlock Text="{x:Bind ViewModel.StartWithWindowsError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError)}" />
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Import relay .env…" Command="{Binding ImportEnvCommand}"
-                                VerticalAlignment="Center" Margin="12,0,0,0" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Text="Coming from relay.py" Style="{StaticResource RowTitle}" />
                             <TextBlock Style="{StaticResource RowDescription}"
                                        Text="Brings over the key, the Discord application ID and the other settings from the relay's .env, and its check-in history if it sits beside it." />
                         </StackPanel>
-                    </DockPanel>
-                    <TextBlock Text="{Binding ImportNotes}" Style="{StaticResource RowDescription}" Margin="0,8,0,0"
-                               Visibility="{Binding ImportNotes, Converter={StaticResource Present}}" />
+                        <Button Grid.Column="1" Content="Import relay .env…" Command="{x:Bind ViewModel.ImportEnvCommand}"
+                                VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+                    <TextBlock Text="{x:Bind ViewModel.ImportNotes}" Style="{StaticResource RowDescription}" Margin="0,8,0,0"
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.ImportNotes)}" />
                 </StackPanel>
             </Border>
 
             <!-- ───────────── Diagnostics ───────────── -->
-            <Expander IsExpanded="{Binding DiagnosticsExpanded}" Margin="0,22,0,4" HorizontalAlignment="Stretch">
+            <Expander IsExpanded="{x:Bind ViewModel.DiagnosticsExpanded, Mode=TwoWay}" Margin="0,22,0,4"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <Expander.Header>
-                    <StackPanel Margin="4,2,0,2">
+                    <StackPanel Margin="0,12">
                         <TextBlock Text="Diagnostics" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="The source's last report and its check-in history" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
-                <StackPanel Margin="4,4,0,0">
+                <StackPanel>
                     <TextBlock Text="The source's last report" Style="{StaticResource RowTitle}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding DiagSummary}" Style="{StaticResource MonoBlock}" Margin="0,4,0,0" />
+                    <TextBlock Text="{x:Bind ViewModel.DiagSummary}" Style="{StaticResource MonoBlock}" Margin="0,4,0,0" />
 
                     <TextBlock Text="Check-in history" Style="{StaticResource RowTitle}" FontWeight="SemiBold" Margin="0,16,0,0" />
-                    <TextBlock Text="{Binding UptimeSummary}" Style="{StaticResource MonoBlock}" TextWrapping="NoWrap" Margin="0,4,0,0" />
+                    <TextBlock Text="{x:Bind ViewModel.UptimeSummary}" Style="{StaticResource MonoBlock}" TextWrapping="NoWrap" Margin="0,4,0,0" />
 
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                        <Button Content="Refresh history" Command="{Binding RefreshUptimeCommand}" Margin="0,0,8,0" />
-                        <Button Content="Open log folder" Command="{Binding OpenLogFolderCommand}" />
+                        <Button Content="Refresh history" Command="{x:Bind ViewModel.RefreshUptimeCommand}" Margin="0,0,8,0" />
+                        <Button Content="Open log folder" Command="{x:Bind ViewModel.OpenLogFolderCommand}" />
                     </StackPanel>
                 </StackPanel>
             </Expander>
 
             <!-- ───────────── Log ───────────── -->
-            <Expander IsExpanded="{Binding LogExpanded}" Margin="0,0,0,4" HorizontalAlignment="Stretch">
+            <Expander IsExpanded="{x:Bind ViewModel.LogExpanded, Mode=TwoWay}" Margin="0,0,0,4"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <Expander.Header>
-                    <StackPanel Margin="4,2,0,2">
+                    <StackPanel Margin="0,12">
                         <TextBlock Text="Log" Style="{StaticResource RowTitle}" />
                         <TextBlock Text="The most recent lines, as they are written" Style="{StaticResource RowDescription}" />
                     </StackPanel>
                 </Expander.Header>
-                <StackPanel Margin="4,4,0,0">
-                    <TextBox x:Name="LogBox" IsReadOnly="True" Height="320"
+                <StackPanel>
+                    <TextBox x:Name="LogBox" IsReadOnly="True" Height="320" AcceptsReturn="True"
                              FontFamily="{StaticResource MonoFont}" FontSize="12"
-                             TextWrapping="Wrap" TextAlignment="Left" VerticalScrollBarVisibility="Auto"
-                             HorizontalScrollBarVisibility="Disabled"
+                             TextWrapping="Wrap" TextAlignment="Left"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              AutomationProperties.Name="Log" />
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button Content="Copy log" Command="{Binding CopyLogCommand}" Margin="0,0,8,0" />
-                        <TextBlock Text="{Binding LogCopied.Text}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                        <Button Content="Copy log" Command="{x:Bind ViewModel.CopyLogCommand}" Margin="0,0,8,0" />
+                        <TextBlock Text="{x:Bind ViewModel.LogCopied.Text}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
             </Expander>
 
-            <TextBlock Text="{Binding VersionText}" Style="{StaticResource Caption}"
-                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+            <TextBlock Text="{x:Bind ViewModel.VersionText, Mode=OneTime}" Style="{StaticResource Caption}"
+                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                        HorizontalAlignment="Center" Margin="0,16,0,0" />
         </StackPanel>
     </ScrollViewer>

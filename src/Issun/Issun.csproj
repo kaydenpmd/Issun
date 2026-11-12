@@ -1,42 +1,47 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- WinUI 3 (Windows App SDK) since 12 Nov 2026, the owner's decision ("let's
+       move to winui 3 actually"); WPF before that. The winui3-spike branch's
+       spike/winui3/REPORT.md (fce7811) has the measurements this file follows. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-    <!-- For NotifyIcon only: the tray icon. See Tray/TrayIcon.cs for why this
-         rather than a third-party WPF tray package. -->
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <RootNamespace>Issun</RootNamespace>
     <AssemblyName>Issun</AssemblyName>
+    <UseWinUI>true</UseWinUI>
+    <!-- Unpackaged and carrying its own copy of the Windows App SDK, so the one
+         .exe runs on a PC with nothing installed first, as the WPF build did.
+         MSIX (the Microsoft Store's route) is a later step. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
     <ApplicationIcon>Assets\issun.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- WPF0001: WPF's Fluent theme (ThemeMode) is marked experimental in .NET 9.
-         WFO0003: the WinForms analyzer wants DPI awareness set through its own
-         Application.SetHighDpiMode, which only exists for WinForms apps. This is
-         a WPF app that borrows one WinForms type, so app.manifest is the right
-         place for it. -->
-    <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Windows App SDK's single-file targets require every file to be
+         unpacked ("PublishSingleFile requires IncludeAllContentForSelfExtract
+         for Dll SxS redirection"), so a published .exe unpacks into
+         %TEMP%\.net\Issun\<hash> on first run. StaleUnpacks deletes the ones
+         earlier builds left. -->
+    <IncludeAllContentForSelfExtract Condition="'$(PublishSingleFile)' == 'true'">true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- UseWindowsForms adds these as global usings, and then Application,
-         Button, MessageBox, Color, Brush, Point and friends are ambiguous in
-         every WPF file. WinForms types are spelled out where they are used. -->
-    <Using Remove="System.Windows.Forms" />
-    <Using Remove="System.Drawing" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="Assets\issun.ico" />
+    <!-- Only WinUI and what it depends on, not the Microsoft.WindowsAppSDK
+         metapackage, which also brings the AI, ML, Search and Widgets packages
+         (onnxruntime, DirectML, the semantic index: about 25 MB of the .exe). -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.6.5" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Issun.Core\Issun.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
 </Project>

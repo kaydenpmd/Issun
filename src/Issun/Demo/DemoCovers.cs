@@ -1,8 +1,12 @@
-using System.IO;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+using System.Buffers.Binary;
 
 namespace Issun.Demo;
+
+/// <summary>A colour for the demo's covers: what WPF's Color.FromRgb gave them.</summary>
+internal readonly record struct Color(byte R, byte G, byte B)
+{
+    public static Color FromRgb(byte r, byte g, byte b) => new(r, g, b);
+}
 
 /// <summary>
 /// Made-up album covers for the demo, drawn in code and handed over as data
@@ -55,11 +59,29 @@ internal static class DemoCovers
             }
         }
 
-        var bitmap = BitmapSource.Create(Size, Size, 96, 96, PixelFormats.Bgra32, null, pixels, Size * 4);
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using var ms = new MemoryStream();
-        encoder.Save(ms);
-        return "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+        return "data:image/bmp;base64," + Convert.ToBase64String(Bmp(pixels));
+    }
+
+    /// <summary>
+    /// A 32-bit top-down BMP of BGRA pixels: no encoder needed, and every
+    /// image decoder reads it.
+    /// </summary>
+    private static byte[] Bmp(byte[] bgra)
+    {
+        const int header = 14 + 40;
+        var file = new byte[header + bgra.Length];
+        var s = file.AsSpan();
+        s[0] = (byte)'B';
+        s[1] = (byte)'M';
+        BinaryPrimitives.WriteInt32LittleEndian(s[2..], file.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(s[10..], header);
+        BinaryPrimitives.WriteInt32LittleEndian(s[14..], 40);
+        BinaryPrimitives.WriteInt32LittleEndian(s[18..], Size);
+        BinaryPrimitives.WriteInt32LittleEndian(s[22..], -Size);    // negative: rows run top to bottom
+        BinaryPrimitives.WriteInt16LittleEndian(s[26..], 1);
+        BinaryPrimitives.WriteInt16LittleEndian(s[28..], 32);
+        BinaryPrimitives.WriteInt32LittleEndian(s[34..], bgra.Length);
+        bgra.CopyTo(s[header..]);
+        return file;
     }
 }

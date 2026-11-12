@@ -1,14 +1,13 @@
 using System.IO;
 using System.Net.Http;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Issun.Core;
 
 namespace Issun.Artwork;
 
 /// <summary>
-/// Fetches and decodes cover art for the now-playing card, off the UI thread,
-/// and remembers it.
+/// Fetches cover art for the now-playing card, off the UI thread, and
+/// remembers it. A WinUI image belongs to the thread that made it, so this
+/// hands back the bytes, and the view model decodes them at the card's size.
 ///
 /// The URL is whatever Discord was given: an Apple CDN address from the
 /// store-ID lookup, or &lt;public base&gt;/art/&lt;hash&gt;.jpg for a JPEG the phone
@@ -30,18 +29,14 @@ public sealed class CoverLoader
     private readonly object _gate = new();
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private readonly LinkedList<string> _order = new();
-    private readonly int _decodeWidth;
 
-    private sealed record Entry(Task<ImageSource?> Load, LinkedListNode<string> Node)
+    private sealed record Entry(Task<byte[]?> Load, LinkedListNode<string> Node)
     {
         public DateTime? FailedAt { get; set; }
     }
 
-    /// <param name="decodeWidth">Pixel width to decode to — the card's size times the screen scale, not the source's 600+ px.</param>
-    public CoverLoader(int decodeWidth = 256) => _decodeWidth = decodeWidth;
-
-    /// <summary>The decoded, frozen cover; null when it could not be had. Never throws.</summary>
-    public Task<ImageSource?> LoadAsync(string url)
+    /// <summary>The cover's bytes; null when it could not be had. Never throws.</summary>
+    public Task<byte[]?> LoadAsync(string url)
     {
         lock (_gate)
         {
@@ -77,14 +72,11 @@ public sealed class CoverLoader
         }
     }
 
-    private async Task<ImageSource?> FetchAsync(string url)
+    private async Task<byte[]?> FetchAsync(string url)
     {
         try
         {
-            var bytes = await ReadAsync(url);
-            if (bytes is null)
-                return null;
-            return Decode(bytes);
+            return await ReadAsync(url);
         }
         catch (Exception ex)
         {
@@ -122,20 +114,6 @@ public sealed class CoverLoader
             return null;
         }
         return await response.Content.ReadAsByteArrayAsync();
-    }
-
-    private ImageSource Decode(byte[] bytes)
-    {
-        using var stream = new MemoryStream(bytes);
-        var image = new BitmapImage();
-        image.BeginInit();
-        image.CacheOption = BitmapCacheOption.OnLoad;   // read it all now; the stream is disposed below
-        image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-        image.DecodePixelWidth = _decodeWidth;
-        image.StreamSource = stream;
-        image.EndInit();
-        image.Freeze();                                  // decoded here, drawn on the UI thread
-        return image;
     }
 
     /// <summary>The URL for a log line: never a data URL's payload, never a query string.</summary>

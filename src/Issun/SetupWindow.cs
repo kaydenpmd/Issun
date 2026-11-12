@@ -1,15 +1,15 @@
-using System.ComponentModel;
-using System.Windows;
+using Issun.Presentation;
 using Issun.ViewModels;
 using Issun.Views;
+using Microsoft.UI.Xaml;
 
 namespace Issun;
 
 /// <summary>
 /// The setup window. Opens by itself on a first run, and from the main
-/// window's Setup row after that. Closing it, by Cancel, Close, Escape or the
-/// title bar, leaves everything it already applied in place: every page applies
-/// as it goes, so there is nothing to roll back.
+/// window's Setup row after that. Closing it, by Cancel, Finish, Escape or the
+/// title bar, leaves everything it already applied in place: every page
+/// applies as it goes, so there is nothing to roll back.
 /// </summary>
 public sealed class SetupWindow : Window
 {
@@ -18,28 +18,18 @@ public sealed class SetupWindow : Window
     public SetupWindow(SetupViewModel vm)
     {
         _vm = vm;
-        Title = "Set up Issun";
-        Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/Issun;component/Assets/issun.ico"));
-        Width = 600;
-        Height = 600;
-        MinWidth = 520;
-        MinHeight = 480;
-        Presentation.WindowFit.ToWorkArea(this, "setup");
-        WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Content = new SetupView { DataContext = vm };
+        Content = new SetupView(vm);
+        WindowFit.Prepare(this, "Set up Issun", 600, 600, 520, 480, "setup");
         vm.CloseRequested += Close;
-        IsVisibleChanged += (_, _) => _vm.SetVisible(IsVisible);
-    }
-
-    protected override void OnClosing(CancelEventArgs e)
-    {
-        base.OnClosing(e);
-        _vm.CloseRequested -= Close;
-    }
-
-    protected override void OnClosed(EventArgs e)
-    {
-        _vm.Dispose();
-        base.OnClosed(e);
+        AppWindow.Changed += (_, e) =>
+        {
+            if (e.DidVisibilityChange || e.DidPresenterChange)
+                _vm.SetVisible(WindowFit.IsShowing(this));
+        };
+        Closed += (_, _) =>
+        {
+            _vm.CloseRequested -= Close;
+            _vm.Dispose();
+        };
     }
 }

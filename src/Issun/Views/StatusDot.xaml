@@ -1,0 +1,32 @@
+<UserControl x:Class="Issun.Views.StatusDot"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="10" Height="10" VerticalAlignment="Top" Margin="0,6,14,0" IsTabStop="False">
+    <!-- The dot beside each status row: grey, or the success, caution or
+         critical colour of Windows 11's status fills. Visual states rather
+         than a converter, so the colours stay ThemeResources and follow a
+         light/dark switch. -->
+    <Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="Levels">
+                <VisualState x:Name="Neutral" />
+                <VisualState x:Name="Good">
+                    <VisualState.Setters>
+                        <Setter Target="Dot.Fill" Value="{ThemeResource SystemFillColorSuccessBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Warning">
+                    <VisualState.Setters>
+                        <Setter Target="Dot.Fill" Value="{ThemeResource SystemFillColorCautionBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Error">
+                    <VisualState.Setters>
+                        <Setter Target="Dot.Fill" Value="{ThemeResource SystemFillColorCriticalBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <Ellipse x:Name="Dot" Fill="{ThemeResource TextFillColorTertiaryBrush}" />
+    </Grid>
+</UserControl>

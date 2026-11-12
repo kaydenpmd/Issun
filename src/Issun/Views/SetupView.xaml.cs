@@ -1,8 +1,15 @@
-using System.Windows.Controls;
+using Issun.ViewModels;
+using Microsoft.UI.Xaml.Controls;
 
 namespace Issun.Views;
 
-public partial class SetupView : UserControl
+public sealed partial class SetupView : UserControl
 {
-    public SetupView() => InitializeComponent();
+    public SetupView(SetupViewModel viewModel)
+    {
+        ViewModel = viewModel;
+        InitializeComponent();
+    }
+
+    public SetupViewModel ViewModel { get; }
 }

@@ -1,9 +1,10 @@
-using System.Windows.Media;
-using System.Windows.Threading;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media;
 using Issun.Artwork;
 using Issun.Core;
 using Issun.Presentation;
 using Issun.Threading;
+using Issun.Views;
 
 namespace Issun.ViewModels;
 
@@ -26,15 +27,15 @@ public sealed partial class MainViewModel : Observable, IDisposable
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromMilliseconds(250);
 
     private readonly IIssunHost _host;
-    private readonly Dispatcher _dispatcher;
+    private readonly DispatcherQueue _dispatcher;
     private readonly IClock _clock;
     private readonly Coalescer _refresh;
-    private readonly DispatcherTimer _ticker;
+    private readonly DispatcherQueueTimer _ticker;
     private readonly CoverLoader _covers = new();
     private HostSnapshot _snapshot = new();
     private bool _disposed;
 
-    public MainViewModel(IIssunHost host, Dispatcher dispatcher, IClock? clock = null)
+    public MainViewModel(IIssunHost host, DispatcherQueue dispatcher, IClock? clock = null)
     {
         _host = host;
         _dispatcher = dispatcher;
@@ -44,7 +45,8 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
         // "Last push 12s ago" moves between pushes, which arrive once every
         // thirty seconds, so the window ticks every one.
-        _ticker = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromSeconds(1) };
+        _ticker = dispatcher.CreateTimer();
+        _ticker.Interval = TimeSpan.FromSeconds(1);
         _ticker.Tick += (_, _) => Tick();
 
         EndpointCopied = new Flash(dispatcher);
@@ -205,9 +207,14 @@ public sealed partial class MainViewModel : Observable, IDisposable
         _coverSettled = ApplyCoverAsync(url, load);
     }
 
-    private async Task ApplyCoverAsync(string url, Task<ImageSource?> load)
+    private async Task ApplyCoverAsync(string url, Task<byte[]?> load)
     {
-        var image = await load;         // never throws; failures are logged by CoverLoader
+        var bytes = await load;         // never throws; failures are logged by CoverLoader
+        if (_coverUrl != url || _disposed)
+            return;
+        // Decoded at the card's size times the screen's scale, not the
+        // source's 600+ px; 256 covers the 112 px card up to 225%.
+        var image = bytes is null ? null : await Images.DecodeAsync(bytes, 256, "cover art");
         if (_coverUrl == url && !_disposed)
             Cover = image;
     }

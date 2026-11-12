@@ -1,5 +1,6 @@
-using System.Windows;
 using Issun.Core;
+using Issun.Platform;
+using Microsoft.UI.Xaml;
 
 namespace Issun.Startup;
 
@@ -22,7 +23,7 @@ public static class CrashHandlers
 
         // UI thread. Handled, so one bad refresh doesn't take the receiver down
         // with it: the host keeps running and the window keeps working.
-        app.DispatcherUnhandledException += (_, e) =>
+        app.UnhandledException += (_, e) =>
         {
             Report("on the window's thread", e.Exception, fatal: false);
             e.Handled = true;
@@ -63,7 +64,7 @@ public static class CrashHandlers
             var message = fatal
                 ? $"Issun hit an error it couldn't recover from and has to close.\n\n{ex?.Message}{log}"
                 : $"Issun hit an error it didn't expect. It's still running, but something may not have updated.\n\n{ex?.Message}{log}";
-            MessageBox.Show(message, "Issun", MessageBoxButton.OK, fatal ? MessageBoxImage.Error : MessageBoxImage.Warning);
+            DesktopShell.Message(message, "Issun", fatal ? DesktopShell.Icon.Error : DesktopShell.Icon.Warning);
         }
         catch (Exception boxError)
         {

@@ -1,35 +1,50 @@
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.Json;
 using Issun.Core;
 using Issun.ViewModels;
 using Issun.Views;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Graphics;
+using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
+using WinRT.Interop;
+using static Issun.Platform.Native;
 
 namespace Issun.Startup;
 
 /// <summary>
 /// --screenshot &lt;png&gt;: lays out the window's content on the demo host and
-/// renders it to a PNG, without a window ever existing. No HWND is created, so
-/// nothing can appear on the desktop, take focus or show in the taskbar — this
-/// runs unattended, often while someone is using the machine.
+/// renders it to a PNG. This runs unattended, often while someone is using
+/// the machine, so nothing may appear on the desktop, take focus or show in
+/// the taskbar.
+///
+/// WPF could render a control with no window at all. WinUI can't: a page in
+/// no window never loads (the winui3-spike's report, question 3). So the page
+/// goes in a real window that is a tool window (no taskbar button), never
+/// activated, and cloaked, which keeps the compositor from ever putting it on
+/// screen. Keep a reference to that window until the render is done: one
+/// nothing refers to is collected and closes mid-render, and the process
+/// exits with 0 having written nothing.
 ///
 /// The whole scrollable content is rendered, top to bottom, at the default
 /// window width: a picture of every section is more use than a picture of the
-/// first screenful. Mica can't be rendered offscreen, so the page gets the
-/// theme's solid base colour, which is what Windows shows where Mica is off.
+/// first screenful. Mica can't be rendered, so the page gets the theme's
+/// solid base colour, which is what Windows shows where Mica is off.
 /// </summary>
 public static class Screenshot
 {
     public const double Width = 560;
     private const double Scale = 1.25;
 
-    public static async Task<int> RunAsync(IIssunHost host, StartupOptions options, Dispatcher dispatcher)
+    public static async Task<int> RunAsync(IIssunHost host, StartupOptions options, DispatcherQueue dispatcher)
     {
         var path = Path.GetFullPath(options.ScreenshotPath!);
         MainViewModel? vm = null;
+        Window? window = null;
         try
         {
             await host.StartAsync();
@@ -44,30 +59,52 @@ public static class Screenshot
                 setup?.ShowQrForScreenshot();
             var page = new Border
             {
-                Background = Application.Current.TryFindResource("SolidBackgroundFillColorBaseBrush") as Brush ?? Brushes.White,
+                Background = (Brush)Application.Current.Resources["SolidBackgroundFillColorBaseBrush"],
                 Width = setup is null ? Width : 600,
-                Child = setup is null ? new MainView { DataContext = vm } : new SetupView { DataContext = setup },
+                VerticalAlignment = VerticalAlignment.Top,
+                Child = setup is null ? new MainView(vm) : new SetupView(setup),
             };
+            var loaded = new TaskCompletionSource();
+            page.Loaded += (_, _) => loaded.TrySetResult();
 
-            // Let bindings, the cover and the uptime summary settle. Awaiting
-            // yields to the dispatcher, so everything posted to it runs.
-            Layout(page);
+            // An outer scroller gives the view as much height as it wants, as
+            // WPF's Measure with an infinite height did; the window itself
+            // can stay small.
+            window = new Window { Content = new ScrollViewer { Content = page, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden } };
+            var hwnd = WindowNative.GetWindowHandle(window);
+            var ex = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+            SetWindowLongPtr(hwnd, GWL_EXSTYLE, (ex | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) & ~(nint)WS_EX_APPWINDOW);
+            var cloak = 1;
+            var hr = DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, ref cloak, sizeof(int));
+            if (hr != 0)
+                throw new InvalidOperationException($"couldn't keep the screenshot window off the screen (DWM cloak 0x{hr:x8})");
+            var dpi = GetDpiForWindow(hwnd) / 96.0;
+            window.AppWindow.ResizeClient(new SizeInt32((int)(page.Width * dpi) + 40, (int)(900 * dpi)));
+            window.AppWindow.Show(false);
+
+            if (await Task.WhenAny(loaded.Task, Task.Delay(TimeSpan.FromSeconds(10))) != loaded.Task)
+                throw new InvalidOperationException("the page never loaded");
+
+            // Let bindings, the cover and the uptime summary settle.
             await Task.WhenAny(vm.CoverSettled, Task.Delay(TimeSpan.FromSeconds(5)));
             await Task.Delay(TimeSpan.FromMilliseconds(600));
             vm.RefreshNow();
-            await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-            Layout(page);
+            await Task.Delay(TimeSpan.FromMilliseconds(400));
 
-            var pixelsWide = (int)Math.Ceiling(page.ActualWidth * Scale);
-            var pixelsHigh = (int)Math.Ceiling(page.ActualHeight * Scale);
-            var bitmap = new RenderTargetBitmap(pixelsWide, pixelsHigh, 96 * Scale, 96 * Scale, PixelFormats.Pbgra32);
-            bitmap.Render(page);
+            // Rendered at 1.25x, as the WPF build's screenshots were. Without
+            // this RenderAsync draws at 1x and stretches the result.
+            page.RasterizationScale = Scale;
+            page.UpdateLayout();
+            await Task.Delay(TimeSpan.FromMilliseconds(400));
+
+            var rtb = new RenderTargetBitmap();
+            int wide = (int)Math.Ceiling(page.ActualWidth * Scale), high = (int)Math.Ceiling(page.ActualHeight * Scale);
+            await rtb.RenderAsync(page, wide, high);
+            var pixels = (await rtb.GetPixelsAsync()).ToArray();
 
             // A locked or disconnected session renders nothing: every pixel
             // comes back transparent, and a blank PNG would pass for a picture
             // of the window. Seen 12 Nov 2026 with the PC at its lock screen.
-            var pixels = new byte[pixelsWide * pixelsHigh * 4];
-            bitmap.CopyPixels(pixels, pixelsWide * 4, 0);
             var drawn = false;
             for (var i = 3; i < pixels.Length; i += 4)
             {
@@ -75,23 +112,15 @@ public static class Screenshot
             }
             if (!drawn)
                 throw new InvalidOperationException(
-                    "the render came out blank (every pixel transparent). WPF draws nothing while Windows is locked or the session is disconnected; unlock the PC and try again.");
+                    "the render came out blank (every pixel transparent). Nothing is drawn while Windows is locked or the session is disconnected; unlock the PC and try again.");
 
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(bitmap));
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await using (var file = File.Create(path))
-                encoder.Save(file);
-
-            Console.Out.WriteLine($"wrote {path} ({pixelsWide}x{pixelsHigh})");
-            WriteTextBoxes(page, Path.ChangeExtension(path, ".text.json"));
+            await SavePngAsync(path, pixels, rtb.PixelWidth, rtb.PixelHeight);
+            Console.Out.WriteLine($"wrote {path} ({rtb.PixelWidth}x{rtb.PixelHeight})");
+            WriteTextBoxes(page, Path.ChangeExtension(path, ".text.json"), rtb.PixelWidth / page.ActualWidth);
             return 0;
         }
         catch (Exception ex)
         {
-            // No window and, for a WinExe, usually no console either — but a
-            // caller that redirected stderr gets the reason, and the debugger
-            // output always does.
             Log.Write($"[ui] screenshot failed: {CrashHandlers.Describe(ex)}");
             Console.Error.WriteLine($"screenshot failed: {ex}");
             return 1;
@@ -99,8 +128,21 @@ public static class Screenshot
         finally
         {
             vm?.Dispose();
+            window?.Close();
+            GC.KeepAlive(window);
             await host.DisposeAsync();
         }
+    }
+
+    private static async Task SavePngAsync(string path, byte[] bgra, int width, int height)
+    {
+        using var memory = new InMemoryRandomAccessStream();
+        var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, memory);
+        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied, (uint)width, (uint)height, 96 * Scale, 96 * Scale, bgra);
+        await encoder.FlushAsync();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await using var file = File.Create(path);
+        await memory.AsStreamForRead().CopyToAsync(file);
     }
 
     /// <summary>
@@ -109,12 +151,12 @@ public static class Screenshot
     /// For pages that put a field over each piece of text so the owner can
     /// write the wording (their rule since 12 Nov 2026: the words are theirs).
     /// </summary>
-    private static void WriteTextBoxes(FrameworkElement page, string jsonPath)
+    private static void WriteTextBoxes(FrameworkElement page, string jsonPath, double scale)
     {
         var boxes = new List<object>();
         void Walk(DependencyObject node)
         {
-            if (node is UIElement { Visibility: not Visibility.Visible }) // IsVisible is false off-screen
+            if (node is UIElement { Visibility: Visibility.Collapsed } or UIElement { Opacity: 0 })
                 return;
             string? text = node switch
             {
@@ -124,8 +166,8 @@ public static class Screenshot
             };
             if (text is { Length: > 0 } && node is FrameworkElement fe && fe.ActualWidth > 0 && fe.ActualHeight > 0)
             {
-                var r = fe.TransformToAncestor(page).TransformBounds(new Rect(0, 0, fe.ActualWidth, fe.ActualHeight));
-                boxes.Add(new { text, x = Math.Round(r.X * Scale), y = Math.Round(r.Y * Scale), w = Math.Round(r.Width * Scale), h = Math.Round(r.Height * Scale) });
+                var r = fe.TransformToVisual(page).TransformBounds(new Windows.Foundation.Rect(0, 0, fe.ActualWidth, fe.ActualHeight));
+                boxes.Add(new { text, x = Math.Round(r.X * scale), y = Math.Round(r.Y * scale), w = Math.Round(r.Width * scale), h = Math.Round(r.Height * scale) });
                 if (node is TextBox)
                     return; // its inner parts repeat the same text
             }
@@ -133,14 +175,7 @@ public static class Screenshot
                 Walk(VisualTreeHelper.GetChild(node, i));
         }
         Walk(page);
-        File.WriteAllText(jsonPath, System.Text.Json.JsonSerializer.Serialize(boxes, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(jsonPath, JsonSerializer.Serialize(boxes, new JsonSerializerOptions { WriteIndented = true }));
         Console.Out.WriteLine($"wrote {jsonPath} ({boxes.Count} pieces of text)");
-    }
-
-    private static void Layout(FrameworkElement page)
-    {
-        page.Measure(new Size(double.IsNaN(page.Width) ? Width : page.Width, double.PositiveInfinity));
-        page.Arrange(new Rect(page.DesiredSize));
-        page.UpdateLayout();
     }
 }

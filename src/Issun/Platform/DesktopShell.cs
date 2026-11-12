@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Windows;
 using Issun.Core;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace Issun.Platform;
 
-/// <summary>The few things the window asks of Windows itself: the clipboard, a browser, Explorer.</summary>
+/// <summary>The few things the window asks of Windows itself: the clipboard, a browser, Explorer, a file to open, a message box.</summary>
 public static class DesktopShell
 {
     /// <summary>
@@ -23,9 +23,12 @@ public static class DesktopShell
         {
             try
             {
-                // SetDataObject(copy: true) leaves the text on the clipboard
-                // after Issun exits, unlike SetText's delayed rendering.
-                Clipboard.SetDataObject(text, copy: true);
+                var package = new DataPackage();
+                package.SetText(text);
+                Clipboard.SetContent(package);
+                // Flush leaves the text on the clipboard after Issun exits,
+                // rather than rendering it on demand from a process that's gone.
+                Clipboard.Flush();
                 return true;
             }
             catch (Exception ex) when (ex is COMException or ExternalException)
@@ -79,4 +82,50 @@ public static class DesktopShell
             Log.Write($"[ui] couldn't open {what} ({target}): {ex.Message}");
         }
     });
+
+    /// <summary>
+    /// Windows' open-file dialog, as WPF's OpenFileDialog showed it: a title,
+    /// named filters ("Name|*.ext|..."), and the file must exist. Null when
+    /// the person cancels. UI thread; modal to <paramref name="owner"/>.
+    /// </summary>
+    public static string? PickFile(nint owner, string title, string filter)
+    {
+        const int max = 32768;
+        var buffer = Marshal.AllocHGlobal(max * 2);
+        try
+        {
+            Marshal.WriteInt16(buffer, 0);
+            var ofn = new Native.OPENFILENAMEW
+            {
+                lStructSize = Marshal.SizeOf<Native.OPENFILENAMEW>(),
+                hwndOwner = owner,
+                // The Win32 form of a filter is "Name\0pattern\0...\0\0".
+                lpstrFilter = filter.Replace('|', '\0') + "\0\0",
+                nFilterIndex = 1,
+                lpstrFile = buffer,
+                nMaxFile = max,
+                lpstrTitle = title,
+                Flags = Native.OFN_EXPLORER | Native.OFN_FILEMUSTEXIST | Native.OFN_PATHMUSTEXIST | Native.OFN_NOCHANGEDIR,
+            };
+            if (Native.GetOpenFileNameW(ref ofn))
+                return Marshal.PtrToStringUni(buffer);
+            if (Native.CommDlgExtendedError() is var error and not 0)
+                Log.Write($"[ui] the open-file dialog failed (error 0x{error:x})");
+            return null;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    public enum Icon : uint { None = 0, Error = Native.MB_ICONERROR, Warning = Native.MB_ICONWARNING, Information = Native.MB_ICONINFORMATION, Question = Native.MB_ICONQUESTION }
+
+    /// <summary>Windows' message box with OK: what WPF's MessageBox.Show drew, through the same user32 call.</summary>
+    public static void Message(string text, string caption, Icon icon) =>
+        Native.MessageBoxW(0, text, caption, Native.MB_OK | (uint)icon);
+
+    /// <summary>Yes and No, with No the default, as Uninstall asks.</summary>
+    public static bool AskYesNo(string text, string caption) =>
+        Native.MessageBoxW(0, text, caption, Native.MB_YESNO | Native.MB_ICONQUESTION | Native.MB_DEFBUTTON2) == Native.IDYES;
 }

@@ -1,9 +1,10 @@
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media;
 using Issun.Core;
 using Issun.Platform;
 using Issun.Presentation;
 using Issun.Threading;
+using Issun.Views;
 
 namespace Issun.ViewModels;
 
@@ -34,22 +35,25 @@ public sealed class SetupViewModel : Observable, IDisposable
     private static readonly TimeSpan ApplyDelay = TimeSpan.FromMilliseconds(600);
 
     private readonly IIssunHost _host;
-    private readonly Dispatcher _dispatcher;
+    private readonly DispatcherQueue _dispatcher;
     private readonly Coalescer _refresh;
-    private readonly DispatcherTimer _ticker;
-    private readonly DispatcherTimer _applyId;
+    private readonly DispatcherQueueTimer _ticker;
+    private readonly DispatcherQueueTimer _applyId;
     private HostSnapshot _snapshot = new();
     private bool _disposed;
 
-    public SetupViewModel(IIssunHost host, Dispatcher dispatcher, SetupPage startPage = SetupPage.Discord)
+    public SetupViewModel(IIssunHost host, DispatcherQueue dispatcher, SetupPage startPage = SetupPage.Discord)
     {
         _host = host;
         _dispatcher = dispatcher;
         _page = startPage;
         _refresh = new Coalescer(dispatcher, TimeSpan.FromMilliseconds(250), "setup refresh", Refresh);
-        _ticker = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromSeconds(1) };
+        _ticker = dispatcher.CreateTimer();
+        _ticker.Interval = TimeSpan.FromSeconds(1);
         _ticker.Tick += (_, _) => Tick();
-        _applyId = new DispatcherTimer(DispatcherPriority.Normal, dispatcher) { Interval = ApplyDelay };
+        _applyId = dispatcher.CreateTimer();
+        _applyId.Interval = ApplyDelay;
+        _applyId.IsRepeating = false;
         _applyId.Tick += (_, _) =>
         {
             _applyId.Stop();
@@ -59,7 +63,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         EndpointCopied = new Flash(dispatcher);
         KeyCopied = new Flash(dispatcher);
 
-        BackCommand = new Command(() => Go(_page - 1), () => _page > SetupPage.Discord);
+        BackCommand = new Command(() => Go(_page - 1), () => _page > SetupPage.Discord, this);
         NextCommand = new AsyncCommand("setup: next", NextAsync, ex =>
         {
             Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
@@ -144,7 +148,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         }, _ => KeyCopied.Show("Couldn't copy — try again"));
 
         ToggleKeyCommand = new Command(() => KeyShown = !KeyShown);
-        ToggleQrCommand = new Command(() => QrShown = !QrShown, () => Qr is not null);
+        ToggleQrCommand = new Command(() => QrShown = !QrShown, () => _qrPixels is not null, this);
         // Show and Hide, the owner's words; the same pair for the key and the code.
 
         _clientId = host.Settings.DiscordClientId;
@@ -257,7 +261,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         if (_page == SetupPage.Source && (_endpointDirty || _qrKeyStale))
             _ = ApplyEndpointAsync();
         // Leaving the Discord page with a half-typed ID still applies what is there.
-        if (_page == SetupPage.Discord && _applyId.IsEnabled)
+        if (_page == SetupPage.Discord && _applyId.IsRunning)
         {
             _applyId.Stop();
             _ = ApplyClientIdAsync();
@@ -275,11 +279,9 @@ public sealed class SetupViewModel : Observable, IDisposable
         Raise(nameof(ShowSkip));
         if (page == SetupPage.Tailscale)
             CheckTailscaleCommand.Execute(null);
-        // Next is an AsyncCommand, which WPF's requery doesn't reach: without
-        // this it stayed disabled after Back from the last page (sandbox,
-        // 12 Nov 2026).
+        // Without this Next stayed disabled after Back from the last page
+        // (sandbox, 12 Nov 2026, in the WPF build).
         NextCommand.RaiseCanExecuteChanged();
-        CommandManagerRequery();
     }
 
     internal static string Describe(SetupPage page) => page switch
@@ -289,8 +291,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         SetupPage.StartWithWindows => "Start with Windows",
         _ => "Connect your source",
     };
-
-    private static void CommandManagerRequery() => System.Windows.Input.CommandManager.InvalidateRequerySuggested();
 
     // ───────────────────────────── Discord ─────────────────────────────
 
@@ -523,6 +523,7 @@ public sealed class SetupViewModel : Observable, IDisposable
             _endpointDirty = dirty;
             Raise(nameof(ShowReload));
             Raise(nameof(QrBlur));
+            UpdateQrImage();
             CopyEndpointCommand.RaiseCanExecuteChanged();
         }
     }
@@ -565,6 +566,7 @@ public sealed class SetupViewModel : Observable, IDisposable
             _qrKeyStale = true;
             Raise(nameof(ShowReload));
             Raise(nameof(QrBlur));
+            UpdateQrImage();
             return;
         }
         _qrKey = key;
@@ -612,6 +614,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         _qrKey = _host.Settings.Key;
         Raise(nameof(ShowReload));
             Raise(nameof(QrBlur));
+            UpdateQrImage();
         FillEndpoint(address.Length > 0 ? address + "/now-playing" : null);
         Log.Write($"[setup] QR code redrawn {(address.Length > 0 ? "with" : "without")} an endpoint");
         return true;
@@ -657,6 +660,7 @@ public sealed class SetupViewModel : Observable, IDisposable
                 return;
             Raise(nameof(ToggleQrLabel));
             Raise(nameof(QrBlur));
+            UpdateQrImage();
             Log.Write($"[setup] QR code {(value ? "shown" : "hidden")}");
         }
     }
@@ -674,10 +678,47 @@ public sealed class SetupViewModel : Observable, IDisposable
     /// </summary>
     public double QrBlur => _qrShown && !ShowReload ? 0 : BlurRadius;
 
-    public BitmapSource? Qr { get => _qr; private set { if (Set(ref _qr, value)) Raise(nameof(HasQr)); } }
+    /// <summary>The code as drawn: sharp, or blurred while <see cref="QrBlur"/> says so.</summary>
+    public ImageSource? Qr { get => _qr; private set => Set(ref _qr, value); }
+    private ImageSource? _qr;
 
-    public bool HasQr => _qr is not null;
-    private BitmapSource? _qr;
+    public bool HasQr => _qrPixels is not null;
+
+    /// <summary>The code's pixels, sharp; the image shown is made from these.</summary>
+    private Pixels? _qrPixels;
+    private Pixels? _qrPixelsBlurred;
+
+    /// <summary>The Image the code is drawn in is 200 wide (SetupView).</summary>
+    private const double QrWidth = 200;
+
+    private void SetQrPixels(Pixels? pixels)
+    {
+        _qrPixels = pixels;
+        _qrPixelsBlurred = null;
+        _qrImageBlurred = null;
+        Raise(nameof(HasQr));
+        UpdateQrImage();
+    }
+
+    private bool? _qrImageBlurred;
+
+    /// <summary>Puts up the sharp code or the blurred one, whichever QrBlur asks for now.</summary>
+    private void UpdateQrImage()
+    {
+        if (_qrPixels is not { } sharp)
+        {
+            _qrImageBlurred = null;
+            Qr = null;
+            return;
+        }
+        var blurred = QrBlur > 0;
+        if (blurred == _qrImageBlurred)
+            return;
+        _qrImageBlurred = blurred;
+        if (blurred)
+            _qrPixelsBlurred ??= Blur.Gaussian(sharp, QrBlur * sharp.Width / QrWidth);
+        Qr = Images.FromPixels(blurred ? _qrPixelsBlurred! : sharp);
+    }
 
     private string? _qrFor;
 
@@ -689,30 +730,28 @@ public sealed class SetupViewModel : Observable, IDisposable
         var key = _qrKey is { Length: > 0 } k ? k : null;
         if (_qrEndpoint is null && key is null)
         {
-            Qr = null;
+            SetQrPixels(null);
             _qrFor = null;
-            CommandManagerRequery();
             return;
         }
         var payload = PairingCode.Payload(_qrEndpoint, key);
         // White on black in dark mode (the owner, 12 Nov 2026), so the drawn
         // code follows a theme switch too: Refresh runs every second.
-        var dark = PairingCode.ThemeIsDark();
+        var dark = AppTheme.IsDark;
         var drawn = (dark ? "dark:" : "light:") + payload;
         if (drawn == _qrFor)
             return;
         try
         {
-            Qr = PairingCode.Render(payload, dark);
+            SetQrPixels(PairingCode.Render(payload, dark));
             if (_qrFor is not null && _qrFor[.._qrFor.IndexOf(':')] != drawn[..drawn.IndexOf(':')])
                 Log.Write($"[setup] QR code redrawn for the {(dark ? "dark" : "light")} theme");
             _qrFor = drawn;
-            CommandManagerRequery();
         }
         catch (Exception ex)
         {
             Log.Write($"[setup] couldn't draw the QR code: {ex.Message}");
-            Qr = null;
+            SetQrPixels(null);
         }
     }
 

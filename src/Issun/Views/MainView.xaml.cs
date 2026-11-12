@@ -1,81 +1,79 @@
-using System.Windows;
-using System.Windows.Controls;
+using Issun.Platform;
 using Issun.ViewModels;
-using Microsoft.Win32;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace Issun.Views;
 
 /// <summary>
 /// The window's content, as a control of its own so --screenshot can lay it
-/// out and render it without a window ever existing.
+/// out and render it in a window that never reaches the screen.
 ///
 /// Code-behind holds only what bindings can't do: appending to the log box
 /// without losing its scroll position, and the file picker.
 /// </summary>
-public partial class MainView : UserControl
+public sealed partial class MainView : UserControl
 {
-    private MainViewModel? _vm;
+    private ScrollViewer? _logScroller;
 
-    public MainView()
+    public MainView(MainViewModel viewModel)
     {
+        ViewModel = viewModel;
         InitializeComponent();
-        DataContextChanged += (_, e) => Attach(e.NewValue as MainViewModel);
-        LogBox.IsVisibleChanged += (_, _) =>
+        viewModel.LogUpdated += OnLogUpdated;
+        viewModel.PickEnvFile = PickEnvFile;
+        LogBox.Text = viewModel.LogText;
+        LogBox.Loaded += (_, _) =>
         {
             // Opening the section lands on the newest line, like a terminal.
-            if (LogBox.IsVisible)
-                LogBox.ScrollToEnd();
+            _logScroller = FindScroller(LogBox);
+            ScrollLogToEnd();
+        };
+        Unloaded += (_, _) =>
+        {
+            viewModel.LogUpdated -= OnLogUpdated;
+            viewModel.PickEnvFile = null;
         };
     }
 
-    private void Attach(MainViewModel? vm)
-    {
-        if (_vm is not null)
-        {
-            _vm.LogUpdated -= OnLogUpdated;
-            _vm.PickEnvFile = null;
-        }
-        _vm = vm;
-        if (vm is null)
-            return;
-        vm.LogUpdated += OnLogUpdated;
-        vm.PickEnvFile = PickEnvFile;
-        LogBox.Text = vm.LogText;
-        LogBox.ScrollToEnd();
-    }
+    public MainViewModel ViewModel { get; }
+
+    /// <summary>The window this view is in, for the file dialog to belong to.</summary>
+    public nint OwnerWindow { get; set; }
 
     private void OnLogUpdated(string appended, bool reload)
     {
         // Follow new lines only if the person was already at the bottom. If they
         // scrolled up to read something, new lines must not yank it away.
-        var atEnd = LogBox.VerticalOffset + LogBox.ViewportHeight >= LogBox.ExtentHeight - 4;
-        if (reload)
-        {
-            var offset = LogBox.VerticalOffset;
-            LogBox.Text = _vm?.LogText ?? "";
-            if (!atEnd)
-                LogBox.ScrollToVerticalOffset(offset);
-        }
-        else
-        {
-            LogBox.AppendText(appended);
-        }
+        var s = _logScroller;
+        var atEnd = s is null || s.VerticalOffset + s.ViewportHeight >= s.ExtentHeight - 4;
+        var offset = s?.VerticalOffset ?? 0;
+        LogBox.Text = reload ? ViewModel.LogText : LogBox.Text + appended;
         if (atEnd)
-            LogBox.ScrollToEnd();
+            ScrollLogToEnd();
+        else
+            DispatcherQueue.TryEnqueue(() => s?.ChangeView(null, offset, null, disableAnimation: true));
     }
 
-    private string? PickEnvFile()
+    private void ScrollLogToEnd() =>
+        DispatcherQueue.TryEnqueue(() => _logScroller?.ChangeView(null, _logScroller.ScrollableHeight, null, disableAnimation: true));
+
+    private static ScrollViewer? FindScroller(DependencyObject root)
     {
-        var dialog = new OpenFileDialog
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
         {
-            Title = "Import relay.py settings",
-            // relay.py's .env has no name before the dot, which "*.env" still
-            // matches; "All files" is there for a copy saved under another name.
-            Filter = "Relay settings (.env)|*.env|All files|*.*",
-            CheckFileExists = true,
-        };
-        var owner = Window.GetWindow(this);
-        var picked = owner is null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
-        return picked == true ? dialog.FileName : null;
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is ScrollViewer sv)
+                return sv;
+            if (FindScroller(child) is { } found)
+                return found;
+        }
+        return null;
     }
+
+    private string? PickEnvFile() =>
+        // relay.py's .env has no name before the dot, which "*.env" still
+        // matches; "All files" is there for a copy saved under another name.
+        DesktopShell.PickFile(OwnerWindow, "Import relay.py settings", "Relay settings (.env)|*.env|All files|*.*");
 }

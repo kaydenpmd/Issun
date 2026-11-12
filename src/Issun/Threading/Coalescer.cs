@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Windows.Threading;
+using Microsoft.UI.Dispatching;
 using Issun.Core;
 
 namespace Issun.Threading;
@@ -17,14 +17,14 @@ namespace Issun.Threading;
 /// </summary>
 public sealed class Coalescer
 {
-    private readonly Dispatcher _dispatcher;
+    private readonly DispatcherQueue _dispatcher;
     private readonly Action _action;
     private readonly TimeSpan _interval;
     private readonly string _name;
     private int _scheduled;
     private long _lastRun;
 
-    public Coalescer(Dispatcher dispatcher, TimeSpan interval, string name, Action action)
+    public Coalescer(DispatcherQueue dispatcher, TimeSpan interval, string name, Action action)
     {
         _dispatcher = dispatcher;
         _interval = interval;
@@ -48,11 +48,11 @@ public sealed class Coalescer
 
     private void Post()
     {
-        if (_dispatcher.HasShutdownStarted)
-            return;
-        // Background priority: below input and rendering, so a burst of state
-        // changes can never make the window stutter under the pointer.
-        _dispatcher.BeginInvoke(DispatcherPriority.Background, Run);
+        // Low priority: below input and rendering, so a burst of state changes
+        // can never make the window stutter under the pointer. False once the
+        // queue has shut down, as Issun quits.
+        if (!_dispatcher.TryEnqueue(DispatcherQueuePriority.Low, Run))
+            Volatile.Write(ref _scheduled, 0);
     }
 
     private void Run()

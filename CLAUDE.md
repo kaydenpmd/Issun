@@ -672,6 +672,14 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    code with Ammy, which is on Ammy's `scan-endpoint-code` branch until it is
    merged. The QR image wasn't decoded here (no decoder installed); the phone is
    the test.
+   **Its words are the owner's to write** (their rule from 12 Nov 2026, starting
+   with this window): build 51 shipped Claude's drafts, to be replaced word for
+   word with what the owner writes in the "Issun Setup Wording" artifact
+   (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ; its `texts` collection, one
+   document per text, keyed like `discord.title`). That covers the setup window,
+   the Setup row, the install and uninstall messages, and Ammy's scan screens and
+   camera prompt. The Discord application ID stays a text box (the owner, the
+   same day).
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;

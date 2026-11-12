@@ -203,6 +203,15 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>
+    /// Reads it again: the setup window changes it through the host, and this
+    /// view model, made before setup ran, would otherwise go on showing the
+    /// first reading, in the checkbox and the tray menu's tick both. Seen on
+    /// 12 Nov 2026: setup's Yes, then an unticked Start with Windows in the
+    /// tray menu.
+    /// </summary>
+    public void RefreshStartWithWindows() => _ = ReadStartWithWindowsAsync();
+
     private async Task<bool?> ReadStartWithWindowsAsync()
     {
         try

@@ -189,6 +189,7 @@ public partial class App : Application
                 _setupWindow = null;
                 _uiState?.MarkSetupShown();
                 _vm?.DismissBannerCommand.Execute(null);
+                _vm?.RefreshStartWithWindows();
                 if (afterwards && !_quitting)
                     ShowMainWindow();
             };
@@ -274,6 +275,7 @@ public partial class App : Application
         }
         WindowFit.Bring(_window);
         _vm.SetWindowVisible(true);
+        _vm.RefreshStartWithWindows();
     }
 
     private void OnWindowClosing(Microsoft.UI.Windowing.AppWindow sender, Microsoft.UI.Windowing.AppWindowClosingEventArgs e)

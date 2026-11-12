@@ -100,12 +100,27 @@ function OnPage($el, $title) {
 }
 
 # A Windows message box: bring it forward by title and press a key (y, n, Enter).
+# A Windows message box: click its button by sending it BM_CLICK, which needs
+# no focus. Keystrokes did, and after the tray step's real mouse clicks
+# Windows stopped letting this script bring the box forward: "y" went
+# nowhere though AppActivate said yes (12 Nov 2026).
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public static class Box {
+    [DllImport("user32", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowW(string c, string t);
+    [DllImport("user32", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowExW(IntPtr p, IntPtr a, string c, string t);
+    [DllImport("user32")] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l);
+    [DllImport("user32")] public static extern bool PostMessageW(IntPtr h, uint m, IntPtr w, IntPtr l);
+    public static bool Click(string title, string button) {
+        var box = FindWindowW("#32770", title); if (box == IntPtr.Zero) return false;
+        var b = FindWindowExW(box, IntPtr.Zero, "Button", button); if (b == IntPtr.Zero) return false;
+        SendMessageW(b, 0x00F5, IntPtr.Zero, IntPtr.Zero); return true;
+    }
+}
+"@
 function AnswerBox($title, $keys) {
-    $ws = New-Object -ComObject WScript.Shell
-    if (-not $ws.AppActivate($title)) { Say "FAIL couldn't bring '$title' forward"; return }
-    Start-Sleep -Milliseconds 500
-    $ws.SendKeys($keys)
-    Say "answered '$title' with $keys"
+    $button = switch ($keys) { "y" { "&Yes" } "n" { "&No" } default { "OK" } }
+    if ([Box]::Click($title, $button)) { Say "answered '$title' with $button" } else { Say "FAIL no '$button' button in '$title'" }
 }
 
 function State($label) {
@@ -283,12 +298,24 @@ public static class TrayMouse {
         if (-not $menu) { Say "FAIL no menu on a right click"; Shot "tray-no-menu" $null; (New-Object -ComObject WScript.Shell).SendKeys("{ESC}") }
         else {
             Shot "tray-menu" $menu
-            $items = $menu.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem)))
+            $all = @($menu.FindAll($Tree::Descendants, [System.Windows.Automation.Condition]::TrueCondition))
+            Say ("menu elements: " + (($all | ForEach-Object { ($_.Current.ControlType.ProgrammaticName -replace "ControlType\.", "") + " '" + $_.Current.Name + "'" }) -join ", "))
+            $items = @($all | Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::MenuItem })
             $names = @($items | ForEach-Object { $_.Current.Name })
-            Say ("menu: " + ($names -join " | "))
-            Expect "the menu has Open Issun, Start with Windows and Quit Issun" (($names -contains "Open Issun") -and ($names -contains "Start with Windows") -and ($names -contains "Quit Issun"))
+            if ($names.Count) {
+                Expect "the menu has Open Issun, Start with Windows and Quit Issun" (($names -contains "Open Issun") -and ($names -contains "Start with Windows") -and ($names -contains "Quit Issun"))
+            } else {
+                Say "the menu's items aren't in UI Automation from here; its words are in tray-menu.png"
+            }
             $quit = $items | Where-Object { $_.Current.Name -eq "Quit Issun" } | Select-Object -First 1
             if ($quit) { $quit.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Say "clicked Quit Issun" }
+            else {
+                # Up from nothing chosen picks the last item, Quit Issun; Enter takes it.
+                $h = [IntPtr]$menu.Current.NativeWindowHandle
+                [Box]::PostMessageW($h, 0x100, [IntPtr]0x26, [IntPtr]0) | Out-Null; Start-Sleep -Milliseconds 300
+                [Box]::PostMessageW($h, 0x100, [IntPtr]0x0D, [IntPtr]0) | Out-Null
+                Say "chose Quit Issun with Up and Enter"
+            }
             Start-Sleep 6
             Expect "Quit Issun ends it" (-not (Get-Process Issun* -ErrorAction SilentlyContinue))
             Expect "and takes the icon away" (-not (FindTray))

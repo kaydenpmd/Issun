@@ -18,7 +18,7 @@ public static class HostFactory
         // integration: the demo is how the window gets looked at without
         // touching the port, Discord or the real settings.
         if (options.UsesDemoHost)
-            return new DemoHost(startPhase: options.DemoPhase);
+            return new DemoHost(startPhase: options.DemoPhase, tailscaleState: options.DemoTailscale);
 
         return new Core.Host.IssunHost();
     }

@@ -72,7 +72,8 @@ public sealed class DemoHost : IIssunHost
     private string? _activityWas;
 
     /// <param name="startPhase">Which step of the script to open on — --demo-phase, for screenshotting one state.</param>
-    public DemoHost(IClock? clock = null, int startPhase = 0)
+    /// <param name="tailscaleState">--demo-tailscale: 0 not installed, 1 not signed in, 2 Funnel and Run unattended off (the default), 3 both on.</param>
+    public DemoHost(IClock? clock = null, int startPhase = 0, int? tailscaleState = null)
     {
         _clock = clock ?? SystemClock.Instance;
         _createdAt = _clock.Now;
@@ -81,6 +82,13 @@ public sealed class DemoHost : IIssunHost
         _tailscale = new TailscaleStatus(true, true, DemoDnsName, FunnelOn: false, FunnelTargetsPort: false,
             "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, " +
             "or run: tailscale funnel --bg --https=443 localhost:8787", Unattended: false);
+        _tailscale = tailscaleState switch
+        {
+            0 => new TailscaleStatus(false, false, null, false, false, Core.Platform.TailscaleCli.NotInstalledDetail),
+            1 => new TailscaleStatus(true, false, null, false, false, Core.Platform.TailscaleCli.DescribeBackendState("NeedsLogin")),
+            3 => _tailscale with { FunnelOn = true, FunnelTargetsPort = true, Detail = null, Unattended = true },
+            _ => _tailscale,
+        };
 
         // Invented releases, except the one-character title: "i" by Kendrick
         // Lamar is the track that exposed Discord's two-character minimum, so

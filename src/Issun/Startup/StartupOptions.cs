@@ -29,6 +29,9 @@ public sealed record StartupOptions
     /// <summary>--demo-phase N: start the demo's script at step N, to screenshot a particular state.</summary>
     public int DemoPhase { get; init; }
 
+    /// <summary>--demo-tailscale N: the demo's Tailscale state, for screenshots: 0 not installed, 1 not signed in, 2 Funnel and Run unattended off, 3 both on.</summary>
+    public int? DemoTailscale { get; init; }
+
     /// <summary>--uninstall: what Settings › Apps runs. Asks, then removes Issun and leaves the settings and logs.</summary>
     public bool Uninstall { get; init; }
 
@@ -67,6 +70,15 @@ public sealed record StartupOptions
                     break;
                 case "--background":
                     options = options with { Background = true };
+                    break;
+                case "--demo-tailscale":
+                    if (Next() is { } ts)
+                    {
+                        if (int.TryParse(ts, NumberStyles.None, CultureInfo.InvariantCulture, out var tsn) && tsn <= 3)
+                            options = options with { DemoTailscale = tsn };
+                        else
+                            problems.Add($"--demo-tailscale takes 0 to 3, not {ts}");
+                    }
                     break;
                 case "--uninstall":
                     options = options with { Uninstall = true };

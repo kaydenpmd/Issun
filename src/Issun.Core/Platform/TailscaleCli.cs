@@ -32,7 +32,7 @@ public sealed partial class TailscaleCli : ITailscale
     /// </summary>
     public static readonly TimeSpan FunnelTimeout = TimeSpan.FromSeconds(30);
 
-    private const string NotInstalledDetail =
+    public const string NotInstalledDetail =
         "Tailscale isn't installed. Install it from tailscale.com/download and sign in, then check again.";
 
     private readonly IProcessRunner _runner;
@@ -231,7 +231,7 @@ public sealed partial class TailscaleCli : ITailscale
             ? "Tailscale is installed but its service isn't running. Start Tailscale from the Start menu, then check again."
             : $"Tailscale reported a problem: {said}";
 
-    private static string DescribeBackendState(string state) => state switch
+    public static string DescribeBackendState(string state) => state switch
     {
         "NeedsLogin" => "Tailscale isn't signed in. Open Tailscale from the system tray and log in, then check again.",
         "NeedsMachineAuth" => "This PC is waiting to be approved in the Tailscale admin console (login.tailscale.com/admin/machines).",

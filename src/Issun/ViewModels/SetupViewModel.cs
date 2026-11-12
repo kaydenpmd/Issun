@@ -661,12 +661,18 @@ public sealed class SetupViewModel : Observable, IDisposable
             return;
         }
         var payload = PairingCode.Payload(_qrEndpoint, key);
-        if (payload == _qrFor)
+        // White on black in dark mode (the owner, 12 Nov 2026), so the drawn
+        // code follows a theme switch too: Refresh runs every second.
+        var dark = PairingCode.ThemeIsDark();
+        var drawn = (dark ? "dark:" : "light:") + payload;
+        if (drawn == _qrFor)
             return;
         try
         {
-            Qr = PairingCode.Render(payload);
-            _qrFor = payload;
+            Qr = PairingCode.Render(payload, dark);
+            if (_qrFor is not null && _qrFor[.._qrFor.IndexOf(':')] != drawn[..drawn.IndexOf(':')])
+                Log.Write($"[setup] QR code redrawn for the {(dark ? "dark" : "light")} theme");
+            _qrFor = drawn;
             CommandManagerRequery();
         }
         catch (Exception ex)

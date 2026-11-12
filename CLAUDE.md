@@ -399,7 +399,11 @@ in the library's `microsoft/command-links/`) were rendered for the Tailscale
 page's choice on 12 Nov 2026 and set aside for Next and Skip.
 
 **The QR code is plain JSON**, `{"endpoint": "...", "key": "..."}`
-(`PairingCode`), black on white, error correction M. Either value may be left
+(`PairingCode`), black on white in the light theme and white on black in the
+dark one (the owner, 12 Nov 2026), error correction M. Both were decoded on
+12 Nov with the `zxing-cpp` Python package (installed for it) from `--screenshot
+--expanded` renders, and both read as normal; whether Ammy's VisionKit scanner
+reads the white-on-black one is for the phone to show. Either value may be left
 out (since 12 Nov 2026): Ammy fills in only the field a code carries. Not a
 link: a link would name an app, and Issun names no source. Ammy reads it from
 its **Scan QR Code** row (`CodeScanner.swift`), and so can any source.

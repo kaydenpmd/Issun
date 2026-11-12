@@ -712,6 +712,35 @@ reference. Trimming is not an option: WPF doesn't support it.
 The repo is public, which keeps Windows runner minutes free; they bill at 2× on
 a private repo.
 
+## Distribution: the Microsoft Store (decided 12 Nov 2026)
+
+The owner: "for now, only store, and winget piggybacking off of store". So
+Issun is headed for the Microsoft Store as an MSIX package, which the Store
+signs, installs and updates, and winget then finds through its `msstore`
+source with no separate winget-pkgs submission. No paid code signing and no
+signed `.msix` on GitHub for now. What the research on 12 Nov found, so it
+isn't redone:
+- Store policies 7.20 (effective 22 Oct 2026) block nothing here. A Win32 app
+  always needs a privacy policy (10.5.1); Discord and Tailscale must be named
+  at the start of the description (10.2.4); the Install Tailscale button is
+  allowed as software that enhances the app's function (10.2.3) and should be
+  explained in the certification notes; no trademarks in the app's name. The
+  listing, description and privacy policy are the owner's to write.
+- An individual developer account is free through storedeveloper.microsoft.com
+  (ID and selfie).
+- MSIX replaces `SelfInstall`, the Run key (with a StartupTask) and the Apps
+  entry, and redirects writes to AppData into the package's own folder unless
+  opted out, which matters for carrying the owner's existing settings across.
+  WPF can be packaged as MSIX; it doesn't need WinUI 3.
+- Signing outside the Store: about $9.99 a month (Microsoft's Artifact
+  Signing, US or Canada individuals) or about $129 a year plus a key token
+  (SSL.com), and even then SmartScreen warns until reputation builds; only the
+  Store avoids the warning.
+- The current unsigned `.exe` on GitHub releases goes on as it is until the
+  Store build exists.
+Whether Issun moves to WinUI 3, and how either packages as MSIX, is the
+`winui3-spike` branch's question.
+
 ## Queued work
 
 Asked for by the owner and not yet done. Take the top item unless told otherwise.

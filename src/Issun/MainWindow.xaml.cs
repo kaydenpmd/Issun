@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = vm;
+        Presentation.WindowFit.ToWorkArea(this, "main");
 
         // The clock-driven text ("last push 12s ago") only ticks while the
         // window can be seen.

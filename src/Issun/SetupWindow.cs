@@ -24,6 +24,7 @@ public sealed class SetupWindow : Window
         Height = 600;
         MinWidth = 520;
         MinHeight = 480;
+        Presentation.WindowFit.ToWorkArea(this, "setup");
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Content = new SetupView { DataContext = vm };
         vm.CloseRequested += Close;

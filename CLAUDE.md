@@ -224,6 +224,26 @@ the window's Diagnostics section, which shows `IUptimeLog.Summarize()`.
 A single-file `.exe` unpacks WPF's native DLLs under `%TEMP%\.net` on first
 launch. That is expected, not litter.
 
+### Testing on a clean PC: Windows Sandbox
+
+`pwsh tools/sandbox/run.ps1` (from PowerShell, not Claude Code's Bash) builds a
+release-numbered `.exe`, opens Windows Sandbox, and runs `tools/sandbox/test.ps1`
+inside it through `wsb exec`: first run, the setup window page by page, the
+self-install's Apps, Start menu and Run entries, a second launch, an update over
+the running copy, and uninstall as Settings › Apps runs it. Every check prints
+`ok` or `FAIL`; the report, screenshots and Issun's logs land in
+`%LOCALAPPDATA%\IssunSandbox\<time>\out`. `-Keep` leaves the sandbox open,
+`-Steps first,update` runs some steps. About two minutes. The sandbox has its
+own network and registry, so it is the one place a self-installing build can
+run on this PC; never open its `.exe` outside it. Enabled on 12 Nov 2026
+(`dism /online /enable-feature /featurename:Containers-DisposableClientVM
+/all`, from an elevated shell; `Enable-WindowsOptionalFeature` failed in
+PowerShell 7 with "Class not registered"). Computer use can't see the Sandbox
+window (its owner, `WindowsSandboxRemoteSession`, can't be granted), which is
+why the test drives itself: UI Automation for WPF, keystrokes for message boxes,
+whose buttons UI Automation didn't find from there. It can't test Discord,
+Tailscale, Funnel or the phone.
+
 ### Testing without touching the live setup
 
 The owner's receiver is live on this machine. These are hard limits:
@@ -667,11 +687,16 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
 1. **Setup wizard and installer: built 11 Nov 2026, not yet run for real.**
    Talked through first, as asked; the owner chose "Self-install", "QR, scanned
    in Ammy" and "Its own window". Seen only as `--screenshot` renders of the demo
-   (the owner declined a click-through of the demo window). Not yet tried: a
-   real first run, an update over a running copy, `--uninstall`, and scanning the
-   code with Ammy, which is on Ammy's `scan-endpoint-code` branch until it is
-   merged. The QR image wasn't decoded here (no decoder installed); the phone is
-   the test.
+   (the owner declined a click-through of the demo window). **Run for real in
+   Windows Sandbox on 12 Nov 2026** (`tools/sandbox/run.ps1`, 20 checks, all
+   passing): the first run installs and opens setup within seconds, every page
+   and Close work, the update over a running copy swaps it and keeps
+   `Issun.exe.previous`, and uninstall removes everything but the settings.
+   It found the main window opening 820 tall in a 775 work area with its title
+   bar above the screen, fixed by `WindowFit`. Not yet tried: the update over
+   the owner's build 48, real Tailscale and Discord, and scanning the code with
+   Ammy (merged into Ammy's main). The QR image wasn't decoded here; the phone
+   is the test.
    **Its words are the owner's to write** (their rule from 12 Nov 2026, starting
    with this window): build 51 shipped Claude's drafts, to be replaced word for
    word with what the owner writes in the "Issun Setup Wording" artifact

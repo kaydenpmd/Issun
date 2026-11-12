@@ -1,0 +1,205 @@
+# Runs INSIDE Windows Sandbox (Windows PowerShell 5.1, the signed-in user's
+# session), started by run.ps1 through `wsb exec`. Tests what only a clean PC
+# shows: the first run, the setup window, self-install, an update over a
+# running copy, and uninstall. Drives WPF windows through UI Automation and
+# Windows message boxes with keystrokes (their buttons don't show up in UI
+# Automation from here). Writes report.txt, screenshots and copies of Issun's
+# logs to C:\IssunOut, which run.ps1 maps to a folder on the host.
+#
+# Every check that can fail writes a line starting "FAIL"; run.ps1 counts them.
+param([string]$Step = "all")
+$ErrorActionPreference = "Continue"
+$out = "C:\IssunOut"
+New-Item -ItemType Directory -Force $out | Out-Null
+$report = Join-Path $out "report.txt"
+function Say($m) { $line = "{0:HH:mm:ss.fff} {1}" -f (Get-Date), $m; Add-Content -Path $report -Value $line -Encoding UTF8 }
+
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms, System.Drawing
+$AE = [System.Windows.Automation.AutomationElement]
+$Tree = [System.Windows.Automation.TreeScope]
+
+function Shot($name, $el) {
+    try {
+        if ($el) { $r = $el.Current.BoundingRectangle; $x=[int]$r.X; $y=[int]$r.Y; $w=[int]$r.Width; $h=[int]$r.Height }
+        else { $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $x=$b.X; $y=$b.Y; $w=$b.Width; $h=$b.Height }
+        $bmp = New-Object System.Drawing.Bitmap $w, $h
+        $g = [System.Drawing.Graphics]::FromImage($bmp)
+        $g.CopyFromScreen($x, $y, 0, 0, $bmp.Size)
+        $bmp.Save((Join-Path $out "$($name).png"), [System.Drawing.Imaging.ImageFormat]::Png)
+        $g.Dispose(); $bmp.Dispose()
+        Say "screenshot $($name).png (${w}x${h})"
+    } catch { Say "screenshot $name failed: $($_.Exception.Message)" }
+}
+
+function FindWindow($title, $seconds) {
+    $cond = New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $title)
+    $deadline = (Get-Date).AddSeconds($seconds)
+    while ((Get-Date) -lt $deadline) {
+        $w = $AE::RootElement.FindFirst($Tree::Children, $cond)
+        if ($w) { return $w }
+        Start-Sleep -Milliseconds 500
+    }
+    return $null
+}
+
+# A window must fit the work area: the main window once opened 820 tall in a
+# 775 work area with its title bar off the top of the screen.
+function CheckFits($el, $label) {
+    $r = $el.Current.BoundingRectangle
+    $a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+    $msg = "$label window at $([int]$r.X),$([int]$r.Y) size $([int]$r.Width)x$([int]$r.Height) in work area $($a.Width)x$($a.Height)"
+    if ($r.Y -lt $a.Y -or $r.X -lt $a.X -or $r.Bottom -gt $a.Bottom + 1 -or $r.Right -gt $a.Right + 1) { Say "FAIL $msg" } else { Say "ok $msg" }
+}
+
+function Dump($el, $label) {
+    $all = $el.FindAll($Tree::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    Say "--- ${label}: visible elements"
+    foreach ($e in $all) {
+        $c = $e.Current
+        if ($c.IsOffscreen) { continue }
+        $type = $c.ControlType.ProgrammaticName -replace "ControlType\.", ""
+        if ($type -in @("Text","Button","CheckBox","Edit","Hyperlink")) {
+            $extra = ""
+            if ($type -eq "CheckBox") { try { $extra = " [" + $e.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Current.ToggleState + "]" } catch {} }
+            if ($type -eq "Edit") { try { $extra = " = '" + $e.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value + "'" } catch {} }
+            if (-not $c.IsEnabled) { $extra += " (disabled)" }
+            Say ("  {0}: {1}{2}" -f $type, ($c.Name -replace "`r?`n", " / "), $extra)
+        }
+    }
+}
+
+function Click($el, $name) {
+    $cond = New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name)),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+    $b = $el.FindFirst($Tree::Descendants, $cond)
+    if (-not $b) { Say "FAIL no button '$name'"; return $false }
+    if (-not $b.Current.IsEnabled) { Say "button '$name' is disabled"; return $false }
+    $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Say "clicked '$name'"
+    return $true
+}
+
+# A Windows message box: bring it forward by title and press a key (y, n, Enter).
+function AnswerBox($title, $keys) {
+    $ws = New-Object -ComObject WScript.Shell
+    if (-not $ws.AppActivate($title)) { Say "FAIL couldn't bring '$title' forward"; return }
+    Start-Sleep -Milliseconds 500
+    $ws.SendKeys($keys)
+    Say "answered '$title' with $keys"
+}
+
+function State($label) {
+    Say "=== state: $label"
+    $inst = Join-Path $env:LOCALAPPDATA "Programs\Issun"
+    if (Test-Path $inst) { Get-ChildItem $inst | ForEach-Object { Say ("  install dir: {0} {1:N0} bytes {2:HH:mm:ss}" -f $_.Name, $_.Length, $_.LastWriteTime) } } else { Say "  install dir: absent" }
+    $run = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue
+    Say ("  Run key Issun: " + $(if ($run.Issun) { $run.Issun } else { "absent" }))
+    $un = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Issun" -ErrorAction SilentlyContinue
+    if ($un) { Say "  Apps entry: $($un.DisplayName) $($un.DisplayVersion), uninstall: $($un.UninstallString)" } else { Say "  Apps entry: absent" }
+    $lnk = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Issun.lnk"
+    if (Test-Path $lnk) { $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk); Say "  Start menu: $($s.TargetPath) $($s.Arguments)" } else { Say "  Start menu: absent" }
+    $procs = @(Get-Process Issun* -ErrorAction SilentlyContinue)
+    if ($procs.Count) { $procs | ForEach-Object { Say "  process: $($_.Id) $($_.Path)" } } else { Say "  process: none" }
+    foreach ($f in @("$env:APPDATA\Issun\settings.json", "$env:LOCALAPPDATA\Issun\window.json", "$env:LOCALAPPDATA\Issun\issun.log")) {
+        Say ("  {0}: {1}" -f $f, $(if (Test-Path $f) { "present" } else { "absent" }))
+    }
+}
+
+function Expect($what, $ok) { if ($ok) { Say "ok $what" } else { Say "FAIL $what" } }
+
+function SaveLogs($tag) {
+    $d = Join-Path $out "logs-$tag"; New-Item -ItemType Directory -Force $d | Out-Null
+    Copy-Item "$env:LOCALAPPDATA\Issun\*.log" $d -ErrorAction SilentlyContinue
+    Copy-Item "$env:LOCALAPPDATA\Issun\window.json" $d -ErrorAction SilentlyContinue
+    # settings.json holds the key: record only each field's length.
+    $sj = "$env:APPDATA\Issun\settings.json"
+    if (Test-Path $sj) {
+        try { $o = Get-Content $sj -Raw | ConvertFrom-Json; $o.PSObject.Properties | ForEach-Object { Add-Content (Join-Path $d "settings-shape.txt") "$($_.Name): length $("$($_.Value)".Length)" } }
+        catch { Add-Content (Join-Path $d "settings-shape.txt") "unreadable: $($_.Exception.Message)" }
+    }
+}
+
+$installDir = Join-Path $env:LOCALAPPDATA "Programs\Issun"
+$installed = Join-Path $installDir "Issun.exe"
+$download = Get-ChildItem "$env:USERPROFILE\Downloads\Issun-*.exe" | Select-Object -First 1
+
+if ($Step -in @("all","first")) {
+    Say "##### first run: $($download.FullName)"
+    State "before"
+    Start-Process $download.FullName
+    $w = FindWindow "Set up Issun" 90
+    if (-not $w) { Say "FAIL setup window didn't open within 90 s"; Shot "no-setup" $null; State "no setup window"; SaveLogs "first"; exit 1 }
+    Say "ok setup window open"
+    Start-Sleep 3
+    State "setup window open"
+    Expect "installed copy in place" (Test-Path $installed)
+    Expect "Apps entry written" (Test-Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Issun")
+    Expect "Start menu entry written" (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Issun.lnk")
+    CheckFits $w "setup"
+    for ($p = 0; $p -lt 4; $p++) {
+        Start-Sleep 2
+        Dump $w "page $p"
+        Shot "setup-page-$p" $w
+        if ($p -lt 3) { if (-not (Click $w "Next")) { break } }
+    }
+    if (Click $w "Show") { Start-Sleep 1; Shot "setup-page-3-shown" $w }
+    Click $w "Close" | Out-Null
+    Start-Sleep 3
+    Expect "setup window closed by Close" (-not (FindWindow "Set up Issun" 1))
+    Expect "Start with Windows registered (ticked by default)" ((Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)
+    $main = FindWindow "Issun" 10
+    if ($main) { CheckFits $main "main"; Shot "main" $main }
+    State "after setup closed"
+    SaveLogs "first"
+}
+
+if ($Step -in @("all","again")) {
+    Say "##### opening the installed copy again: the running one should show its window, and setup shouldn't open"
+    $before = @(Get-Process Issun* -ErrorAction SilentlyContinue).Count
+    Start-Process $installed
+    Start-Sleep 6
+    Expect "setup didn't open a second time" (-not (FindWindow "Set up Issun" 1))
+    Expect "still one Issun running" (@(Get-Process Issun* -ErrorAction SilentlyContinue).Count -eq $before)
+    $main = FindWindow "Issun" 5
+    if ($main) { CheckFits $main "main" } else { Say "FAIL main window didn't show" }
+    Shot "second-open" $null
+}
+
+if ($Step -in @("all","update")) {
+    Say "##### update over the running copy: opening the download again"
+    $old = @(Get-Process Issun* -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+    Start-Process $download.FullName
+    Start-Sleep 15
+    $now = @(Get-Process Issun* -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+    Expect "old process quit" (-not ($now | Where-Object { $old -contains $_ }))
+    Expect "a new process runs from the install folder" ($now.Count -eq 1)
+    Expect "previous build kept beside it" (Test-Path (Join-Path $installDir "Issun.exe.previous"))
+    State "after update"
+    SaveLogs "update"
+}
+
+if ($Step -in @("all","uninstall")) {
+    Say "##### uninstall, as Settings > Apps runs it"
+    $un = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Issun" -ErrorAction SilentlyContinue
+    if (-not $un) { Say "FAIL no Apps entry to uninstall from" } else {
+        Start-Process cmd.exe -ArgumentList "/c", "`"$($un.UninstallString)`"" -WindowStyle Hidden
+        $box = FindWindow "Uninstall Issun" 30
+        if (-not $box) { Say "FAIL no uninstall question"; Shot "no-uninstall-box" $null }
+        else {
+            Shot "uninstall-question" $box
+            AnswerBox "Uninstall Issun" "y"
+            Start-Sleep 15
+            if (FindWindow "Uninstall Issun" 1) { Say "FAIL a second uninstall box"; Shot "uninstall-second" $null }
+        }
+    }
+    State "after uninstall"
+    Expect "install folder removed" (-not (Test-Path $installDir))
+    Expect "Run entry removed" (-not (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)
+    Expect "Apps entry removed" (-not (Test-Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Issun"))
+    Expect "Start menu entry removed" (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Issun.lnk"))
+    Expect "Issun quit" (-not (Get-Process Issun* -ErrorAction SilentlyContinue))
+    Expect "settings kept" (Test-Path "$env:APPDATA\Issun\settings.json")
+    SaveLogs "uninstall"
+}
+Say "##### done ($Step)"

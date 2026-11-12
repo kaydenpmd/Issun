@@ -39,10 +39,11 @@ $sha = (git -C $repo rev-parse --short HEAD).Trim()
 $dirty = if (git -C $repo status --porcelain) { "-dirty" } else { "" }
 if (-not $NoBuild) {
     Note "publishing build $build ($sha$dirty)"
-    dotnet publish (Join-Path $repo "src\Issun\Issun.csproj") -c Release -r win-x64 --self-contained `
+    $said = dotnet publish (Join-Path $repo "src\Issun\Issun.csproj") -c Release -r win-x64 --self-contained `
         -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true `
-        -p:IssunBuild=$build -p:IssunCommit="$sha$dirty" -o $pub | Select-Object -Last 1
-    if ($LASTEXITCODE) { throw "dotnet publish failed" }
+        -p:IssunBuild=$build -p:IssunCommit="$sha$dirty" -o $pub
+    if ($LASTEXITCODE) { $said | Where-Object { $_ -match "error" } | ForEach-Object { Write-Host $_ }; throw "dotnet publish failed" }
+    $said | Select-Object -Last 1
 }
 Copy-Item (Join-Path $pub "Issun.exe") (Join-Path $in "Issun-test-b$build-$sha$dirty.exe")
 Copy-Item (Join-Path $PSScriptRoot "test.ps1") $in

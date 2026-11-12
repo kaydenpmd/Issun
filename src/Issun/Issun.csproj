@@ -29,6 +29,9 @@
          %TEMP%\.net\Issun\<hash> on first run. StaleUnpacks deletes the ones
          earlier builds left. -->
     <IncludeAllContentForSelfExtract Condition="'$(PublishSingleFile)' == 'true'">true</IncludeAllContentForSelfExtract>
+    <!-- Also required for a single file: it builds the resources.pri that
+         WinUI reads its XAML from, embedded in the .exe. No MSIX is made. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>

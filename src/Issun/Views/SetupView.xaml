@@ -152,11 +152,19 @@
                         </DockPanel>
                     </Border>
 
-                    <!-- This PC's public address, Tailscale's or another, for
-                         the endpoint and QR code: Settings' Public address.
-                         The owner's ask, 12 Nov 2026; its words are theirs.
-                         Shown without Tailscale, or once an address is set. -->
-                    <Border Style="{StaticResource Card}" Visibility="{Binding ShowAddress, Converter={StaticResource Visible}}">
+                    <TextBlock Text="{Binding TailscaleError}" Style="{StaticResource ErrorText}" Margin="2,8,0,0"
+                               Visibility="{Binding TailscaleError, Converter={StaticResource Present}}" />
+                </StackPanel>
+
+                <!-- ───────────── 2b. An address of their own ─────────────
+                     Reached only by the Tailscale page's Skip (the owner,
+                     12 Nov 2026), for people who reach Issun some other way.
+                     Next saves what's typed, or moves on if nothing is. The
+                     field is Settings' Public address. Its words are theirs. -->
+                <StackPanel Visibility="{Binding OnAddressPage, Converter={StaticResource Visible}}">
+                    <TextBlock Text="[text]" Style="{StaticResource MainInstruction}" />
+                    <TextBlock Text="[text]" Style="{StaticResource PageBody}" />
+                    <Border Style="{StaticResource Card}">
                         <StackPanel>
                             <DockPanel>
                                 <TextBox DockPanel.Dock="Right" Width="260" VerticalAlignment="Center" Margin="12,0,0,0"
@@ -171,9 +179,6 @@
                                        Visibility="{Binding AddressProblem, Converter={StaticResource Present}}" />
                         </StackPanel>
                     </Border>
-
-                    <TextBlock Text="{Binding TailscaleError}" Style="{StaticResource ErrorText}" Margin="2,8,0,0"
-                               Visibility="{Binding TailscaleError, Converter={StaticResource Present}}" />
                 </StackPanel>
 
                 <!-- ───────────── 3. Start with Windows ───────────── -->
@@ -258,9 +263,13 @@
             </Grid>
         </ScrollViewer>
 
-        <!-- Back, Next, Cancel: right-aligned, in that order. -->
+        <!-- Back, Skip (Tailscale page only), Next, Cancel: right-aligned, in that order. -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12,24,24">
             <Button Content="Back" Command="{Binding BackCommand}" Style="{StaticResource FooterButton}" />
+            <!-- Skip: the Tailscale page's way past for people without Tailscale. -->
+            <Button Content="[text]" Command="{Binding SkipCommand}" Style="{StaticResource FooterButton}"
+                    AutomationProperties.AutomationId="Skip"
+                    Visibility="{Binding ShowSkip, Converter={StaticResource Visible}}" />
             <Button Content="Next" Command="{Binding NextCommand}" Style="{StaticResource AccentFooterButton}" IsDefault="True"
                     Visibility="{Binding ShowNext, Converter={StaticResource Visible}}" />
             <Button Content="{Binding CloseLabel}" Command="{Binding CloseCommand}" Style="{StaticResource FooterButton}" IsCancel="True" />

@@ -80,6 +80,20 @@ function Click($el, $name) {
     return $true
 }
 
+function ClickId($el, $id) {
+    $b = $el.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id)))
+    if (-not $b) { Say "FAIL no element with id '$id'"; return $false }
+    if (-not $b.Current.IsEnabled -or $b.Current.IsOffscreen) { Say "FAIL '$id' isn't available"; return $false }
+    $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Say "clicked '$id'"
+    return $true
+}
+
+function OnPage($el, $title) {
+    $t = $el.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $title)))
+    return [bool]($t -and -not $t.Current.IsOffscreen)
+}
+
 # A Windows message box: bring it forward by title and press a key (y, n, Enter).
 function AnswerBox($title, $keys) {
     $ws = New-Object -ComObject WScript.Shell
@@ -147,12 +161,24 @@ if ($Step -in @("all","first")) {
     Expect "Apps entry written" (Test-Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Issun")
     Expect "Start menu entry written" (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Issun.lnk")
     CheckFits $w "setup"
-    for ($p = 0; $p -lt 4; $p++) {
-        Start-Sleep 2
-        Dump $w "page $p"
-        Shot "setup-page-$p" $w
-        if ($p -lt 3) { if (-not (Click $w "Next")) { break } }
-    }
+    Start-Sleep 2
+    Dump $w "page 0"; Shot "setup-page-0" $w
+    Click $w "Next" | Out-Null; Start-Sleep 3
+    Dump $w "page 1"; Shot "setup-page-1" $w
+    Click $w "Next" | Out-Null; Start-Sleep 4
+    Expect "Next stays on the Tailscale page without Tailscale" (OnPage $w "Make this PC reachable")
+    Dump $w "page 1 after Next"; Shot "setup-page-1-refused" $w
+    ClickId $w "Skip" | Out-Null; Start-Sleep 2
+    Expect "Skip leads to the address page" (OnPage $w "Public address")
+    Dump $w "page 2"; Shot "setup-page-2" $w
+    Click $w "Next" | Out-Null; Start-Sleep 2
+    Expect "an empty address page moves on" (OnPage $w "Launch Issun on startup?")
+    Dump $w "page 3"; Shot "setup-page-3" $w
+    Click $w "Back" | Out-Null; Start-Sleep 1
+    Expect "Back returns to the address page" (OnPage $w "Public address")
+    Click $w "Next" | Out-Null; Start-Sleep 2
+    Click $w "Next" | Out-Null; Start-Sleep 2
+    Dump $w "page 4"; Shot "setup-page-4" $w
     if (Click $w "Show") { Start-Sleep 1; Shot "setup-page-3-shown" $w }
     Click $w "Close" | Out-Null
     Start-Sleep 3
@@ -274,19 +300,23 @@ if ($Step -eq "address") {
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
     Start-Sleep 3
     Click $w "Next" | Out-Null
+    Start-Sleep 3
+    ClickId $w "Skip" | Out-Null
     Start-Sleep 2
     $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Public address")))
     if (-not $box) { Say "FAIL no address field"; exit 1 }
     $value = $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
     $value.SetValue("http://not-https.example.com")
+    Click $w "Next" | Out-Null
     Start-Sleep 2
+    Expect "an http address is refused and the page stays" (OnPage $w "Public address")
     Dump $w "after an http address"
     Shot "address-rejected" $w
     $value.SetValue("issun-test.example.com/now-playing/")
     Start-Sleep 2
     Dump $w "after a good address"
     Shot "address-typed" $w
-    Click $w "Next" | Out-Null; Start-Sleep 1; Click $w "Next" | Out-Null; Start-Sleep 3
+    Click $w "Next" | Out-Null; Start-Sleep 2; Click $w "Next" | Out-Null; Start-Sleep 3
     Dump $w "source page"
     $all = $w.FindAll($Tree::Descendants, [System.Windows.Automation.Condition]::TrueCondition) | ForEach-Object { $_.Current.Name }
     Expect "endpoint shows the typed address" ($all -contains "https://issun-test.example.com/now-playing")

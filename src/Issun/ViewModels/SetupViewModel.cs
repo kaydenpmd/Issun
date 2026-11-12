@@ -7,14 +7,17 @@ using Issun.Threading;
 
 namespace Issun.ViewModels;
 
-public enum SetupPage { Discord = 0, Tailscale = 1, StartWithWindows = 2, Source = 3 }
+public enum SetupPage { Discord = 0, Tailscale = 1, Address = 2, StartWithWindows = 3, Source = 4 }
 
 /// <summary>
-/// The setup window: four pages, each one live. Nothing waits for Next to be
-/// applied. The Discord application ID connects as soon as it looks like one,
+/// The setup window: four pages, each one live, and a fifth for an address of
+/// one's own, reached only through the Tailscale page's Skip. Nothing but that
+/// address waits for Next to be applied. The Discord application ID connects as soon as it looks like one,
 /// the Tailscale buttons act when clicked, Start with Windows applies when
 /// ticked, and the last page watches for the source's first push. So every page
-/// shows the real state of what it set up, and Next only moves on.
+/// shows the real state of what it set up. Next moves on, except that on the
+/// Tailscale page it first checks Tailscale has an address for this PC, and
+/// on the address page it saves what's typed.
 ///
 /// The structure is Microsoft's wizard guidance, read 11 Nov 2026 and saved in
 /// the design-research library (microsoft/windows-setup-wizards): no welcome
@@ -51,19 +54,24 @@ public sealed class SetupViewModel : Observable, IDisposable
             _applyId.Stop();
             _ = ApplyClientIdAsync();
         };
-        _applyAddress = new DispatcherTimer(DispatcherPriority.Normal, dispatcher) { Interval = ApplyDelay };
-        _applyAddress.Tick += (_, _) =>
-        {
-            _applyAddress.Stop();
-            _ = ApplyAddressAsync();
-        };
         _address = host.Settings.PublicBase;
 
         EndpointCopied = new Flash(dispatcher);
         KeyCopied = new Flash(dispatcher);
 
-        BackCommand = new Command(() => Go(_page - 1), () => _page > SetupPage.Discord);
-        NextCommand = new Command(() => Go(_page + 1), () => _page < SetupPage.Source);
+        BackCommand = new Command(() => Go(Previous(_page)), () => _page > SetupPage.Discord);
+        NextCommand = new AsyncCommand("setup: next", NextAsync, ex =>
+        {
+            Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
+            if (_page == SetupPage.Tailscale) TailscaleError = $"[text] {ex.Message}";
+            else if (_page == SetupPage.Address) AddressProblem = $"[text] {ex.Message}";
+        }, () => _page < SetupPage.Source);
+        SkipCommand = new Command(() =>
+        {
+            Log.Write("[setup] skipped Tailscale for an address of their own");
+            _viaSkip = true;
+            Go(SetupPage.Address);
+        });
         CloseCommand = new Command(() => CloseRequested?.Invoke());
         OpenPortalCommand = new Command(() => Open(DeveloperPortal, "the Discord Developer Portal"));
         // Installs with winget, as the owner asked (12 Nov 2026). Where there is
@@ -140,6 +148,7 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public bool OnDiscordPage => _page == SetupPage.Discord;
     public bool OnTailscalePage => _page == SetupPage.Tailscale;
+    public bool OnAddressPage => _page == SetupPage.Address;
     public bool OnStartPage => _page == SetupPage.StartWithWindows;
     public bool OnSourcePage => _page == SetupPage.Source;
 
@@ -148,8 +157,66 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public bool ShowNext => _page < SetupPage.Source;
 
+    /// <summary>
+    /// Skip is always on the Tailscale page, and only there (the owner,
+    /// 12 Nov 2026). Next, when Tailscale has an address, goes past the
+    /// address page; Skip is the only way to it.
+    /// </summary>
+    public bool ShowSkip => _page == SetupPage.Tailscale;
+
     public Command BackCommand { get; }
-    public Command NextCommand { get; }
+    public AsyncCommand NextCommand { get; }
+    public Command SkipCommand { get; }
+
+    /// <summary>Whether this run reached Start with Windows through Skip, so Back returns the way it came.</summary>
+    private bool _viaSkip;
+
+    private SetupPage Previous(SetupPage page) => page switch
+    {
+        SetupPage.Address => SetupPage.Tailscale,
+        SetupPage.StartWithWindows => _viaSkip ? SetupPage.Address : SetupPage.Tailscale,
+        _ => page - 1,
+    };
+
+    /// <summary>
+    /// Next, as the owner set it out on 12 Nov 2026. On the Tailscale page it
+    /// asks Tailscale for this PC's address and stays put with an error if
+    /// there is none (Skip is the way past without Tailscale); with one, it goes
+    /// straight on, past the address page. On the address page it saves what's
+    /// typed, or just moves on when the field is empty. Elsewhere it moves on.
+    /// </summary>
+    private async Task NextAsync()
+    {
+        switch (_page)
+        {
+            case SetupPage.Tailscale:
+                TailscaleError = null;
+                await _host.RefreshTailscaleAsync();
+                if (_host.Snapshot.Tailscale?.PublicBase is null)
+                {
+                    Log.Write("[setup] Next on the Tailscale page: Tailscale has no address for this PC yet, staying");
+                    TailscaleError = "[text]";
+                    return;
+                }
+                Log.Write("[setup] Next on the Tailscale page: Tailscale has this PC's address");
+                _viaSkip = false;
+                Go(SetupPage.StartWithWindows);
+                break;
+            case SetupPage.Address:
+                if (_address.Trim().Length == 0)
+                {
+                    Log.Write("[setup] Next on the address page with nothing typed: moving on without saving");
+                    Go(SetupPage.StartWithWindows);
+                    break;
+                }
+                if (await SaveAddressAsync())
+                    Go(SetupPage.StartWithWindows);
+                break;
+            default:
+                Go(_page + 1);
+                break;
+        }
+    }
     public Command CloseCommand { get; }
 
     private void Go(SetupPage page)
@@ -162,20 +229,17 @@ public sealed class SetupViewModel : Observable, IDisposable
             _applyId.Stop();
             _ = ApplyClientIdAsync();
         }
-        if (_page == SetupPage.Tailscale && _applyAddress.IsEnabled)
-        {
-            _applyAddress.Stop();
-            _ = ApplyAddressAsync();
-        }
         Log.Write($"[setup] {Describe(_page)} -> {Describe(page)}");
         _page = page;
         Raise(nameof(Page));
         Raise(nameof(OnDiscordPage));
         Raise(nameof(OnTailscalePage));
+        Raise(nameof(OnAddressPage));
         Raise(nameof(OnStartPage));
         Raise(nameof(OnSourcePage));
         Raise(nameof(CloseLabel));
         Raise(nameof(ShowNext));
+        Raise(nameof(ShowSkip));
         if (page == SetupPage.Tailscale)
             CheckTailscaleCommand.Execute(null);
         CommandManagerRequery();
@@ -185,6 +249,7 @@ public sealed class SetupViewModel : Observable, IDisposable
     {
         SetupPage.Discord => "Discord",
         SetupPage.Tailscale => "Tailscale",
+        SetupPage.Address => "own address",
         SetupPage.StartWithWindows => "Start with Windows",
         _ => "Connect your source",
     };
@@ -251,26 +316,21 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     // ───────────────────────────── Tailscale ─────────────────────────────
 
-    private readonly DispatcherTimer _applyAddress;
     private string _address;
 
     /// <summary>
-    /// This PC's public address as typed: Tailscale's or anything else that
-    /// forwards https to Issun (the owner's ask, 12 Nov 2026, so people with
-    /// their own setup can still get the endpoint and QR code). It is Settings'
-    /// Public address, so empty means "work it out from Tailscale". Applied
-    /// 0.6 s after it stops changing, like the Discord ID.
+    /// This PC's public address as typed, on its own page behind the Tailscale
+    /// page's Skip, for people who reach Issun some other way (the owner,
+    /// 12 Nov 2026). It is Settings' Public address, which overrides
+    /// Tailscale's. Saved by Next, not as it's typed.
     /// </summary>
     public string PublicAddress
     {
         get => _address;
         set
         {
-            if (!Set(ref _address, value ?? ""))
-                return;
-            _applyAddress.Stop();
-            AddressProblem = null;
-            _applyAddress.Start();
+            if (Set(ref _address, value ?? ""))
+                AddressProblem = null;
         }
     }
 
@@ -295,33 +355,30 @@ public sealed class SetupViewModel : Observable, IDisposable
             : null;
     }
 
-    private async Task ApplyAddressAsync()
+    private async Task<bool> SaveAddressAsync()
     {
         var address = NormaliseAddress(_address);
         if (address is null)
         {
             AddressProblem = "[text]";
-            Log.Write($"[setup] not applying a public address of {_address.Trim().Length} characters: not an https address");
-            return;
+            Log.Write($"[setup] not saving a public address of {_address.Trim().Length} characters: not an https address");
+            return false;
         }
         if (address == _host.Settings.PublicBase)
-            return;
+            return true;
         try
         {
-            Log.Write(address.Length == 0
-                ? "[setup] public address cleared: Issun works it out from Tailscale"
-                : $"[setup] applying a public address ({address.Length} characters{(address.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) ? ", a Tailscale name" : "")})");
+            Log.Write($"[setup] saving a public address ({address.Length} characters{(address.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) ? ", a Tailscale name" : "")})");
             await _host.UpdateSettingsAsync(_host.Settings with { PublicBase = address });
+            return true;
         }
         catch (Exception ex)
         {
             Log.Write($"[setup] couldn't save the public address: {ex.Message}");
             AddressProblem = $"[text] {ex.Message}";
+            return false;
         }
     }
-
-    public bool ShowAddress { get => _showAddress; private set => Set(ref _showAddress, value); }
-    private bool _showAddress;
 
     public string? AddressProblem { get => _addressProblem; private set => Set(ref _addressProblem, value); }
     private string? _addressProblem;
@@ -555,10 +612,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         OfferFunnel = StatusText.OfferFunnel(s.Tailscale);
         ShowUnattended = s.Tailscale is { Running: true };
         UnattendedStatus = Unattended(s.Tailscale?.Unattended);
-        // Tailscale gives Issun this PC's address by itself, so the field is
-        // for those without it (the owner, 12 Nov 2026), and for an address
-        // already typed, which overrides Tailscale's and must stay clearable.
-        ShowAddress = s.Tailscale is { Installed: false } || _host.Settings.PublicBase.Length > 0;
+        Raise(nameof(ShowSkip));
         OfferUnattended = s.Tailscale is { Running: true, Unattended: false };
 
         EndpointUrl = s.EndpointUrl;
@@ -595,9 +649,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         // An ID typed in the last 0.6 s before closing still counts.
         if (_clientId.Trim() != _host.Settings.DiscordClientId && LooksLikeId(_clientId.Trim()))
             _ = ApplyClientIdAsync();
-        _applyAddress.Stop();
-        if (NormaliseAddress(_address) is { } address && address != _host.Settings.PublicBase)
-            _ = ApplyAddressAsync();
         Log.Write($"[setup] closed on the {Describe(_page)} page");
     }
 }

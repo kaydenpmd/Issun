@@ -1,0 +1,5 @@
+03:48:33.898 == before installing
+03:48:34.045      package IssunSpike_1.0.0.0_x64.msix, 58405148 bytes (55.7 MB); runtime dependency 50210887 bytes (47.88 MB)
+03:48:34.822      Windows App Runtime packages already here: Microsoft.WindowsAppRuntime.CBS.1.6 6000.900.156.100; Microsoft.WindowsAppRuntime.CBS.2 2.2.0.100
+03:48:34.849      running elevated: True
+03:48:36.738  ok   trusted the test certificate in the sandbox's LocalMachine\TrustedPeople (A7F5BC8BA6B01C151D341A1704D6CC57DFC7B5B7)

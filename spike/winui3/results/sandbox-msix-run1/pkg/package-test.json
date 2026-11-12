@@ -1,0 +1,21 @@
+{
+  "package": "IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc",
+  "installedLocation": "C:\\Program Files\\WindowsApps\\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc",
+  "familyName": "IssunSpike.WinUI3_zfx5h6nf580cc",
+  "applicationDataLocalFolder": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Packages\\IssunSpike.WinUI3_zfx5h6nf580cc\\LocalState",
+  "localAppDataProbeAsSeenInside": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\IssunSpikeProbe\\probe.txt",
+  "roamingAppDataProbeAsSeenInside": "C:\\Users\\WDAGUtilityAccount\\AppData\\Roaming\\IssunSpikeProbe\\probe.txt",
+  "plantedSettingsReadable": "{\u0022planted\u0022: \u0022before the package was installed\u0022}",
+  "hkcuWrite": "ok",
+  "listener": "listening on 127.0.0.1:59828",
+  "listenerSelfGet": "ok",
+  "pipeReply": "failed: Cannot access a closed pipe.",
+  "runTailscaleByPath": "exit 0: stand-in tailscale 1.0; args: version; package: none",
+  "runTailscaleOnPath": "exit 0: stand-in tailscale 1.0; args: version; package: none",
+  "runWinget": "failed: An error occurred trying to start process \u0027winget\u0027 with working directory \u0027C:\\Windows\\System32\u0027. The system cannot find the file specified.",
+  "runCmd": "exit 0: Microsoft Windows [Version 10.0.26100.9457]",
+  "startupInitial": "Disabled",
+  "startupAfterRequestEnable": "Enabled",
+  "startupAfterDisable": "Disabled",
+  "startupLeftOn": "Enabled"
+}

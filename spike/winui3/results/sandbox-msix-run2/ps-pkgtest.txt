@@ -1,0 +1,45 @@
+04:00:27.191 == inside the package: identity, writes, listener, pipe, other programs, StartupTask
+04:00:27.382      port 56551, pipe issun-spike-b5fdf194
+04:00:33.468  ok   the packaged spike ran its checks
+04:00:33.511      its process: C:\Program Files\WindowsApps\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc\IssunSpike.exe
+04:00:33.899  ok   GET http://127.0.0.1:56551/health from outside the package answered 'ok'
+Receive-Job : A parameter cannot be found that matches parameter name 
+'Timeout'.
+At C:\IssunIn\msix-test.ps1:85 char:34
++     $jr = Receive-Job $job -Wait -Timeout 10 -ErrorAction SilentlyCon ...
++                                  ~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Receive-Job], ParameterBin 
+   dingException
+    + FullyQualifiedErrorId : NamedParameterNotFound,Microsoft.PowerShell.Comm 
+   ands.ReceiveJobCommand
+ 
+04:00:34.091      pipe server side: 
+04:00:34.322      package: IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc
+04:00:34.337      installedLocation: C:\Program Files\WindowsApps\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc
+04:00:34.353      familyName: IssunSpike.WinUI3_zfx5h6nf580cc
+04:00:34.369      applicationDataLocalFolder: C:\Users\WDAGUtilityAccount\AppData\Local\Packages\IssunSpike.WinUI3_zfx5h6nf580cc\LocalState
+04:00:34.385      localAppDataProbeAsSeenInside: C:\Users\WDAGUtilityAccount\AppData\Local\IssunSpikeProbe\probe.txt
+04:00:34.397      roamingAppDataProbeAsSeenInside: C:\Users\WDAGUtilityAccount\AppData\Roaming\IssunSpikeProbe\probe.txt
+04:00:34.401      plantedSettingsReadable: {"planted": "before the package was installed"}
+04:00:34.428      hkcuWrite: ok
+04:00:34.434      listener: listening on 127.0.0.1:56551
+04:00:34.450      listenerSelfGet: ok
+04:00:34.464      pipeReply: hello back from the pipe server
+04:00:34.480      pipeCloseError: Cannot access a closed pipe.
+04:00:34.496      runTailscaleByPath: exit 0: stand-in tailscale 1.0; args: version; package: none
+04:00:34.496      runTailscaleOnPath: exit 0: stand-in tailscale 1.0; args: version; package: none
+04:00:34.522      runWinget: failed: An error occurred trying to start process 'winget' with working directory 'C:\Windows\System32'. The system cannot find the file specified.
+04:00:34.528      runCmd: exit 0: Microsoft Windows [Version 10.0.26100.9457]
+04:00:34.551      startupInitial: Disabled
+04:00:34.567      startupAfterRequestEnable: Enabled
+04:00:34.584      startupAfterDisable: Disabled
+04:00:34.597      startupLeftOn: Enabled
+04:00:34.616  ok   named pipe from inside the package to a server outside it
+04:00:34.623  ok   Kestrel listening on 127.0.0.1 from inside the package
+04:00:34.647  ok   ran C:\Program Files\Tailscale\tailscale.exe and read its output
+04:00:34.668  ok   the app turned its StartupTask on (Enabled) and off (Disabled)
+04:00:35.057      a write to %LOCALAPPDATA%: real folder False, package's LocalCache True
+04:00:35.073      a write to %APPDATA%: real folder False, package's LocalCache True
+04:00:35.088      a write to %LOCALAPPDATA% by the child program: real folder True, package's LocalCache False
+04:00:35.108      HKCU\Software\IssunSpikeProbe in the real registry: False
+04:00:35.197      startup task's record: State UserEnabledStartupOnce ----- ---------------------- 2 1

@@ -1,0 +1,4 @@
+04:01:45.251 == uninstall
+04:01:46.727  ok   removed
+04:01:46.748      its LocalCache left behind: False
+04:01:46.782      its startup record left behind: False

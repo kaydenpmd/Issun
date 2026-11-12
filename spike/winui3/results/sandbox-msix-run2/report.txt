@@ -1,0 +1,65 @@
+04:00:07.467 == before installing
+04:00:07.618      package IssunSpike_1.0.0.0_x64.msix, 58405193 bytes (55.7 MB); runtime dependency 50210887 bytes (47.88 MB)
+04:00:08.484      Windows App Runtime packages already here: Microsoft.WindowsAppRuntime.CBS.1.6 6000.900.156.100; Microsoft.WindowsAppRuntime.CBS.2 2.2.0.100
+04:00:08.511      running elevated: True
+04:00:10.439  ok   trusted the test certificate in the sandbox's LocalMachine\TrustedPeople (A7F5BC8BA6B01C151D341A1704D6CC57DFC7B5B7)
+04:00:13.155 == install
+04:00:19.094      without the runtime dependency: refused: Deployment failed with HRESULT: 0x80073CF3, Package failed updates, dependency or conflict validation.
+04:00:24.251      with the runtime dependency: took 5089 ms
+04:00:24.278  ok   the package is installed: IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc
+04:00:24.356      install location C:\Program Files\WindowsApps\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc, signature kind Developer, dependencies: Microsoft.WindowsAppRuntime.2 2.6.5.0
+04:00:24.443      installed: 368 files, 140 MB
+04:00:24.493      Windows App Runtime framework now: Microsoft.WindowsAppRuntime.2 2.6.5.0, C:\Program Files\WindowsApps\Microsoft.WindowsAppRuntime.2_2.6.5.0_x64__8wekyb3d8bbwe
+04:00:24.515  ok   the execution alias exists (C:\Users\WDAGUtilityAccount\AppData\Local\Microsoft\WindowsApps\IssunSpike.exe)
+04:00:27.191 == inside the package: identity, writes, listener, pipe, other programs, StartupTask
+04:00:27.382      port 56551, pipe issun-spike-b5fdf194
+04:00:33.468  ok   the packaged spike ran its checks
+04:00:33.511      its process: C:\Program Files\WindowsApps\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc\IssunSpike.exe
+04:00:33.899  ok   GET http://127.0.0.1:56551/health from outside the package answered 'ok'
+04:00:34.091      pipe server side: 
+04:00:34.322      package: IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc
+04:00:34.337      installedLocation: C:\Program Files\WindowsApps\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc
+04:00:34.353      familyName: IssunSpike.WinUI3_zfx5h6nf580cc
+04:00:34.369      applicationDataLocalFolder: C:\Users\WDAGUtilityAccount\AppData\Local\Packages\IssunSpike.WinUI3_zfx5h6nf580cc\LocalState
+04:00:34.385      localAppDataProbeAsSeenInside: C:\Users\WDAGUtilityAccount\AppData\Local\IssunSpikeProbe\probe.txt
+04:00:34.397      roamingAppDataProbeAsSeenInside: C:\Users\WDAGUtilityAccount\AppData\Roaming\IssunSpikeProbe\probe.txt
+04:00:34.401      plantedSettingsReadable: {"planted": "before the package was installed"}
+04:00:34.428      hkcuWrite: ok
+04:00:34.434      listener: listening on 127.0.0.1:56551
+04:00:34.450      listenerSelfGet: ok
+04:00:34.464      pipeReply: hello back from the pipe server
+04:00:34.480      pipeCloseError: Cannot access a closed pipe.
+04:00:34.496      runTailscaleByPath: exit 0: stand-in tailscale 1.0; args: version; package: none
+04:00:34.496      runTailscaleOnPath: exit 0: stand-in tailscale 1.0; args: version; package: none
+04:00:34.522      runWinget: failed: An error occurred trying to start process 'winget' with working directory 'C:\Windows\System32'. The system cannot find the file specified.
+04:00:34.528      runCmd: exit 0: Microsoft Windows [Version 10.0.26100.9457]
+04:00:34.551      startupInitial: Disabled
+04:00:34.567      startupAfterRequestEnable: Enabled
+04:00:34.584      startupAfterDisable: Disabled
+04:00:34.597      startupLeftOn: Enabled
+04:00:34.616  ok   named pipe from inside the package to a server outside it
+04:00:34.623  ok   Kestrel listening on 127.0.0.1 from inside the package
+04:00:34.647  ok   ran C:\Program Files\Tailscale\tailscale.exe and read its output
+04:00:34.668  ok   the app turned its StartupTask on (Enabled) and off (Disabled)
+04:00:35.057      a write to %LOCALAPPDATA%: real folder False, package's LocalCache True
+04:00:35.073      a write to %APPDATA%: real folder False, package's LocalCache True
+04:00:35.088      a write to %LOCALAPPDATA% by the child program: real folder True, package's LocalCache False
+04:00:35.108      HKCU\Software\IssunSpikeProbe in the real registry: False
+04:00:35.197      startup task's record: State UserEnabledStartupOnce ----- ---------------------- 2 1
+04:00:38.035 == tray icon and menu, packaged
+04:00:42.095  ok   the packaged spike opened its tray menu and captured it
+04:00:42.131      icon rect: 1338,775 32x48
+04:00:44.782 == window and UI Automation, packaged
+04:00:45.706  ok   found the packaged spike's window
+04:00:48.790  ok   found Copy key and invoking it ran its handler
+04:00:48.917 == --screenshot, packaged
+04:00:50.507  ok   --screenshot wrote a PNG from inside the package
+04:00:53.331 == startup apps run again: Explorer restarted with its once-per-session flag cleared
+04:00:53.460      StartupHasBeenRun keys found: 1 (HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\1\StartupHasBeenRun)
+04:01:41.786      the app's own log at C:\Users\WDAGUtilityAccount\AppData\Local\Packages\IssunSpike.WinUI3_zfx5h6nf580cc\LocalCache\Local\IssunSpike\spike.log exists: False
+04:01:41.833      IssunSpike processes running: 0 
+04:01:41.857  FAIL Windows started the packaged spike at sign-in through its StartupTask
+04:01:45.251 == uninstall
+04:01:46.727  ok   removed
+04:01:46.748      its LocalCache left behind: False
+04:01:46.782      its startup record left behind: False

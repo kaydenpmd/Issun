@@ -26,6 +26,7 @@ Windows 11 Enterprise 10.0.26100 with no .NET installed. Pictures are dark mode.
 | 3 | `--screenshot` offscreen, and UI Automation | **Yes** to both, with caveats: needs a cloaked window, and a rasterization-scale setting |
 | 4 | Size and cold start against WPF | **Smaller** (77.95 MB against 82.18 MB) and **faster** to a usable window once unpacked (0.6 s against 1.8 s for a one-page WPF app); slower on the very first run (3.7 s against 2.8 s) |
 | 5 | The real ProgressRing and InfoBar mark, dark | Rendered; the success mark matches the WPF copy, the ring is the real control |
+| 6 | MSIX, the Microsoft Store's route | **Yes**: packages as a full-trust MSIX, installs from a signed `.msix`, and everything Issun needs works inside it; AppData and HKCU writes are redirected; the app turns its StartupTask on and off, but launching at sign-in wasn't seen (the sandbox can't sign back in) |
 
 ### 1. One `.exe` on a clean PC: yes
 
@@ -188,6 +189,96 @@ side at eight points of their 2 s loop.
   A WinUI Issun would need a Composition blur (Win2D's GaussianBlurEffect
   through an effect brush) for those two.
 
+### 6. MSIX packaging (the Microsoft Store's route): yes
+
+Added at the owner's yes on 12 Nov 2026, after the decision "for now, only
+store, and winget piggybacking off of store". Built with `-p:SpikePackaged=true`
+(`Package.appxmanifest`, single-project MSIX, no packaging project), signed
+with a throwaway self-signed certificate (`CN=IssunSpikeTest`, made in memory
+and saved as files; trusted only inside the sandbox, in
+`LocalMachine\TrustedPeople`; nothing added to this PC's certificate stores),
+installed with `Add-AppxPackage` in a fresh sandbox (`sandbox/msix-run.ps1`,
+`results/sandbox-msix-run1` and `-run2`). Nothing was submitted anywhere.
+
+- **Packaging: yes.** One project; `WindowsPackageType=MSIX`, `runFullTrust`,
+  a `windows.startupTask` extension and an execution alias (for the tests).
+  The build would only sign from a certificate in the user's store (APPX0105
+  with a password-protected `.pfx`), so it builds unsigned and the `.msix` is
+  signed afterwards with `signtool` from the SDK build-tools package. The
+  Store signs the copy it distributes, so this only matters for test builds.
+- **Size:** the `.msix` is **55.7 MB** (58,405,148 bytes), 368 files and 140 MB
+  installed. It carries .NET (there is no .NET framework package) but not the
+  Windows App SDK.
+- **The Windows App SDK runtime is a dependency, not inside.** The package
+  declares `Microsoft.WindowsAppRuntime.2` at least 2.6.5.0 (from Microsoft).
+  Installed alone, Windows refused it: `0x80073CF3`, "Package failed updates,
+  dependency or conflict validation"; the 2.2 copy Windows 24H2 ships (CBS)
+  doesn't count. With the runtime package beside it (`Dependencies\x64\
+  Microsoft.WindowsAppRuntime.2.msix`, 47.9 MB, built alongside) it installed in
+  5 s. From the Store this is automatic: the Store installs framework
+  dependencies with the app. Sideloaded, someone has to supply it.
+- **Runs, full trust:** from `C:\Program Files\WindowsApps\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc\IssunSpike.exe`,
+  with package identity.
+- **StartupTask: the app turns it on and off itself.** `StartupTask.GetAsync`
+  read Disabled, `RequestEnableAsync` returned **Enabled** with no prompt,
+  `Disable()` gave **Disabled**, and enabled again it was recorded in the
+  user's registry (`State 2`).
+  **Whether Windows then starts it at sign-in wasn't seen.** Signing the
+  sandbox out ended its session for good: it never signed back in, so nothing
+  could be checked (`sandbox-msix-run1`). Making Explorer run the startup apps
+  again instead (clearing `SessionInfo\1\StartupHasBeenRun` and restarting
+  Explorer, `sandbox-msix-run2`) didn't start it either, after 40 s, so
+  packaged startup tasks aren't launched that way. Microsoft documents that an
+  enabled StartupTask starts the app at sign-in; to see it, install on a
+  machine that can sign out and back in (a Hyper-V VM, not this PC).
+- **Tray icon and menu:** work from inside the package (`msix-tray/tray-menu.png`).
+- **127.0.0.1 listener:** Kestrel on a free port (59828 and 56551, never 8787) answered
+  `ok` to itself and to `Invoke-WebRequest` from outside the package.
+- **Named pipe:** the packaged app connected as a client to a pipe served
+  outside it (as Issun connects to Discord's), sent a line and got the
+  server's reply (`msix-spike.log`: "pipeReply: hello back from the pipe
+  server"). Run 1 marked it failed because closing the writer after the
+  server hung up threw and overwrote the result, the test's bug; run 2 keeps
+  both and passes.
+- **Running other programs:** a stand-in `tailscale.exe` (there is no Tailscale
+  in the sandbox) ran from `C:\Program Files\Tailscale` both by full path and
+  through `PATH`, and its output was read back. **It ran outside the package**
+  (it reported no package identity) and its own AppData writes went to the real
+  folder, so the real `tailscale` CLI would behave as it does today. `winget`
+  isn't in Windows Sandbox, so it couldn't be tried; `cmd /c ver` ran.
+- **AppData and HKCU writes are redirected.** Files the app wrote to
+  `%LOCALAPPDATA%` and `%APPDATA%` landed in
+  `%LOCALAPPDATA%\Packages\<family>\LocalCache\Local` and `\Roaming`, not the
+  real folders, though the app saw the usual paths; its HKCU write never
+  reached the real registry. It **could read** a settings file already in the
+  real `%APPDATA%` before it was installed. So a Store Issun would find the
+  owner's existing settings, but whatever it writes from then on stays with the
+  package and is deleted with it, and other programs (and the owner, browsing
+  `%LOCALAPPDATA%\Issun`) won't see new logs there. The manifest can opt out
+  (`desktop6:FileSystemWriteVirtualization` and `desktop6:RegistryWriteVirtualization`
+  set to disabled, with the restricted capability `unvirtualizedResources`,
+  which the Store reviews); not tried.
+- **UI Automation and `--screenshot`** work from inside the package, as outside.
+- **Uninstall:** `Remove-AppxPackage` removed it, and with it the package's
+  `LocalCache` (so everything it had written to AppData) and its startup
+  record (`sandbox-msix-run2`). The settings file in the real `%APPDATA%`
+  that it had only read stayed.
+
+For Issun this means, measured here:
+- `SelfInstall`, the Run key and the Apps entry go; the StartupTask replaces
+  the Run key (a Run-key write from inside the package would be redirected
+  and never seen by Windows).
+- Question 1's 180 MB unpacked into `%TEMP%` doesn't happen: an installed
+  package's files are already on disk, so there is no single-file extraction.
+- Logs and settings written by a Store Issun live under
+  `%LOCALAPPDATA%\Packages\<family>\LocalCache\`, and go when it's
+  uninstalled. Anything that reads `%LOCALAPPDATA%\Issun\issun.log` directly
+  (Issun's CLAUDE.md tells sessions to) would need the new path, unless the
+  manifest opts out of the redirection.
+- WPF can be packaged the same way (Issun's CLAUDE.md, Distribution), so the
+  Store doesn't require WinUI 3; this spike only shows that WinUI 3 doesn't
+  stand in the Store's way.
+
 ## What a migration would cost
 
 Measured or counted, not guessed:
@@ -229,6 +320,12 @@ ones, and each hand-drawn copy is a small migration paid anyway without
 getting the real control. If the window is close to done, staying on WPF and
 drawing the odd control by hand is cheaper.
 
+With the Microsoft Store as the way Issun ships (decided 12 Nov 2026), the
+two biggest WinUI costs above shrink: there is no `%TEMP%` unpacking, because
+the package's files are installed, and the Windows App SDK runtime is a
+framework the Store installs once, alongside. The rewrite of both views
+remains. The Store route itself works with either framework.
+
 If you go ahead: do it on its own branch, port the setup window first (the
 smallest and newest view), keep the view models, take `TrayIcon.cs` and the
 cloaked-window screenshot from this spike, reference
@@ -241,5 +338,8 @@ delete stale `%TEMP%\.net\Issun\*` folders when it starts.
   `Native.cs`, `SpikeLog.cs`: the spike. Modes are listed at the top of `App.xaml.cs`.
 - `../baseline-wpf/`: the WPF baseline for cold start.
 - `sandbox/run.ps1`, `sandbox/test.ps1`: the clean-PC runs.
+- `Package.appxmanifest`, `Assets/`, `PackageTest.cs`: the MSIX build (`-p:SpikePackaged=true`) and its in-package checks (`--package-test`).
+- `sandbox/msix-run.ps1`, `sandbox/msix-test.ps1`: installing and checking the MSIX in Windows Sandbox.
+- `../fake-cli/`: the stand-in `tailscale.exe` for the sandbox.
 - `tools/wpf-ring-frames.ps1`: renders Issun's WPF ProgressRing at set points.
-- `results/`: pictures, both sandbox runs' reports, logs and captures.
+- `results/`: pictures, the sandbox runs' reports, logs and captures (`sandbox-run1`, `sandbox-run2`, `sandbox-msix-run1`, `sandbox-msix-run2`).

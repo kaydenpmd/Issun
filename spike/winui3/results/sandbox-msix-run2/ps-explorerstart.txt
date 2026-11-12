@@ -1,0 +1,2 @@
+04:00:53.331 == startup apps run again: Explorer restarted with its once-per-session flag cleared
+04:00:53.460      StartupHasBeenRun keys found: 1 (HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\1\StartupHasBeenRun)

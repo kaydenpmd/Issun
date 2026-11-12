@@ -49,12 +49,14 @@ public partial class App : Application
             var value = i + 1 < args.Length && !args[i + 1].StartsWith("--") ? args[++i] : null;
             _opt[name] = value;
         }
+        PackageTest.LogActivation();
         int code;
         try
         {
             if (Has("screenshot")) code = await ScreenshotAsync(Opt("screenshot")!);
             else if (Has("tray-test")) code = await TrayTestAsync(Opt("tray-test")!);
             else if (Has("ring-frames")) code = await RingFramesAsync(Opt("ring-frames")!);
+            else if (Has("package-test")) code = await PackageTest.RunAsync(Opt("package-test")!, int.Parse(Opt("port")!), Opt("pipe")!, Has("leave-startup-on"));
             else { ShowWindow(); return; }
         }
         catch (Exception ex)

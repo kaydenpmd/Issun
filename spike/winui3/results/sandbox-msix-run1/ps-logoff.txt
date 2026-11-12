@@ -1,0 +1,1 @@
+03:49:19.667 == signing out with the StartupTask left on

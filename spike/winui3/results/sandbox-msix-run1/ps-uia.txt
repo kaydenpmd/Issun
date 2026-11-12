@@ -1,0 +1,5 @@
+03:49:11.203 == window and UI Automation, packaged
+03:49:11.892  ok   found the packaged spike's window
+03:49:14.969  ok   found Copy key and invoking it ran its handler
+03:49:15.129 == --screenshot, packaged
+03:49:16.891  ok   --screenshot wrote a PNG from inside the package

@@ -1,0 +1,3 @@
+04:01:41.786      the app's own log at C:\Users\WDAGUtilityAccount\AppData\Local\Packages\IssunSpike.WinUI3_zfx5h6nf580cc\LocalCache\Local\IssunSpike\spike.log exists: False
+04:01:41.833      IssunSpike processes running: 0 
+04:01:41.857  FAIL Windows started the packaged spike at sign-in through its StartupTask

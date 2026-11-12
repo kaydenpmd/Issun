@@ -1,0 +1,3 @@
+03:49:04.454 == tray icon and menu, packaged
+03:49:08.493  ok   the packaged spike opened its tray menu and captured it
+03:49:08.527      icon rect: 1338,775 32x48

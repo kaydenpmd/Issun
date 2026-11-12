@@ -1,0 +1,8 @@
+03:48:39.472 == install
+03:48:45.382      without the runtime dependency: refused: Deployment failed with HRESULT: 0x80073CF3, Package failed updates, dependency or conflict validation.
+03:48:50.432      with the runtime dependency: took 4989 ms
+03:48:50.457  ok   the package is installed: IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc
+03:48:50.534      install location C:\Program Files\WindowsApps\IssunSpike.WinUI3_1.0.0.0_x64__zfx5h6nf580cc, signature kind Developer, dependencies: Microsoft.WindowsAppRuntime.2 2.6.5.0
+03:48:50.614      installed: 368 files, 140 MB
+03:48:50.653      Windows App Runtime framework now: Microsoft.WindowsAppRuntime.2 2.6.5.0, C:\Program Files\WindowsApps\Microsoft.WindowsAppRuntime.2_2.6.5.0_x64__8wekyb3d8bbwe
+03:48:50.674  ok   the execution alias exists (C:\Users\WDAGUtilityAccount\AppData\Local\Microsoft\WindowsApps\IssunSpike.exe)

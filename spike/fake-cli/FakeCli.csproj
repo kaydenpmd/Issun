@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Stands in for tailscale.exe in the sandbox, which has no Tailscale: put
+       at C:\Program Files\Tailscale\tailscale.exe, it says whether a program
+       started from inside the MSIX runs in the package too, and writes a probe
+       file to see where its AppData writes land. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>tailscale</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+</Project>

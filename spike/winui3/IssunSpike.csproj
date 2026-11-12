@@ -15,8 +15,10 @@
     <UseWinUI>true</UseWinUI>
     <!-- Unpackaged (no MSIX) and carrying its own copy of the Windows App SDK,
          so nothing has to be installed first: Issun's model. -->
-    <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsPackageType Condition="'$(SpikePackaged)' != 'true'">None</WindowsPackageType>
+    <WindowsAppSDKSelfContained Condition="'$(SpikePackaged)' != 'true'">true</WindowsAppSDKSelfContained>
+    <!-- .NET has no framework package, so a packaged .NET app carries its own
+         runtime either way. -->
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Platforms>x64</Platforms>
@@ -27,6 +29,23 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- -p:SpikePackaged=true: a full-trust MSIX (Package.appxmanifest), the
+       Microsoft Store's shape. The Windows App SDK is then a framework package
+       the MSIX depends on, as the Store prefers, not a copy inside it. Signed
+       afterwards with a throwaway test certificate (REPORT.md, question 6). -->
+  <PropertyGroup Condition="'$(SpikePackaged)' == 'true'">
+    <WindowsPackageType>MSIX</WindowsPackageType>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
+    <!-- Signed afterwards with signtool and the test .pfx: the build only signs
+         from a certificate in the user's store (APPX0105 with a .pfx). -->
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <AppxBundle>Never</AppxBundle>
+    <GenerateTestArtifacts>false</GenerateTestArtifacts>
+    <AppxPackageDir>$(SpikePackageOut)\</AppxPackageDir>
+    <DefineConstants>$(DefineConstants);SPIKE_PACKAGED</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

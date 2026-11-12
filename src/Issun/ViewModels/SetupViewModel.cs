@@ -349,6 +349,9 @@ public sealed class SetupViewModel : Observable, IDisposable
 
 
     public AsyncCommand GetTailscaleCommand { get; }
+
+    /// <summary>The command the install link runs, word for word, shown as its note.</summary>
+    public string InstallCommandText { get; } = "winget " + string.Join(' ', Core.Platform.TailscaleCli.WingetInstallArguments);
     public AsyncCommand CheckTailscaleCommand { get; }
     public AsyncCommand EnableFunnelCommand { get; }
     public AsyncCommand EnableUnattendedCommand { get; }

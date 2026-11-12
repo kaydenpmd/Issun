@@ -23,6 +23,39 @@
          left a field blank the text was taken out, not emptied. The Tailscale
          page's two cards are still Claude's drafts, waiting on the owner. -->
     <UserControl.Resources>
+        <!-- A command link, Windows' title-and-note button, measured from a
+             Windows 11 24H2 task dialog (design library, microsoft/command-links):
+             an arrow about 20 px at x+3, the title about 16 px at x+34, the note
+             about 12 px under it, ink 15 px below the top, no box at rest. The
+             task dialog's #0078D7 becomes Fluent's accent text colour, since
+             Windows draws no dark command link. The hover fill is
+             SubtleFillColorSecondary: the task dialog's hover wasn't captured. -->
+        <Style x:Key="CommandLink" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Box" Background="Transparent" CornerRadius="4" Padding="3,9,8,9">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE72A;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                                           FontSize="20" Width="20" Margin="0,0,11,0" VerticalAlignment="Top"
+                                           Foreground="{TemplateBinding Foreground}" />
+                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" />
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="MainInstruction" TargetType="TextBlock">
             <Setter Property="FontSize" Value="28" />
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
@@ -112,10 +145,20 @@
                                 <StackPanel>
                                     <TextBlock Text="Tailscale" Style="{StaticResource RowTitle}" />
                                     <TextBlock Text="{Binding TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
+                                    <!-- Installing Tailscale: a command link whose note is the
+                                         exact winget command it runs, so people see it before
+                                         they click (the owner, 12 Nov 2026). The title is
+                                         theirs to write; the command is the code's own. -->
+                                    <Button Style="{StaticResource CommandLink}" Command="{Binding GetTailscaleCommand}"
+                                            Margin="-3,8,0,0" AutomationProperties.AutomationId="InstallTailscale"
+                                            Visibility="{Binding OfferInstall, Converter={StaticResource Visible}}">
+                                        <StackPanel>
+                                            <TextBlock Text="[text]" FontSize="16" />
+                                            <TextBlock Text="{Binding InstallCommandText}" FontSize="12" TextWrapping="Wrap"
+                                                       FontFamily="{StaticResource MonoFont}" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </Button>
                                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                        <Button Content="Get Tailscale" Command="{Binding GetTailscaleCommand}"
-                                                Style="{DynamicResource AccentButtonStyle}" Margin="0,0,8,0"
-                                                Visibility="{Binding OfferInstall, Converter={StaticResource Visible}}" />
                                         <Button Content="Turn on Funnel" Command="{Binding EnableFunnelCommand}"
                                                 Style="{DynamicResource AccentButtonStyle}" Margin="0,0,8,0"
                                                 Visibility="{Binding OfferFunnel, Converter={StaticResource Visible}}" />

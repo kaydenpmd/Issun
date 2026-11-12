@@ -273,8 +273,7 @@ if ($Step -eq "tailscale") {
     Dump $w "Tailscale page before"
     Shot "tailscale-before" $w
     $ts = Get-ChildItem "$env:LOCALAPPDATA\Issun" -ErrorAction SilentlyContinue | Out-Null
-    $buttons = $w.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-    $get = $buttons | Where-Object { $_.Current.Name -notin @("Check again","Back","Next","Cancel","Close","Turn on Funnel","Turn on") -and -not $_.Current.IsOffscreen } | Select-Object -First 1
+    $get = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "InstallTailscale")))
     if (-not $get) { Say "FAIL no install button"; exit 1 }
     Say "pressing '$($get.Current.Name)'"
     $get.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()

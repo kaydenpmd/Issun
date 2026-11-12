@@ -189,9 +189,12 @@ if ($Step -in @("all","first")) {
     Expect "Back returns to Connect your source" (OnPage $w "Connect your source")
     ClickId $w "Skip" | Out-Null; Start-Sleep 2
     Dump $w "page 3"; Shot "setup-page-3" $w
-    Click $w "Close" | Out-Null
+    Expect "Next is gone on the last page" (-not ($w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Next")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))))) | Where-Object { -not $_.Current.IsOffscreen }))
+    ClickId $w "LaunchOnStartup" | Out-Null
     Start-Sleep 3
-    Expect "setup window closed by Close" (-not (FindWindow "Set up Issun" 1))
+    Expect "choosing to launch on startup closes setup" (-not (FindWindow "Set up Issun" 1))
     Expect "Start with Windows registered (ticked by default)" ((Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)
     $main = FindWindow "Issun" 10
     if ($main) { CheckFits $main "main"; Shot "main" $main }

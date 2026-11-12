@@ -71,6 +71,9 @@ public sealed class SetupViewModel : Observable, IDisposable
             Go(_page + 1);
         });
         CloseCommand = new Command(() => CloseRequested?.Invoke());
+        // The last page's two answers: each applies itself and finishes setup.
+        LaunchOnStartupCommand = new Command(() => Finish(true));
+        DontLaunchOnStartupCommand = new Command(() => Finish(false));
         OpenPortalCommand = new Command(() => Open(DeveloperPortal, "the Discord Developer Portal"));
         // Installs with winget, as the owner asked (12 Nov 2026). Where there is
         // no winget (some Windows 10 and LTSC installs, Windows Sandbox) it opens
@@ -166,6 +169,16 @@ public sealed class SetupViewModel : Observable, IDisposable
     public bool OnDiscordPage => _page == SetupPage.Discord;
     public bool OnTailscalePage => _page == SetupPage.Tailscale;
     public bool OnStartPage => _page == SetupPage.StartWithWindows;
+
+    public Command LaunchOnStartupCommand { get; }
+    public Command DontLaunchOnStartupCommand { get; }
+
+    private void Finish(bool launchOnStartup)
+    {
+        Log.Write($"[setup] chose {(launchOnStartup ? "to launch" : "not to launch")} Issun on startup; finishing setup");
+        StartWithWindows = launchOnStartup;
+        CloseRequested?.Invoke();
+    }
     public bool OnSourcePage => _page == SetupPage.Source;
 
     /// <summary>"Cancel" until the last page, then "Close": Microsoft's wizard rule once the task is done.</summary>

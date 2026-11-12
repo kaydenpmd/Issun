@@ -201,15 +201,21 @@
 
                 <!-- ───────────── 3. Start with Windows ───────────── -->
                 <StackPanel Visibility="{Binding OnStartPage, Converter={StaticResource Visible}}">
-                    <TextBlock Text="Launch Issun on startup?" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
+                    <TextBlock Text="Launch Issun on startup?" Style="{StaticResource MainInstruction}" Margin="0,0,0,12" />
 
-                    <Border Style="{StaticResource Card}">
-                        <DockPanel>
-                            <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0"
-                                      IsChecked="{Binding StartWithWindows}" AutomationProperties.Name="Start with Windows" />
-                            <TextBlock Text="Launch minimized on Windows startup" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
-                        </DockPanel>
-                    </Border>
+                    <!-- A fork in the road (the owner, 12 Nov 2026): two command
+                         links, the control Windows made for a choice between
+                         paths, in place of a checkbox card that repeated the
+                         title. Each applies its answer and finishes setup.
+                         Their words are the owner's to write. -->
+                    <Button Style="{StaticResource CommandLink}" Command="{Binding LaunchOnStartupCommand}"
+                            AutomationProperties.AutomationId="LaunchOnStartup">
+                        <TextBlock Text="[text]" FontSize="16" />
+                    </Button>
+                    <Button Style="{StaticResource CommandLink}" Command="{Binding DontLaunchOnStartupCommand}"
+                            AutomationProperties.AutomationId="DontLaunchOnStartup">
+                        <TextBlock Text="[text]" FontSize="16" />
+                    </Button>
                 </StackPanel>
 
                 <!-- ───────────── 4. Source ───────────── -->

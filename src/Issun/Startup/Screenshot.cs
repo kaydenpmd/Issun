@@ -6,6 +6,7 @@ using Issun.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
@@ -66,13 +67,15 @@ public static class Screenshot
             SetupViewModel? setup = options.SetupPage is { } n ? new SetupViewModel(host, dispatcher, (SetupPage)n) : null;
             if (options.Expanded)
                 setup?.ShowQrForScreenshot();
-            var page = new Border
-            {
-                Background = (Brush)Application.Current.Resources["SolidBackgroundFillColorBaseBrush"],
-                Width = setup is null ? Width : 600,
-                VerticalAlignment = VerticalAlignment.Top,
-                Child = setup is null ? new MainView(vm) : new SetupView(setup),
-            };
+            // The background as a ThemeResource, resolved once the page is in
+            // the window. Looked up by key in code instead, it threw "Cannot
+            // find a resource with the given key" in the published build in
+            // Windows Sandbox (12 Nov 2026), though the debug build found it.
+            var page = (Border)XamlReader.Load(
+                "<Border xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" " +
+                "Background=\"{ThemeResource SolidBackgroundFillColorBaseBrush}\" VerticalAlignment=\"Top\" />");
+            page.Width = setup is null ? Width : 600;
+            page.Child = setup is null ? new MainView(vm) : new SetupView(setup);
             var loaded = new TaskCompletionSource();
             page.Loaded += (_, _) => loaded.TrySetResult();
 

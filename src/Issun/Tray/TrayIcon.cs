@@ -57,7 +57,8 @@ public sealed class TrayIcon : IDisposable
         };
         if (RegisterClassExW(ref wc) == 0)
             Log.Write($"[ui] the tray icon's window class wasn't registered (error {Marshal.GetLastWin32Error()})");
-        _hwnd = CreateWindowExW(0, WindowClass, "Issun", 0, 0, 0, 0, 0, 0, 0, inst, 0);
+        // No title: a window named Issun would be found in place of the main one.
+        _hwnd = CreateWindowExW(0, WindowClass, "", 0, 0, 0, 0, 0, 0, 0, inst, 0);
         if (_hwnd == 0)
             Log.Write($"[ui] the tray icon's window wasn't created (error {Marshal.GetLastWin32Error()})");
         _taskbarCreated = RegisterWindowMessageW("TaskbarCreated");

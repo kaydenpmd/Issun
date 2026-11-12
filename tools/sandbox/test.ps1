@@ -240,6 +240,26 @@ if ($Step -in @("all","again")) {
     $main = FindWindow "Issun" 5
     if ($main) { CheckFits $main "main" } else { Say "FAIL main window didn't show" }
     Shot "second-open" $null
+    # Start with Windows waits for Apply, like the settings above it (the owner, 12 Nov 2026).
+    if ($main) {
+        $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+        function RunEntry { [bool](Get-ItemProperty $runKey -ErrorAction SilentlyContinue).Issun }
+        $box = $main.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+            (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Start with Windows")),
+            (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::CheckBox)))))
+        if (-not $box) { Say "FAIL no Start with Windows checkbox" } else {
+            try { $box.GetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern).ScrollIntoView(); Start-Sleep -Milliseconds 500 } catch {}
+            $toggle = $box.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+            $before = RunEntry
+            $toggle.Toggle(); Start-Sleep 2
+            Expect "ticking Start with Windows changes nothing before Apply" ((RunEntry) -eq $before)
+            Click $main "Apply" | Out-Null; Start-Sleep 2
+            Expect "Apply changes it" ((RunEntry) -ne $before)
+            $toggle.Toggle(); Start-Sleep 1
+            Click $main "Apply" | Out-Null; Start-Sleep 2
+            Expect "and Apply puts it back" ((RunEntry) -eq $before)
+        }
+    }
 }
 
 # The notification-area icon, rewritten by hand for WinUI 3 (12 Nov 2026):

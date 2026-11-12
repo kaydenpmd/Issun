@@ -6,8 +6,10 @@ namespace Issun.ViewModels;
 
 // The Settings section. The form holds text as typed and is checked only on
 // Apply (Presentation.SettingsForm), so a half-typed port never reaches the
-// host. Start with Windows is the exception: it isn't a Setting, it applies the
-// moment it is clicked, and the tray menu shows the same value.
+// host. Start with Windows waits for Apply too (the owner, 12 Nov 2026: "don't
+// apply it straight away for the sake of consistency with the other
+// settings"), though it isn't a Setting but the Run key; the tray menu's item
+// still applies at once, having no Apply to wait for.
 public sealed partial class MainViewModel
 {
     /// <summary>The host's settings when the form was last loaded, to tell "the person edited this" from "the host changed underneath".</summary>
@@ -24,7 +26,11 @@ public sealed partial class MainViewModel
         RevertSettingsCommand = new Command(() =>
         {
             LoadFields(_host.Settings);
+            _loading = true;
+            try { StartWithWindowsField = _startWithWindows; }
+            finally { _loading = false; }
             SettingsErrors = null;
+            UpdateDirty();
         });
     }
 
@@ -57,6 +63,14 @@ public sealed partial class MainViewModel
         await _host.UpdateSettingsAsync(updated);
         _formBase = null;          // reload from what the host actually kept
         RefreshSettings();
+        if (_startWithWindowsField != _startWithWindows)
+        {
+            Log.Write($"[ui] Apply: start with Windows {OnOff(_startWithWindowsField)}");
+            _startWithWindows = _startWithWindowsField;
+            Raise(nameof(StartWithWindows));
+            await ApplyStartWithWindowsAsync(_startWithWindowsField);
+        }
+        UpdateDirty();
         SettingsSaved.Show("Saved");
     }
 
@@ -103,7 +117,7 @@ public sealed partial class MainViewModel
 
     private void UpdateDirty()
     {
-        SettingsDirty = SettingsForm.Differs(Fields(), _host.Settings);
+        SettingsDirty = SettingsForm.Differs(Fields(), _host.Settings) || _startWithWindowsField != _startWithWindows;
         ApplySettingsCommand.RaiseCanExecuteChanged();
     }
 
@@ -126,8 +140,8 @@ public sealed partial class MainViewModel
     // ─────────────────────────── Start with Windows ───────────────────────────
 
     /// <summary>
-    /// Bound to the checkbox and mirrored in the tray menu. The host's property
-    /// touches the registry or Task Scheduler, so both reading and writing it
+    /// What Windows does: the tray menu's tick, and set from it at once. The
+    /// host's property touches the registry, so both reading and writing it
     /// happen off the UI thread; this is the last value read back.
     /// </summary>
     public bool StartWithWindows
@@ -137,12 +151,28 @@ public sealed partial class MainViewModel
         {
             if (value == _startWithWindows)
                 return;
+            var fieldFollows = _startWithWindowsField == _startWithWindows;
             _startWithWindows = value;
             Raise();
+            if (fieldFollows)
+                FollowStartWithWindows();
             _ = ApplyStartWithWindowsAsync(value);
         }
     }
     private bool _startWithWindows;
+
+    /// <summary>The window's checkbox: a form field, applied by Apply with the rest.</summary>
+    public bool StartWithWindowsField { get => _startWithWindowsField; set { if (Set(ref _startWithWindowsField, value)) Edited(); } }
+    private bool _startWithWindowsField;
+
+    /// <summary>The checkbox takes Windows' value, as a reload, not an edit.</summary>
+    private void FollowStartWithWindows()
+    {
+        _loading = true;
+        try { StartWithWindowsField = _startWithWindows; }
+        finally { _loading = false; }
+        UpdateDirty();
+    }
 
     public string? StartWithWindowsError { get => _startWithWindowsError; private set => Set(ref _startWithWindowsError, value); }
     private string? _startWithWindowsError;
@@ -185,7 +215,13 @@ public sealed partial class MainViewModel
         try
         {
             var actual = await Task.Run(() => _host.StartWithWindows);
+            // The checkbox follows what Windows does, unless it's been edited.
+            var fieldFollows = _startWithWindowsField == _startWithWindows;
             Set(ref _startWithWindows, actual, nameof(StartWithWindows));
+            if (fieldFollows)
+                FollowStartWithWindows();
+            else
+                UpdateDirty();
             return actual;
         }
         catch (Exception ex)

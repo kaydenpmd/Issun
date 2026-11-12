@@ -231,6 +231,19 @@
                          AutomationProperties.Name="Port" />
             </tk:SettingsCard>
 
+            <!-- Above Apply, and applied by it, as the settings above it are
+                 (the owner, 12 Nov 2026). -->
+            <tk:SettingsCard Header="Start with Windows" Style="{StaticResource Row}">
+                <tk:SettingsCard.Description>
+                    <!-- No description (the owner, 12 Nov 2026); only an error, when
+                         Windows didn't take the change. -->
+                    <TextBlock Text="{x:Bind ViewModel.StartWithWindowsError}" Style="{StaticResource ErrorText}"
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError)}" />
+                </tk:SettingsCard.Description>
+                <CheckBox MinWidth="0" Padding="0" IsChecked="{x:Bind ViewModel.StartWithWindowsField, Mode=TwoWay}"
+                          AutomationProperties.Name="Start with Windows" />
+            </tk:SettingsCard>
+
             <StackPanel Padding="2,8,2,4" Margin="0,0,0,4">
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Apply" Command="{x:Bind ViewModel.ApplySettingsCommand}"
@@ -243,16 +256,7 @@
                            Visibility="{x:Bind v:Bind.Present(ViewModel.SettingsErrors)}" />
             </StackPanel>
 
-            <tk:SettingsCard Header="Start with Windows" Style="{StaticResource Row}">
-                <tk:SettingsCard.Description>
-                    <!-- No description (the owner, 12 Nov 2026); only an error, when
-                         Windows didn't take the change. -->
-                    <TextBlock Text="{x:Bind ViewModel.StartWithWindowsError}" Style="{StaticResource ErrorText}"
-                               Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError)}" />
-                </tk:SettingsCard.Description>
-                <CheckBox MinWidth="0" Padding="0" IsChecked="{x:Bind ViewModel.StartWithWindows, Mode=TwoWay}"
-                          AutomationProperties.Name="Start with Windows" />
-            </tk:SettingsCard>
+
 
             <!-- ───────────── Diagnostics ───────────── -->
             <!-- SettingsExpander, as Windows 11 Settings' rows that open (the

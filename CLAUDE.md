@@ -712,7 +712,10 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    chat. Its new fields (`tailscale.check`, `tailscale.funnel`,
    `tailscale.unattended.*`) have no answers yet. `discord.id.saveFailed` is
    "[have me write error messages myself eventually]": the sample stays until
-   they do. Cancel stays: the owner wanted it only if it's standard in this
+   they do. The Discord page's live status line ("Set the Discord application
+   ID in Settings. ...", older text shared with the main window) stays as it
+   is: asked whether to put it on the wording page, the owner said "Leave it".
+   Cancel stays: the owner wanted it only if it's standard in this
    kind of window, and Microsoft's wizard guidance puts Cancel in every
    wizard's command area, title-bar X or not. The six commits from
    `8b556b8` to `7d902f8` aren't pushed, because a push releases, and the

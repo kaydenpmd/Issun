@@ -192,9 +192,16 @@ if ($Step -in @("all","first")) {
     Expect "Next is gone on the last page" (-not ($w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Next")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))))) | Where-Object { -not $_.Current.IsOffscreen }))
-    ClickId $w "LaunchOnStartup" | Out-Null
+    function Picked($id) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))); return [bool]($r -and $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) }
+    function Pick($id) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))); $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Say "picked $id" }
+    Shot "setup-page-3-radios" $w
+    Expect "Yes is picked on a first run" (Picked "LaunchYes")
+    Pick "LaunchNo"; Start-Sleep 2
+    Expect "No removes Issun from startup" (-not (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)
+    Pick "LaunchYes"; Start-Sleep 2
+    Click $w "Close" | Out-Null
     Start-Sleep 3
-    Expect "choosing to launch on startup closes setup" (-not (FindWindow "Set up Issun" 1))
+    Expect "Close finishes setup" (-not (FindWindow "Set up Issun" 1))
     Expect "Start with Windows registered (ticked by default)" ((Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)
     $main = FindWindow "Issun" 10
     if ($main) { CheckFits $main "main"; Shot "main" $main }

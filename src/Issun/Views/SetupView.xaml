@@ -203,19 +203,15 @@
                 <StackPanel Visibility="{Binding OnStartPage, Converter={StaticResource Visible}}">
                     <TextBlock Text="Launch Issun on startup?" Style="{StaticResource MainInstruction}" Margin="0,0,0,12" />
 
-                    <!-- A fork in the road (the owner, 12 Nov 2026): two command
-                         links, the control Windows made for a choice between
-                         paths, in place of a checkbox card that repeated the
-                         title. Each applies its answer and finishes setup.
-                         Their words are the owner's to write. -->
-                    <Button Style="{StaticResource CommandLink}" Command="{Binding LaunchOnStartupCommand}"
-                            AutomationProperties.AutomationId="LaunchOnStartup">
-                        <TextBlock Text="[text]" FontSize="16" />
-                    </Button>
-                    <Button Style="{StaticResource CommandLink}" Command="{Binding DontLaunchOnStartupCommand}"
-                            AutomationProperties.AutomationId="DontLaunchOnStartup">
-                        <TextBlock Text="[text]" FontSize="16" />
-                    </Button>
+                    <!-- Yes and No radio buttons under the question (the owner,
+                         12 Nov 2026: "radiobuttons for yes and no for the launch
+                         at startup or whatever page would be perfect"), in place
+                         of a checkbox card that repeated the title. The choice
+                         applies as it's picked; Close finishes. -->
+                    <RadioButton Content="Yes" GroupName="LaunchOnStartup" IsChecked="{Binding LaunchYes}" Margin="2,0,0,8"
+                                 AutomationProperties.AutomationId="LaunchYes" />
+                    <RadioButton Content="No" GroupName="LaunchOnStartup" IsChecked="{Binding LaunchNo}" Margin="2,0,0,0"
+                                 AutomationProperties.AutomationId="LaunchNo" />
                 </StackPanel>
 
                 <!-- ───────────── 4. Source ───────────── -->

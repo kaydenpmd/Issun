@@ -424,7 +424,15 @@ run of a build that has this.
 ever, and from **Set up again** in Settings after that. Four pages, in the
 owner's order of 12 Nov 2026:
 1. **Discord**: the application ID, applied 0.6 s after it looks like a 17–20
-   digit ID, with the live Discord status under it.
+   digit ID, with the live Discord status under it. **Next waits for Discord
+   to accept the ID** (the owner, 13 Nov 2026: "can the first setup page
+   actually check if you did the discord thing correctly"): greyed out until
+   Discord's handshake with the ID in the box comes back READY, as Connect
+   your source's Next waits for a source. The status line says why it waits
+   (no ID, Discord's 4000 for an ID it refuses, or Discord not running), so
+   the check added no words. Skip is the way past without Discord. The
+   sandbox has no Discord, so its steps Skip this page; Next turning on with
+   a real ID is for the owner's PC to show.
 2. **Tailscale** ("Make this PC reachable with a Tailscale Funnel", the owner's
    title): the install button runs `winget install --id Tailscale.Tailscale
    --exact` (by id: the name matches four packages and winget stops to ask),

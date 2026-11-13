@@ -72,7 +72,12 @@ public sealed class SetupViewModel : Observable, IDisposable
         {
             Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
             if (_page == SetupPage.Tailscale) TailscaleError = $"[text] {ex.Message}";
-        }, () => _page != SetupPage.Source || Pairing.SourceConnected);
+        }, () => _page switch
+        {
+            SetupPage.Discord => DiscordAccepted,
+            SetupPage.Source => Pairing.SourceConnected,
+            _ => true,
+        });
         SkipCommand = new Command(() =>
         {
             Log.Write($"[setup] Skip on the {Describe(_page)} page");
@@ -281,6 +286,7 @@ public sealed class SetupViewModel : Observable, IDisposable
             ClientIdProblem = null;
             if (LooksLikeId(value.Trim()))
                 _applyId.Start();
+            DiscordAcceptedChanged();
         }
     }
 
@@ -311,8 +317,46 @@ public sealed class SetupViewModel : Observable, IDisposable
         }
     }
 
-    public string? ClientIdProblem { get => _clientIdProblem; private set => Set(ref _clientIdProblem, value); }
+    public string? ClientIdProblem
+    {
+        get => _clientIdProblem;
+        private set
+        {
+            if (Set(ref _clientIdProblem, value))
+                DiscordAcceptedChanged();
+        }
+    }
     private string? _clientIdProblem;
+
+    /// <summary>
+    /// Whether Discord has accepted the application ID in the box: Discord's
+    /// handshake with it came back READY (the owner, 13 Nov 2026: "can the
+    /// first setup page actually check if you did the discord thing
+    /// correctly"). Next waits for it, as Connect your source's Next waits for
+    /// a source, and the status line under the ID says why it's waiting:
+    /// no ID, an ID Discord refuses (4000), or Discord not running. Skip is the
+    /// way past. An ID still being typed, or one that differs from the ID
+    /// Issun is using, isn't accepted yet, whatever the connection says.
+    /// </summary>
+    public bool DiscordAccepted =>
+        _snapshot.Discord.State == DiscordLinkState.Connected
+        && ClientIdProblem is null
+        && _clientId.Trim() == _host.Settings.DiscordClientId;
+
+    private bool? _discordAcceptedLogged;
+
+    private void DiscordAcceptedChanged()
+    {
+        var accepted = DiscordAccepted;
+        if (_page == SetupPage.Discord && accepted != _discordAcceptedLogged)
+        {
+            _discordAcceptedLogged = accepted;
+            Log.Write(accepted
+                ? "[setup] Discord accepted the application ID, Next available"
+                : "[setup] Discord hasn't accepted an application ID, Next greyed out");
+        }
+        NextCommand?.RaiseCanExecuteChanged();
+    }
 
     public StatusLine DiscordStatus { get => _discordStatus; private set => Set(ref _discordStatus, value); }
     private StatusLine _discordStatus = new("Not connected", StatusLevel.Neutral);
@@ -462,6 +506,7 @@ public sealed class SetupViewModel : Observable, IDisposable
             _discordLogged = DiscordStatus.Text;
             Log.Write($"[setup] Discord: {_discordLogged}");
         }
+        DiscordAcceptedChanged();
 
         TailscaleStatus = StatusText.Tailscale(s.Tailscale, s.Server.Port);
         OfferInstall = s.Tailscale is { Installed: false };

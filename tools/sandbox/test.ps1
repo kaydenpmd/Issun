@@ -185,7 +185,13 @@ if ($Step -in @("all","first")) {
     Dump $w "page 0"; Shot "setup-page-0" $w
     function SkipShown { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "Skip"))); return [bool]($r -and $r.Current.Name -eq "Skip" -and -not $r.Current.IsOffscreen) }
     Expect "Skip on the Discord page" (SkipShown)
-    Click $w "Next" | Out-Null; Start-Sleep 3
+    # No Discord here, so Discord can't accept an ID: Next waits, Skip moves on.
+    $next0 = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Next")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
+    Expect "Next is greyed out until Discord accepts an ID" ($next0 -and -not $next0.Current.IsEnabled)
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3
+    Expect "Skip leads to the Tailscale page" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
     Dump $w "page 1"; Shot "setup-page-1" $w
     Click $w "Next" | Out-Null; Start-Sleep 4
     Expect "Next stays on the Tailscale page without Tailscale" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
@@ -403,7 +409,7 @@ if ($Step -eq "tailscale") {
     $w = FindWindow "Set up Issun" 90
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
     Start-Sleep 3
-    Click $w "Next" | Out-Null
+    ClickId $w "Skip" | Out-Null  # past the Discord page: no Discord here, so Next waits
     Start-Sleep 3
     Dump $w "Tailscale page before"
     Shot "tailscale-before" $w
@@ -444,7 +450,7 @@ if ($Step -eq "address") {
     $w = FindWindow "Set up Issun" 90
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
     Start-Sleep 3
-    Click $w "Next" | Out-Null; Start-Sleep 3
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3  # past the Discord page: no Discord here, so Next waits
     ClickId $w "Skip" | Out-Null; Start-Sleep 3
     $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")),
@@ -488,7 +494,7 @@ if ($Step -eq "qrrules") {
     $w = FindWindow "Set up Issun" 90
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
     Start-Sleep 3
-    Click $w "Next" | Out-Null; Start-Sleep 3
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3  # past the Discord page: no Discord here, so Next waits
     ClickId $w "Skip" | Out-Null; Start-Sleep 3
     $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")),

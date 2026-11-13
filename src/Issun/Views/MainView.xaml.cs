@@ -33,6 +33,27 @@ public sealed partial class MainView : UserControl
         {
             viewModel.LogUpdated -= OnLogUpdated;
         };
+        // The cover's hairline is one physical pixel at any scale, and follows
+        // the window to a screen with another scale.
+        Loaded += (_, _) =>
+        {
+            if (XamlRoot is null)
+                return;
+            SizeHairline();
+            XamlRoot.Changed += (_, _) => SizeHairline();
+        };
+    }
+
+    private double _hairlineScale;
+
+    private void SizeHairline()
+    {
+        var scale = XamlRoot?.RasterizationScale ?? 1;
+        if (scale <= 0 || scale == _hairlineScale)
+            return;
+        _hairlineScale = scale;
+        CoverHairline.BorderThickness = new Thickness(1 / scale);
+        Core.Log.Write($"[ui] cover hairline: 1 px at scale {scale:0.##} ({1 / scale:0.###} epx)");
     }
 
     public MainViewModel ViewModel { get; }

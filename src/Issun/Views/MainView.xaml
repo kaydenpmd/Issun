@@ -45,12 +45,14 @@
                     <!-- Cover, or a placeholder when there is none. An
                          ImageBrush rather than an Image so the corners clip.
 
-                         The hairline is Windows 11's own convention for a
-                         surface edge, and every value comes from Windows rather
-                         than from here. Width 1: Microsoft Learn, "Layering and
-                         elevation", gives every surface a stroke width of 1.
-                         Colour: the theme's ControlStrokeColorDefault, the same
-                         stroke Windows puts on buttons and combo boxes. Corners:
+                         The hairline is the owner's policy for pictures (13 Nov
+                         2026), not Windows': Quick Settings' media card draws
+                         none. Width: one physical pixel at any scale, as Apple
+                         Music for Windows draws its covers' (measured at 150%,
+                         where 1 epx would be 1.5 px and WinUI drew 2).
+                         Colour: the theme's ControlStrokeColorDefault, the
+                         stroke an unfocused combo box and a pressed button
+                         wear. Corners:
                          ControlCornerRadius, 4, which Microsoft Learn's
                          "Geometry" page gives to in-page elements. It is drawn
                          over the art, as Apple Music draws its own, so a cover
@@ -80,7 +82,9 @@
                                 <ImageBrush ImageSource="{x:Bind ViewModel.Cover}" Stretch="UniformToFill" />
                             </Border.Background>
                         </Border>
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" IsHitTestVisible="False"
+                        <!-- One physical pixel, whatever the scale: MainView.xaml.cs sets
+                             the thickness to 1 / RasterizationScale. -->
+                        <Border x:Name="CoverHairline" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" IsHitTestVisible="False"
                                 BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                                 Visibility="{x:Bind v:Bind.Visible(ViewModel.HasCover)}" />
                     </Grid>

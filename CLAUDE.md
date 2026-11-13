@@ -485,8 +485,8 @@ transitions guidance (design library, `microsoft/windows-page-transitions/`)
 has it for "sibling pages" next to each other and says nothing about wizards,
 so it is the nearest documented fit, not a rule. The pages are still written in
 `SetupView.xaml` for x:Bind and moved into each `SetupStep` page as it's shown;
-a `StepSlot` remembers which one holds it (Back threw otherwise). Not yet seen
-moving on the owner's screen. Command links (Windows' title-and-note buttons, measured
+a `StepSlot` remembers which one holds it (Back threw otherwise). Installed in
+build 129; not yet seen moving on the owner's screen. Command links (Windows' title-and-note buttons, measured
 in the library's `microsoft/command-links/`) were rendered for the Tailscale
 page's choice on 12 Nov 2026 and set aside for Next and Skip.
 
@@ -1018,7 +1018,9 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    plan. See "The WinUI 3 move" below for what changed and how it was
    checked. Make further setup-window changes on top of it.
    **Where it stood at the handoff of 13 Nov 2026 (03:00).** Installed on the
-   owner's PC: build 127 (ea3fc19), a local publish
+   owner's PC: build 127 (ea3fc19), a local publish (build 129, f6fede5, with
+   the setup pages' slide, since 05:48 on 13 Nov 2026, at the owner's "install"; 127
+   kept as `Issun.exe.b127.bak`)
    (`tools/install-local.ps1`, CI's own command), not a release; builds 109 to
    124 went in the same way the same night (see "Updating the installed
    copy"). Done since the WinUI move and recorded in their own places: the Now

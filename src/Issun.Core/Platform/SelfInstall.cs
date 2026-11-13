@@ -124,6 +124,21 @@ public sealed class SelfInstall
             ? $"[install] replaced {oldVersion} in {InstallDir} with {IssunInfo.Display}; the old one is kept as {PreviousName}"
             : $"[install] installed {IssunInfo.Display} to {InstallDir} from {ExePath}");
         WriteUninstallEntry(InstalledExe);
+        RefreshShellIcons();
+    }
+
+    /// <summary>
+    /// After a new .exe lands at the same path, so the taskbar and the Start
+    /// menu show its icon rather than a cached one (<see cref="ShellIcons"/>).
+    /// Only for the real install: tests use a throwaway uninstall key, and
+    /// must not touch the desktop's shell.
+    /// </summary>
+    private void RefreshShellIcons()
+    {
+        if (_uninstallKeyPath != DefaultUninstallKeyPath)
+            return;
+        ShellIcons.Refresh(InstalledExe,
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), StartMenuShortcut.FileName));
     }
 
     /// <summary>
@@ -143,6 +158,9 @@ public sealed class SelfInstall
                 return;
             WriteUninstallEntry(InstalledExe);
             Log.Write($"[install] registered {IssunInfo.Display} in Settings › Apps");
+            // A new build at the installed path, put there by Install or by
+            // hand: either way its icon may be new.
+            RefreshShellIcons();
         }
         catch (Exception ex)
         {

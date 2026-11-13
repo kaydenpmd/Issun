@@ -1150,7 +1150,11 @@ SHCNF_PATHW | SHCNF_FLUSH)` for the `.exe` and the shortcut, then
 `SHCNE_ASSOCCHANGED`. Then 36 x 36, the same as Apple Music's. Which of the
 three changes the 36 itself needed isn't known, since the cache hid them all.
 **After an icon change, notify the shell, or no one sees it.** Builds 111 and
-113 kept as `.bak` beside the `.exe`.
+113 kept as `.bak` beside the `.exe`. Since build 116 Issun does it itself
+(`ShellIcons.Refresh`, the owner's "Yes, add it"): after `SelfInstall.Install`
+and whenever `EnsureRegistered` finds a new build at the installed path, so a
+hand swap like these is covered too. Logged as `[install] told Windows the
+icons of the .exe and the Start menu entry may have changed`.
 
 **Two things the handover taught, for anyone repeating it:**
 

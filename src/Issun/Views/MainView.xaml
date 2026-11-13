@@ -70,7 +70,9 @@
                              light and #12FFFFFF in dark, on the card's #B3FFFFFF and
                              #0DFFFFFF. It was SubtleFillColorSecondary, a hover fill, and
                              ControlFillColorDefault is the card's own colour in light.
-                             PersonPicture keeps a stroke too, so the hairline below stays. -->
+                             No hairline on it: PersonPicture has one, but the owner
+                             asked for none (13 Nov 2026), as Ammy's square has none;
+                             the hairline below edges covers only. -->
                         <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource ControlAltFillColorQuarternaryBrush}" />
                         <Border CornerRadius="{ThemeResource ControlCornerRadius}"
                                 Visibility="{x:Bind v:Bind.Visible(ViewModel.HasCover)}">
@@ -79,7 +81,8 @@
                             </Border.Background>
                         </Border>
                         <Border CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" IsHitTestVisible="False"
-                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" />
+                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                Visibility="{x:Bind v:Bind.Visible(ViewModel.HasCover)}" />
                     </Grid>
 
                     <!-- The media card's two text styles: the title in Body

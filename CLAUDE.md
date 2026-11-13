@@ -710,7 +710,14 @@ within half a pixel. Its screen-reader name is "Explicit", the owner's word
 JPEGMAFIA Explicit", and music.apple.com labels its badge
 `aria-label="Explicit"`. The card's "Not playing" stands alone since the same
 day; the line under it (nothing checked in yet / the source has gone quiet /
-checking in but nothing playing) went at the owner's "remove this line". The research, Apple Music for Windows' own badge included,
+checking in but nothing playing) went at the owner's "remove this line".
+With no cover the square is empty, like Ammy's: no music note (the owner
+asked it gone; it was Segoe Fluent Icons' Audio, U+E8D6, picked in Sept with
+no reference), no hairline (the owner, same day; covers keep theirs), and
+filled with ControlAltFillColorQuarternary, the fill WinUI gives its own empty
+PersonPicture, which stands off the card in both themes (dark 43 to 58, light
+251 to 227 in a render). It was SubtleFillColorSecondary, a hover fill nearly
+the card's colour in light. The research, Apple Music for Windows' own badge included,
 is in the design library, `apple\apple-music-windows-explicit-badge`. It
 replaced a hand-drawn badge the owner asked to have rolled back as more
 complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`

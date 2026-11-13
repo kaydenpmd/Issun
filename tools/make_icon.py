@@ -5,8 +5,11 @@ grows as it arrives, the way Ammy's fades as it leaves. Drawn the way Albums'
 and Ammy's iPhone icons are: Albums' squircle, black, greys, gradient and
 shadow. (In Okami, Issun is the one who does the talking for Ammy.)
 
-Windows masks nothing, so the tile is drawn here, with transparent corners and
-its shadow inside the frame. The frames from 32 px down are laid out by hand on
+Windows masks nothing, so the tile is drawn here, with transparent corners.
+Since 12 Nov 2026 it fills the whole frame, edge to edge, with no shadow under
+it: the owner saw it on the taskbar at 150% 32 px tall beside Apple Music's 36
+and asked for it "as big as possible". (It had a 60/1024 margin each side and
+a drop shadow inside that.) The frames from 32 px down are laid out by hand on
 the pixel grid, with fewer and heavier shapes, because a picture shrunk to 16 px
 turns to grey mush.
 
@@ -118,7 +121,7 @@ def picture():
                 body=(bx, 512 - BUBBLE_H / 2, bx + BUBBLE_W, 512 + BUBBLE_H / 2, 0.34 * BUBBLE_H),
                 tail=(0.30 * BUBBLE_W, 0.30 * BUBBLE_H, 0.05 * BUBBLE_W), shadow=(12, 18, 40))
 
-def on_tile(px, tile=(60, 60, 964, 964), tshadow=(10, 14, 64)):
+def on_tile(px, tile=(0, 0, 1024, 1024), tshadow=None):
     """The picture scaled onto a tile with Albums' 214 px margin in proportion,
     for a frame px square."""
     k = px / 1024
@@ -130,7 +133,8 @@ def on_tile(px, tile=(60, 60, 964, 964), tshadow=(10, 14, 64)):
     waves = [(*move(cx, cy), r * f, w * f, phi, fill) for cx, cy, r, w, phi, fill in P["waves"]]
     bx0, by0 = move(*P["body"][:2])
     bx1, by1 = move(*P["body"][2:4])
-    return dict(tile=(tx0, ty0, tx1, ty1, 0.2237 * (tx1 - tx0)), tshadow=tuple(v * k for v in tshadow[:2]) + (tshadow[2],),
+    return dict(tile=(tx0, ty0, tx1, ty1, 0.2237 * (tx1 - tx0)),
+                tshadow=tuple(v * k for v in tshadow[:2]) + (tshadow[2],) if tshadow else None,
                 waves=waves, body=(bx0, by0, bx1, by1, P["body"][4] * f),
                 tail=tuple(v * f for v in P["tail"]), shadow=(P["shadow"][0] * f, P["shadow"][1] * f, P["shadow"][2]))
 
@@ -145,7 +149,7 @@ SMALL = {
              body=(9, 5, 19, 12, 2.6), tail=(3.8, 3.4, 0.9), shadow=None),
     24: dict(tile=(0, 0, 24, 24, 5.4), tshadow=None, waves=[(0.5, 11.5, 4.3, 2.4, 40, PALE), (0.5, 11.5, 8, 2.4, 40, MID)],
              body=(11, 6, 23, 15, 3.1), tail=(4.4, 3.8, 1), shadow=None),
-    32: dict(tile=(1, 1, 31, 31, 6.7), tshadow=(0.5, 0.6, 60),
+    32: dict(tile=(0, 0, 32, 32, 7.2), tshadow=None,
              waves=[(1, 15, 5.6, 3, 39, PALE), (1, 15, 10.1, 3, 39, MID)],
              body=(14, 9, 28, 19, 3.7), tail=(5.2, 4.6, 1.2), shadow=None),
 }

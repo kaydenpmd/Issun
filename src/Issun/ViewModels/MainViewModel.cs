@@ -111,7 +111,6 @@ public sealed partial class MainViewModel : Observable, IDisposable
             Artist = NowPlayingText.Artist(track);
         }
         HasTrack = s.Track is not null;
-        NothingPlayingDetail = NowPlayingText.NothingPlayingDetail(s);
         UpdateCover(s);
 
         // ── Status ──
@@ -166,8 +165,6 @@ public sealed partial class MainViewModel : Observable, IDisposable
     public string Artist { get => _artist; private set => Set(ref _artist, value); }
     private string _artist = "";
 
-    public string NothingPlayingDetail { get => _nothingDetail; private set => Set(ref _nothingDetail, value); }
-    private string _nothingDetail = "";
 
     public ImageSource? Cover
     {

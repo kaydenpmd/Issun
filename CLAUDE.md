@@ -705,7 +705,12 @@ fractions of its square (corners 0.15, the E cut out at x 0.32-0.68 and y
 Segoe UI Variable's cap height for Body Strong, 9.8 epx. `MainView.xaml` has
 the numbers and their source. Only proportions are copied, no outline from the
 font, which can't ship here. Rendered at 1.25x it spans the capitals' rows to
-within half a pixel. Its screen-reader name is `[text]`, the owner's to write. The research, Apple Music for Windows' own badge included,
+within half a pixel. Its screen-reader name is "Explicit", the owner's word
+(13 Nov 2026), and Apple's: Apple Music for Windows' list items read "Veteran
+JPEGMAFIA Explicit", and music.apple.com labels its badge
+`aria-label="Explicit"`. The card's "Not playing" stands alone since the same
+day; the line under it (nothing checked in yet / the source has gone quiet /
+checking in but nothing playing) went at the owner's "remove this line". The research, Apple Music for Windows' own badge included,
 is in the design library, `apple\apple-music-windows-explicit-badge`. It
 replaced a hand-drawn badge the owner asked to have rolled back as more
 complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`

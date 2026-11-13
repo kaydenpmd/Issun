@@ -119,7 +119,7 @@
                                         <Path Width="9.8" Height="9.8" Stretch="Fill"
                                               Visibility="{x:Bind v:Bind.Visible(ViewModel.IsExplicit)}"
                                               Fill="{ThemeResource TextFillColorPrimaryBrush}"
-                                              AutomationProperties.Name="[text]"
+                                              AutomationProperties.Name="Explicit"
                                               Data="F0 M15,0 H85 A15,15 0 0 1 100,15 V85 A15,15 0 0 1 85,100 H15 A15,15 0 0 1 0,85 V15 A15,15 0 0 1 15,0 Z
                                                     M34.8,23.7 H63.6 A4.1,4.1 0 0 1 63.6,31.9 H42.4 V45.1 H62.3 A3.85,3.85 0 0 1 62.3,52.8 H42.4 V66.7 H63.6 A4.1,4.1 0 0 1 63.6,74.9 H34.8 A2.5,2.5 0 0 1 32.3,72.4 V26.2 A2.5,2.5 0 0 1 34.8,23.7 Z" />
                                     </InlineUIContainer>
@@ -131,13 +131,9 @@
                         </StackPanel>
 
                         <!-- No track -->
-                        <StackPanel Visibility="{x:Bind v:Bind.Hidden(ViewModel.HasTrack)}">
-                            <TextBlock Text="Not playing" Style="{StaticResource BodyStrongTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
-                            <TextBlock Text="{x:Bind ViewModel.NothingPlayingDetail}" Style="{StaticResource CaptionTextBlockStyle}"
-                                       TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
-                        </StackPanel>
+                        <TextBlock Text="Not playing" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                   Visibility="{x:Bind v:Bind.Hidden(ViewModel.HasTrack)}" />
                     </StackPanel>
                 </Grid>
             </Border>

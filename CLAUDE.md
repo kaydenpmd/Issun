@@ -1127,6 +1127,12 @@ one by the process ID you noted before the rename. Once that was done, build
 109 answered `/version` within 4 s, connected to Discord at once, and deleted
 377 MB of earlier builds' unpacked files from `%TEMP%\.net\Issun`.
 
+**12 Nov 2026, build 109 to 111 (7.4 s down), for the full-bleed icon, at
+the owner's "Install it".** The same local publish (208ec19, SHA-256
+B3839E76…1D5415), build 109 kept as `Issun.exe.b109.bak`, and the running
+Issun stopped by the process ID read before the rename, which worked first
+time.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

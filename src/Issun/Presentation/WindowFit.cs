@@ -31,9 +31,17 @@ public static class WindowFit
         var hwnd = WindowNative.GetWindowHandle(window);
         var appWindow = window.AppWindow;
 
-        var icon = Native.LoadAppIcon(Native.GetSystemMetrics(Native.SM_CXICON));
-        if (icon != 0)
-            appWindow.SetIcon(Win32Interop.GetIconIdFromIcon(icon));
+        // Both icons at this window's DPI: the big one is the taskbar's and
+        // Alt+Tab's, the small one the title bar's. One icon for both, as
+        // AppWindow.SetIcon takes, left the taskbar a 32 px one at 150%.
+        int bigSize = Native.IconSize(hwnd, Native.SM_CXICON), smallSize = Native.IconSize(hwnd, Native.SM_CXSMICON);
+        nint big = Native.LoadAppIcon(bigSize), small = Native.LoadAppIcon(smallSize);
+        if (big != 0 && small != 0)
+        {
+            Native.SendMessageW(hwnd, Native.WM_SETICON, Native.ICON_BIG, big);
+            Native.SendMessageW(hwnd, Native.WM_SETICON, Native.ICON_SMALL, small);
+            Log.Write($"[ui] {name} window: icons {bigSize} and {smallSize} px at {Native.GetDpiForWindow(hwnd)} dpi");
+        }
         else
             Log.Write($"[ui] {name} window: the icon is missing from the build");
 

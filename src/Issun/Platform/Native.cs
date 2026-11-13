@@ -76,6 +76,10 @@ internal static class Native
     [DllImport("user32")] public static extern bool SetForegroundWindow(nint hwnd);
     [DllImport("user32")] public static extern bool PostMessageW(nint hwnd, uint msg, nint wParam, nint lParam);
     [DllImport("user32")] public static extern int GetSystemMetrics(int index);
+    [DllImport("user32")] public static extern int GetSystemMetricsForDpi(int index, uint dpi);
+    [DllImport("user32")] public static extern nint SendMessageW(nint hwnd, uint msg, nint wParam, nint lParam);
+    public const uint WM_SETICON = 0x80;
+    public const nint ICON_SMALL = 0, ICON_BIG = 1;
     [DllImport("user32", CharSet = CharSet.Unicode)] public static extern nint LoadImageW(nint inst, nint name, uint type, int cx, int cy, uint flags);
     [DllImport("user32")] public static extern bool DestroyIcon(nint icon);
     [DllImport("user32")] public static extern uint GetDpiForWindow(nint hwnd);
@@ -95,4 +99,16 @@ internal static class Native
     /// <summary>The .exe's own icon at a size, or 0. No file needed beside a single-file .exe.</summary>
     public static nint LoadAppIcon(int size) =>
         LoadImageW(GetModuleHandleW(null), AppIconResource, 1 /* IMAGE_ICON */, size, size, 0);
+
+    /// <summary>
+    /// SM_CXICON or SM_CXSMICON at the window's own DPI. Plain GetSystemMetrics
+    /// gave Issun 32 at 150%, the 100% size, and the taskbar then drew the 32 px
+    /// icon as it was, 4 px smaller each way than Apple Music's 36 beside it
+    /// (seen 12 Nov 2026).
+    /// </summary>
+    public static int IconSize(nint hwnd, int metric)
+    {
+        var dpi = hwnd != 0 ? GetDpiForWindow(hwnd) : 0;
+        return dpi != 0 ? GetSystemMetricsForDpi(metric, dpi) : GetSystemMetrics(metric);
+    }
 }

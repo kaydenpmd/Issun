@@ -111,8 +111,6 @@ public sealed partial class MainViewModel : Observable, IDisposable
         }
         HasTrack = s.Track is not null;
         NothingPlayingDetail = NowPlayingText.NothingPlayingDetail(s);
-        SourceVersion = NowPlayingText.SourceVersion(s.SourceName, s.PhoneVersion);
-        OnDiscord = NowPlayingText.OnDiscord(s);
         UpdateCover(s);
 
         // ── Status ──
@@ -154,12 +152,6 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
     public string NothingPlayingDetail { get => _nothingDetail; private set => Set(ref _nothingDetail, value); }
     private string _nothingDetail = "";
-
-    public string? SourceVersion { get => _sourceVersion; private set => Set(ref _sourceVersion, value); }
-    private string? _sourceVersion;
-
-    public string? OnDiscord { get => _onDiscord; private set => Set(ref _onDiscord, value); }
-    private string? _onDiscord;
 
     public ImageSource? Cover
     {

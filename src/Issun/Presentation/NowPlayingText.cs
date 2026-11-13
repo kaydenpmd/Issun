@@ -30,17 +30,11 @@ public static class NowPlayingText
     /// <summary>
     /// "Source: Ammy 1.0 (97)" — the source's name and number, no "version"
     /// (the owner's wording, 23 Sept 2026). "Source: 1.0 (97)" from a source
-    /// that sends no name; null before it has said which build it is.
+    /// that sends no name; null before it has said which build it is. Only
+    /// the log uses it now: the card dropped the line on 12 Nov 2026.
     /// </summary>
     public static string? SourceVersion(string? sourceName, string phoneVersion) =>
         string.IsNullOrWhiteSpace(phoneVersion) || phoneVersion == "unknown" ? null
         : string.IsNullOrWhiteSpace(sourceName) ? $"Source: {phoneVersion}"
         : $"Source: {sourceName} {phoneVersion}";
-
-    /// <summary>Whether Discord is showing something, in a few words; null when there is nothing worth saying.</summary>
-    public static string? OnDiscord(HostSnapshot s) =>
-        s.Track is null ? null :
-        s.Activity is not null ? "Showing on Discord" :
-        s.Discord.State == DiscordLinkState.Connected ? "Sending to Discord…" :
-        "Not on Discord";
 }

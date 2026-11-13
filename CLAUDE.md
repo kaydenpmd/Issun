@@ -78,9 +78,16 @@ Discord's card keeps its bar; that comes from `ActivityBuilder`'s timestamps
 and is untouched. The same day the card's "Nothing playing" became "Not
 playing". Don't bring the window's bar back without asking.
 
-The card's source line is the source's name and number, e.g. `Source: Ammy 1.0
-(97)`, from the push's `app_name` (`IPhoneDiagnostics.SourceName`). No word
-"version": the owner, 23 Sept 2026, "NO 'VERSION' JUST NAME AND NUMBER".
+Since 12 Nov 2026 the card is laid out as Windows' own media card in Quick
+Settings, without its app-name row and its playback buttons, as Ammy's row
+copies the Lock Screen's player: title (Body Strong) over artist (Caption) on
+the left, the cover on the right at that card's 58, text centred against it,
+24 of padding. The measurements are in the design library,
+`microsoft\windows11-media-controls`. The owner's words: "i just want title
+and artist", so the card's source line (`Source: Ammy 1.0 (97)`) and its
+Discord line ("Showing on Discord") went. `NowPlayingText.SourceVersion` stays
+for the setup log, and its no-"version" wording with it: the owner, 23 Sept
+2026, "NO 'VERSION' JUST NAME AND NUMBER".
 
 ## Why it exists
 

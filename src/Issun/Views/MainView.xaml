@@ -26,11 +26,20 @@
 
             <!-- ───────────── Now playing ───────────── -->
             <TextBlock Text="Now playing" Style="{StaticResource SectionHeader}" Margin="2,8,0,8" />
-            <Border Style="{StaticResource Card}" Padding="16">
+            <!-- Laid out as Windows' own media card in Quick Settings, without
+                 its app-name row above and its playback buttons below (26H2
+                 build 26300.9457, measured 12 Nov 2026 at 150%;
+                 design-research\microsoft\windows11-media-controls): title and
+                 artist on the left, centred against the cover on the right.
+                 Padding 24: that card puts its title and its cover about 24 to
+                 25 effective pixels inside its edges, and the same 24 goes
+                 above and below here, where its other rows were. No theme
+                 resource gives a card's padding, so it is typed. -->
+            <Border Style="{StaticResource Card}" Padding="24">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <!-- Cover, or a placeholder when there is none. An
@@ -52,7 +61,7 @@
                          draws its cover 87 px square, 58 effective pixels. No
                          theme resource gives that size, so it is typed here
                          (design-research\microsoft\windows11-media-controls). -->
-                    <Grid Width="58" Height="58" VerticalAlignment="Top">
+                    <Grid Grid.Column="1" Width="58" Height="58" VerticalAlignment="Center">
                         <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource SubtleFillColorSecondaryBrush}">
                             <TextBlock Text="&#xE8D6;" FontFamily="{ThemeResource SymbolThemeFontFamily}"
                                        FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -69,38 +78,36 @@
                                 BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" />
                     </Grid>
 
-                    <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <!-- The media card's two text styles: the title in Body
+                         Strong (14 semibold) over the artist in Caption (12),
+                         both in the primary text colour, with nothing between
+                         them. Its title measured 10 effective pixels to the
+                         cap, its artist 8.7. The 16 before the cover isn't
+                         from it: its title was too short to show the gap. -->
+                    <StackPanel Margin="0,0,16,0" VerticalAlignment="Center">
 
                         <!-- A track -->
                         <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.HasTrack)}">
                             <!-- Two lines at most: some titles carry every remix credit.
                                  An explicit track's title ends in a typed 🅴;
                                  see NowPlayingText.CardTitle. -->
-                            <TextBlock Text="{x:Bind ViewModel.Title}" Style="{StaticResource SubtitleTextBlockStyle}"
+                            <TextBlock Text="{x:Bind ViewModel.Title}" Style="{StaticResource BodyStrongTextBlockStyle}"
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                                        ToolTipService.ToolTip="{x:Bind ViewModel.Title}" />
-                            <TextBlock Text="{x:Bind ViewModel.Artist}" Style="{StaticResource BodyTextBlockStyle}" Margin="0,2,0,0"
+                            <TextBlock Text="{x:Bind ViewModel.Artist}" Style="{StaticResource CaptionTextBlockStyle}"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                         </StackPanel>
 
                         <!-- No track -->
                         <StackPanel Visibility="{x:Bind v:Bind.Hidden(ViewModel.HasTrack)}">
-                            <TextBlock Text="Not playing" Style="{StaticResource SubtitleTextBlockStyle}"
+                            <TextBlock Text="Not playing" Style="{StaticResource BodyStrongTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
-                            <TextBlock Text="{x:Bind ViewModel.NothingPlayingDetail}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                            <TextBlock Text="{x:Bind ViewModel.NothingPlayingDetail}" Style="{StaticResource CaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                         </StackPanel>
-
-                        <v:WrapPanel Margin="0,8,0,0">
-                            <TextBlock Text="{x:Bind ViewModel.SourceVersion}" Style="{StaticResource Caption}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                       Visibility="{x:Bind v:Bind.Present(ViewModel.SourceVersion)}"
-                                       Margin="0,0,12,0" />
-                            <TextBlock Text="{x:Bind ViewModel.OnDiscord}" Style="{StaticResource Caption}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                       Visibility="{x:Bind v:Bind.Present(ViewModel.OnDiscord)}" />
-                        </v:WrapPanel>
                     </StackPanel>
                 </Grid>
             </Border>

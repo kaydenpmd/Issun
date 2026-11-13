@@ -18,8 +18,9 @@ public enum SetupPage { Discord = 0, Tailscale = 1, Source = 2, StartWithWindows
 /// the Tailscale buttons act when clicked, Start with Windows applies when
 /// ticked, and the last page watches for the source's first push. So every page
 /// shows the real state of what it set up. Next moves on, except that on the
-/// Tailscale page it first checks Tailscale has an address for this PC with
-/// Funnel on; Skip moves on without that check.
+/// Discord page it first asks Discord whether it accepts the application ID,
+/// and on the Tailscale page it first checks Tailscale has an address for this
+/// PC with Funnel on; Skip moves on without those checks.
 ///
 /// The structure is Microsoft's wizard guidance, read 11 Nov 2026 and saved in
 /// the design-research library (microsoft/windows-setup-wizards): no welcome
@@ -32,13 +33,11 @@ public sealed class SetupViewModel : Observable, IDisposable
     public const string DeveloperPortal = "https://discord.com/developers/applications";
     public const string TailscaleDownload = "https://tailscale.com/download";
 
-    private static readonly TimeSpan ApplyDelay = TimeSpan.FromMilliseconds(600);
 
     private readonly IIssunHost _host;
     private readonly DispatcherQueue _dispatcher;
     private readonly Coalescer _refresh;
     private readonly DispatcherQueueTimer _ticker;
-    private readonly DispatcherQueueTimer _applyId;
     private HostSnapshot _snapshot = new();
     private bool _disposed;
 
@@ -51,14 +50,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         _ticker = dispatcher.CreateTimer();
         _ticker.Interval = TimeSpan.FromSeconds(1);
         _ticker.Tick += (_, _) => Tick();
-        _applyId = dispatcher.CreateTimer();
-        _applyId.Interval = ApplyDelay;
-        _applyId.IsRepeating = false;
-        _applyId.Tick += (_, _) =>
-        {
-            _applyId.Stop();
-            _ = ApplyClientIdAsync();
-        };
 
         Pairing = new PairingViewModel(host, dispatcher, "setup");
         Pairing.PropertyChanged += (_, e) =>
@@ -74,7 +65,6 @@ public sealed class SetupViewModel : Observable, IDisposable
             if (_page == SetupPage.Tailscale) TailscaleError = $"[text] {ex.Message}";
         }, () => _page switch
         {
-            SetupPage.Discord => DiscordAccepted,
             SetupPage.Source => Pairing.SourceConnected,
             _ => true,
         });
@@ -195,6 +185,9 @@ public sealed class SetupViewModel : Observable, IDisposable
     {
         switch (_page)
         {
+            case SetupPage.Discord:
+                await NextOnDiscordAsync();
+                break;
             case SetupPage.Tailscale:
                 TailscaleError = null;
                 await _host.RefreshTailscaleAsync();
@@ -233,12 +226,10 @@ public sealed class SetupViewModel : Observable, IDisposable
         // Leaving Connect your source with an edited endpoint still applies it.
         if (_page == SetupPage.Source)
             _ = Pairing.ApplyPendingAsync();
-        // Leaving the Discord page with a half-typed ID still applies what is there.
-        if (_page == SetupPage.Discord && _applyId.IsRunning)
-        {
-            _applyId.Stop();
+        // Skip past the Discord page still saves an ID that looks like one,
+        // unchecked: Skip is the way past the check, not past the ID.
+        if (_page == SetupPage.Discord && LooksLikeId(_clientId.Trim()) && _clientId.Trim() != _host.Settings.DiscordClientId)
             _ = ApplyClientIdAsync();
-        }
         Log.Write($"[setup] {Describe(_page)} -> {Describe(page)}");
         _page = page;
         Raise(nameof(Page));
@@ -271,9 +262,8 @@ public sealed class SetupViewModel : Observable, IDisposable
     private string _clientId;
 
     /// <summary>
-    /// The ID as typed. Applied 0.6 s after it stops changing, once it looks
-    /// like an ID, so pasting one connects straight away and the status line
-    /// beneath answers whether Discord accepts it.
+    /// The ID as typed. Nothing happens as it's typed: Next checks it with
+    /// Discord and saves it once Discord accepts it.
     /// </summary>
     public string ClientId
     {
@@ -282,11 +272,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         {
             if (!Set(ref _clientId, value))
                 return;
-            _applyId.Stop();
             ClientIdProblem = null;
-            if (LooksLikeId(value.Trim()))
-                _applyId.Start();
-            DiscordAcceptedChanged();
         }
     }
 
@@ -317,49 +303,62 @@ public sealed class SetupViewModel : Observable, IDisposable
         }
     }
 
-    public string? ClientIdProblem
-    {
-        get => _clientIdProblem;
-        private set
-        {
-            if (Set(ref _clientIdProblem, value))
-                DiscordAcceptedChanged();
-        }
-    }
-    private string? _clientIdProblem;
+    public string? ClientIdProblem { get => _clientIdProblem; private set => Set(ref _clientIdProblem, value); }
 
     /// <summary>
-    /// Whether Discord has accepted the application ID in the box: Discord's
-    /// handshake with it came back READY (the owner, 13 Nov 2026: "can the
-    /// first setup page actually check if you did the discord thing
-    /// correctly"). Next waits for it, as Connect your source's Next waits for
-    /// a source, and the status line under the ID says why it's waiting:
-    /// no ID, an ID Discord refuses (4000), or Discord not running. Skip is the
-    /// way past. An ID still being typed, or one that differs from the ID
-    /// Issun is using, isn't accepted yet, whatever the connection says.
+    /// Next on the Discord page (the owner, 13 Nov 2026: "make click send the
+    /// request and pop an error somewhere if the request returns wrong. it
+    /// will only check when next is pressed. once per click. if the connection
+    /// is valid, proceed to the next page"). One check with Discord per click,
+    /// on a connection of its own; while it runs Next shows a spinner and takes
+    /// no clicks. Accepted: the ID is saved and setup moves on. Otherwise
+    /// Discord's reason goes under the ID, in the words the main window's
+    /// Discord status uses, and setup stays.
     /// </summary>
-    public bool DiscordAccepted =>
-        _snapshot.Discord.State == DiscordLinkState.Connected
-        && ClientIdProblem is null
-        && _clientId.Trim() == _host.Settings.DiscordClientId;
-
-    private bool? _discordAcceptedLogged;
-
-    private void DiscordAcceptedChanged()
+    private async Task NextOnDiscordAsync()
     {
-        var accepted = DiscordAccepted;
-        if (_page == SetupPage.Discord && accepted != _discordAcceptedLogged)
+        var id = _clientId.Trim();
+        ClientIdProblem = null;
+        if (!LooksLikeId(id))
         {
-            _discordAcceptedLogged = accepted;
-            Log.Write(accepted
-                ? "[setup] Discord accepted the application ID, Next available"
-                : "[setup] Discord hasn't accepted an application ID, Next greyed out");
+            Log.Write($"[setup] Next on the Discord page: {id.Length} characters isn't an application ID, staying");
+            ClientIdProblem = "An application ID is 17–20 digits long.";
+            return;
         }
-        NextCommand?.RaiseCanExecuteChanged();
+        Log.Write($"[setup] Next on the Discord page: asking Discord about the application ID ({id.Length} digits)");
+        var result = await _host.CheckDiscordIdAsync(id);
+        if (_page != SetupPage.Discord || _clientId.Trim() != id)
+        {
+            Log.Write("[setup] Discord answered after the page or the ID changed; ignoring it");
+            return;
+        }
+        if (!result.Accepted)
+        {
+            Log.Write($"[setup] Next on the Discord page: not accepted, staying ({result.Problem})");
+            ClientIdProblem = result.Problem;
+            return;
+        }
+        Log.Write("[setup] Next on the Discord page: Discord accepted the application ID");
+        if (id != _host.Settings.DiscordClientId)
+        {
+            try
+            {
+                Log.Write($"[setup] saving the Discord application ID ({id.Length} digits)");
+                await _host.UpdateSettingsAsync(_host.Settings with { DiscordClientId = id });
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"[setup] couldn't save the Discord application ID: {ex.Message}");
+                ClientIdProblem = $"Couldn't save it: {ex.Message}";
+                return;
+            }
+        }
+        Go(SetupPage.Tailscale);
     }
 
-    public StatusLine DiscordStatus { get => _discordStatus; private set => Set(ref _discordStatus, value); }
-    private StatusLine _discordStatus = new("Not connected", StatusLevel.Neutral);
+    private string? _clientIdProblem;
+
+
 
     // ───────────────────────────── Tailscale ─────────────────────────────
 
@@ -492,7 +491,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         Log.Write(Pairing.SourceConnected ? "[setup] Connect your source: connected, Next available" : "[setup] Connect your source: waiting, Next greyed out");
         NextCommand.RaiseCanExecuteChanged();
     }
-    private string? _discordLogged;
 
     private void Refresh()
     {
@@ -500,13 +498,6 @@ public sealed class SetupViewModel : Observable, IDisposable
             return;
         var s = _snapshot = _host.Snapshot;
 
-        DiscordStatus = StatusText.Discord(s.Discord);
-        if (_page == SetupPage.Discord && DiscordStatus.Text != _discordLogged)
-        {
-            _discordLogged = DiscordStatus.Text;
-            Log.Write($"[setup] Discord: {_discordLogged}");
-        }
-        DiscordAcceptedChanged();
 
         TailscaleStatus = StatusText.Tailscale(s.Tailscale, s.Server.Port);
         OfferInstall = s.Tailscale is { Installed: false };
@@ -544,8 +535,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         _disposed = true;
         _host.Changed -= OnHostChanged;
         _ticker.Stop();
-        _applyId.Stop();
-        // An ID typed in the last 0.6 s before closing still counts.
+        // An ID typed and never checked still counts when the window closes.
         if (_clientId.Trim() != _host.Settings.DiscordClientId && LooksLikeId(_clientId.Trim()))
             _ = ApplyClientIdAsync();
         _ = Pairing.ApplyPendingAsync();

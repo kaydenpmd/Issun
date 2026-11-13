@@ -38,6 +38,9 @@ public sealed record StartupOptions
     /// <summary>--setup-page N (with --screenshot): render the setup window on page N (0 to 3) instead of the main window.</summary>
     public int? SetupPage { get; init; }
 
+    /// <summary>--press-next (with --setup-page): press Next just before the render, to show it waiting on its check.</summary>
+    public bool PressNext { get; init; }
+
     public IReadOnlyList<string> Problems { get; init; } = [];
 
     /// <summary>
@@ -91,6 +94,9 @@ public sealed record StartupOptions
                         else
                             problems.Add($"--setup-page takes 0 to 3, not {page}");
                     }
+                    break;
+                case "--press-next":
+                    options = options with { PressNext = true };
                     break;
                 case "--expanded":
                     options = options with { Expanded = true };

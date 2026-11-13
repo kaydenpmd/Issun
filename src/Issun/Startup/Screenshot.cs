@@ -133,6 +133,15 @@ public static class Screenshot
             page.UpdateLayout();
             await Task.Delay(TimeSpan.FromMilliseconds(400));
 
+            // --press-next presses the setup page's Next just before the
+            // render, so the picture shows Next while it waits on its check
+            // (the demo's Discord check takes a second).
+            if (options.PressNext && setup is not null)
+            {
+                setup.NextCommand.Execute(null);
+                await Task.Delay(TimeSpan.FromMilliseconds(300));
+            }
+
             var rtb = new RenderTargetBitmap();
             int wide = (int)Math.Ceiling(page.ActualWidth * Scale / root), high = (int)Math.Ceiling(page.ActualHeight * Scale / root);
             await rtb.RenderAsync(page, wide, high);

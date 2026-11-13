@@ -423,16 +423,31 @@ run of a build that has this.
 **The setup window** opens by itself on a first run (no settings.json), once
 ever, and from **Set up again** in Settings after that. Four pages, in the
 owner's order of 12 Nov 2026:
-1. **Discord**: the application ID, applied 0.6 s after it looks like a 17–20
-   digit ID, with the live Discord status under it. **Next waits for Discord
-   to accept the ID** (the owner, 13 Nov 2026: "can the first setup page
-   actually check if you did the discord thing correctly"): greyed out until
-   Discord's handshake with the ID in the box comes back READY, as Connect
-   your source's Next waits for a source. The status line says why it waits
-   (no ID, Discord's 4000 for an ID it refuses, or Discord not running), so
-   the check added no words. Skip is the way past without Discord. The
-   sandbox has no Discord, so its steps Skip this page; Next turning on with
-   a real ID is for the owner's PC to show.
+1. **Discord**: the Developer Portal card and the application ID. **Next
+   checks the ID with Discord, once per click** (the owner, 13 Nov 2026:
+   "remove the third card from the discord page. make click send the request
+   and pop an error somewhere if the request returns wrong. it will only check
+   when next is pressed. once per click. if the connection is valid, proceed
+   to the next page. while waiting for a response back, replace the "next"
+   text with a spinner"). `DiscordIdCheck` opens a connection of its own,
+   handshakes with the typed ID and closes; the presence connection is left
+   alone. READY: the ID is saved and setup moves on. Anything else: the
+   reason goes in red below the ID's card, where the status card was ("i want
+   the error to be where the status card is rn"), as the Tailscale page's
+   error sits below its cards, in the main window's
+   Discord status wording (`PresenceWorker.DetailFor`: 4000 is "the
+   application ID is invalid", no pipe is "Discord isn't running", and so on),
+   and a box that isn't 17–20 digits gets "An application ID is 17–20 digits
+   long." without asking Discord. Those words were all in the app before; none
+   is new. While Next waits, its label gives way to WinUI's 16 px
+   ProgressRing and the button is disabled (on the Tailscale page too, whose
+   Next also waits on a check). Nothing is applied while typing any more, and
+   the live status card under the ID is gone. Skip, or closing the window,
+   still saves an ID that looks like one, unchecked. The sandbox has no
+   Discord, so it sees both errors; Next going through with a real ID is for
+   the owner's PC to show. `--press-next` (with `--setup-page`) renders Next
+   mid-check from the demo, whose check takes a second and accepts only its
+   own ID.
 2. **Tailscale** ("Make this PC reachable with a Tailscale Funnel", the owner's
    title): the install button runs `winget install --id Tailscale.Tailscale
    --exact` (by id: the name matches four packages and winget stops to ask),

@@ -44,7 +44,7 @@ public sealed class PresenceWorker : IPresenceWorker
     // The 4000 message reads like a deleted application. It has been a single
     // misread digit, copied from a screenshot (Ammy's CLAUDE.md, "Don't
     // transcribe config from screenshots").
-    internal const string InvalidIdDetail =
+    public const string InvalidIdDetail =
         "Discord says the application ID is invalid. Check it for a misread digit: "
         + "copy it from the Discord Developer Portal rather than retyping it.";
 
@@ -278,7 +278,7 @@ public sealed class PresenceWorker : IPresenceWorker
     private static long Deadline(TimeSpan delay) =>
         Stopwatch.GetTimestamp() + (long)(delay.TotalSeconds * Stopwatch.Frequency);
 
-    private static string DetailFor(Exception ex) => ex switch
+    internal static string DetailFor(Exception ex) => ex switch
     {
         DiscordHandshakeException { Code: 4000 } => InvalidIdDetail,
         DiscordHandshakeException h => $"Discord refused the connection: {h.Message}",

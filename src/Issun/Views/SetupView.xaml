@@ -121,28 +121,19 @@
 
                     <tk:SettingsCard Header="Application ID" Style="{StaticResource Row}">
                         <tk:SettingsCard.Description>
-                            <StackPanel>
-                                <TextBlock Text="Copy this from the application's General Information page and paste it here." TextWrapping="Wrap" />
-                                <TextBlock Text="{x:Bind ViewModel.ClientIdProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
-                                           Visibility="{x:Bind v:Bind.Present(ViewModel.ClientIdProblem)}" />
-                            </StackPanel>
+                            <TextBlock Text="Copy this from the application's General Information page and paste it here." TextWrapping="Wrap" />
                         </tk:SettingsCard.Description>
                         <TextBox x:Name="ClientIdBox" Width="200"
                                  Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  AutomationProperties.Name="Discord application ID" />
                     </tk:SettingsCard>
 
-                    <Border Style="{StaticResource Card}">
-                        <!-- Centred in the card's height, as a SettingsCard centres its content. -->
-                        <Grid VerticalAlignment="Center">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <v:StatusDot Status="{x:Bind ViewModel.DiscordStatus}" />
-                            <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.DiscordStatus.Text}" Style="{StaticResource RowDescription}" />
-                        </Grid>
-                    </Border>
+                    <!-- Next's answer from Discord, where the status card was
+                         (the owner, 13 Nov 2026: "i want the error to be where
+                         the status card is rn"), as the Tailscale page puts its
+                         error under its cards. -->
+                    <TextBlock Text="{x:Bind ViewModel.ClientIdProblem}" Style="{StaticResource ErrorText}" Margin="2,8,0,0"
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.ClientIdProblem)}" />
                 </StackPanel>
 
                 <!-- ───────────── 2. Tailscale ───────────── -->
@@ -262,8 +253,23 @@
                  the page's check; on the last page it ends setup. -->
             <Button Content="Skip" Command="{x:Bind ViewModel.SkipCommand}" Style="{StaticResource FooterButton}"
                     AutomationProperties.AutomationId="Skip" />
-            <Button Content="{x:Bind ViewModel.NextLabel}" Command="{x:Bind ViewModel.NextCommand}" Style="{StaticResource AccentFooterButton}"
+            <!-- While Next waits on a check (Discord's answer about the ID,
+                 Tailscale's address), the label gives way to WinUI's
+                 ProgressRing at 16 px, the size Connect your source's Waiting
+                 ring uses (the owner, 13 Nov 2026: "replace the "next" text
+                 with a spinner"). The button is disabled meanwhile, so the ring
+                 takes the disabled accent button's text colour. The button
+                 keeps its 120 width, so nothing beside it moves. -->
+            <Button Command="{x:Bind ViewModel.NextCommand}" Style="{StaticResource AccentFooterButton}"
+                    AutomationProperties.Name="{x:Bind ViewModel.NextLabel}"
                     Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowNext)}" KeyboardAcceleratorPlacementMode="Hidden">
+                <Grid>
+                    <TextBlock Text="{x:Bind ViewModel.NextLabel}"
+                               Visibility="{x:Bind v:Bind.Hidden(ViewModel.NextCommand.IsRunning)}" />
+                    <ProgressRing IsActive="{x:Bind ViewModel.NextCommand.IsRunning}" Width="16" Height="16" MinWidth="16" MinHeight="16"
+                                  Foreground="{ThemeResource AccentButtonForegroundDisabled}"
+                                  Visibility="{x:Bind v:Bind.Visible(ViewModel.NextCommand.IsRunning)}" />
+                </Grid>
                 <Button.KeyboardAccelerators>
                     <KeyboardAccelerator Key="Enter" />
                 </Button.KeyboardAccelerators>

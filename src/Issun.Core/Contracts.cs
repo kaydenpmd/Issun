@@ -397,6 +397,12 @@ public interface IIssunHost : IAsyncDisposable
     /// <summary>Installs Tailscale with winget, then re-probes.</summary>
     Task<TailscaleInstallResult> InstallTailscaleAsync();
 
+    /// <summary>
+    /// Asks Discord once, on a connection of its own, whether it accepts this
+    /// application ID. Saves nothing and leaves the presence connection alone.
+    /// </summary>
+    Task<Discord.DiscordIdCheckResult> CheckDiscordIdAsync(string clientId);
+
     bool StartWithWindows { get; set; }
 
     string UptimeSummary();

@@ -185,11 +185,18 @@ if ($Step -in @("all","first")) {
     Dump $w "page 0"; Shot "setup-page-0" $w
     function SkipShown { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "Skip"))); return [bool]($r -and $r.Current.Name -eq "Skip" -and -not $r.Current.IsOffscreen) }
     Expect "Skip on the Discord page" (SkipShown)
-    # No Discord here, so Discord can't accept an ID: Next waits, Skip moves on.
-    $next0 = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
-        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Next")),
-        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
-    Expect "Next is greyed out until Discord accepts an ID" ($next0 -and -not $next0.Current.IsEnabled)
+    # Next asks Discord about the ID, once per click. No Discord here, so the
+    # page stays with the reason under the ID, and Skip moves on.
+    function NameShown($name) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))); return [bool]($r -and -not $r.Current.IsOffscreen) }
+    Expect "no Discord status card" (-not (NameShown "Set the Discord application ID in Settings. Presence stays off until there is one."))
+    Click $w "Next" | Out-Null; Start-Sleep 2
+    Expect "Next with no ID stays and says why" ((OnPage $w "Connect to Discord") -and (NameShown "An application ID is 17$([char]0x2013)20 digits long."))
+    $idBox = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Discord application ID")))
+    $idBox.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue("123456789012345678"); Start-Sleep 1
+    Expect "editing the ID clears the error" (-not (NameShown "An application ID is 17$([char]0x2013)20 digits long."))
+    Click $w "Next" | Out-Null; Start-Sleep 3
+    Dump $w "page 0 after Next without Discord"; Shot "setup-page-0-no-discord" $w
+    Expect "Next without Discord stays and says Discord isn't running" ((OnPage $w "Connect to Discord") -and (NameShown "Discord isn't running. Open the Discord desktop app and Issun will connect by itself."))
     ClickId $w "Skip" | Out-Null; Start-Sleep 3
     Expect "Skip leads to the Tailscale page" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
     Dump $w "page 1"; Shot "setup-page-1" $w

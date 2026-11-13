@@ -25,6 +25,8 @@ namespace Issun.Demo;
 /// </summary>
 public sealed class DemoHost : IIssunHost
 {
+    private const string DemoClientId = "123456789012345678";
+
     private const double CheckinEvery = 5;
     private const string DemoDnsName = "issun-pc.example-tailnet.ts.net";
     private const string DemoUser = "demo-user";
@@ -79,7 +81,7 @@ public sealed class DemoHost : IIssunHost
         _clock = clock ?? SystemClock.Instance;
         _createdAt = _clock.Now;
         _startPhase = ((startPhase % Script.Length) + Script.Length) % Script.Length;
-        _settings = new Settings { DiscordClientId = "123456789012345678", Key = NewKey() };
+        _settings = new Settings { DiscordClientId = DemoClientId, Key = NewKey() };
         _tailscale = new TailscaleStatus(true, true, DemoDnsName, FunnelOn: false, FunnelTargetsPort: false,
             "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, " +
             "or run: tailscale funnel --bg --https=443 localhost:8787", Unattended: false);
@@ -210,6 +212,18 @@ public sealed class DemoHost : IIssunHost
         Log.Write("[demo] Tailscale installed (pretend)");
         Tick();
         return new TailscaleInstallResult(true, false, "");
+    }
+
+    /// <summary>
+    /// Pretend: after a second, so the spinner in Next shows, the demo's own ID
+    /// is accepted and any other is refused, so both outcomes can be seen.
+    /// </summary>
+    public async Task<Core.Discord.DiscordIdCheckResult> CheckDiscordIdAsync(string clientId)
+    {
+        await Task.Delay(1000);
+        var ok = clientId == DemoClientId;
+        Log.Write($"[demo] Discord application ID check: {(ok ? "accepted" : "refused")} (pretend)");
+        return new Core.Discord.DiscordIdCheckResult(ok, ok ? null : Core.Discord.PresenceWorker.InvalidIdDetail);
     }
 
     public async Task<(bool Ok, string Output)> EnableFunnelAsync()

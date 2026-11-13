@@ -20,7 +20,7 @@ namespace Issun;
 ///   Issun.exe --background      tray only — what Start with Windows runs
 ///   Issun.exe --demo            made-up data; binds nothing, writes nothing real
 ///   Issun.exe --uninstall       what Settings › Apps runs: asks, then removes Issun
-///   Issun.exe --screenshot a.png [--theme light|dark] [--expanded] [--demo-phase N] [--setup-page N] [--demo-tailscale N]
+///   Issun.exe --screenshot a.png [--theme light|dark] [--expanded] [--demo-phase N] [--setup-page N [--press-next]] [--demo-tailscale N]
 ///                               render the window's content, or a setup page, to a PNG and exit
 ///
 /// A release opened from anywhere but %LOCALAPPDATA%\Programs\Issun installs

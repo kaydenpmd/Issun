@@ -456,8 +456,8 @@ owner's order of 12 Nov 2026:
    source by itself (the owner, 12 Nov 2026): a 16 px ProgressRing and
    "Waiting..." with Next greyed out until a source is checking in, then
    Windows' InfoBar success mark and "Connected" with Next available. **Skip**
-   is here too, hidden while connected (Next then does the same) and back if
-   the connection drops. The ring is WinUI's own ProgressRing since the move
+   is here too, and stays while connected, though Next then does the same.
+   The ring is WinUI's own ProgressRing since the move
    to WinUI 3; the WPF build drew a copy of it (`Views/ProgressRing.cs`, in
    git history). The QR code is blurred until Show. WinUI has no blur
    effect, so the blur is done on the CPU (`Presentation/Blur.cs`) from the
@@ -477,7 +477,11 @@ The structure is Microsoft's wizard guidance, saved in the design library at
 `microsoft/windows-setup-wizards/`: no welcome page, a main instruction per page
 (Windows 11's Title style, 28/36 semibold), Back, Next and Cancel, Cancel
 becoming Close on the last page. The rest is the main window's cards. Every
-step logs as `[setup]`. Moving between pages slides, since 13 Nov 2026 (the
+step logs as `[setup]`. **Skip is on every page, and says Skip** (the owner,
+13 Nov 2026: "give every setup page a skip button, and you know damn well the
+placeholder button next to next on those pages is supposed to say skip"; the
+wording page's `footer.skip` holds it). It moves on without the page's check,
+and on the last page it ends setup as Finish does. Moving between pages slides, since 13 Nov 2026 (the
 owner: "let's add transition animations between issun's setup pages"): the
 pages sit in a `Frame` and use WinUI's own horizontal slide, Next and Skip
 from the right, Back from the left, the first page with none. Microsoft's Page
@@ -1004,7 +1008,7 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    PC" above). **Still none pushed: 75 commits on `main` ahead of GitHub as of
    13 Nov 2026** (the WinUI move was merged into `main` locally on 12 Nov, at
    the owner's "can we merge this all to main"), because a push releases and
-   the window still has 14 `[text]` placeholders: Skip, the install link's title
+   the window still has 13 `[text]` placeholders: the install link's title
    and progress line, the new-key button, and the errors (no winget, install
    failed, no address, Funnel off, endpoint invalid, save failed, new key
    failed), besides the Tailscale cards above. Before asking the owner, check

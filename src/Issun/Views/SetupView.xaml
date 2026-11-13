@@ -249,7 +249,7 @@
             </Grid>
         </ScrollViewer>
 
-        <!-- Back, Skip (Tailscale and Connect your source), Next, Cancel:
+        <!-- Back, Skip, Next, Cancel:
              right-aligned, in that order. Enter is Next and Escape is Cancel,
              as WPF's IsDefault and IsCancel made them; the accelerators' own
              tooltips are hidden, since they would add words to the window. -->
@@ -258,10 +258,10 @@
         <Grid Grid.Row="1" Margin="24,12,24,24" MaxWidth="1000">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="Back" Command="{x:Bind ViewModel.BackCommand}" Style="{StaticResource FooterButton}" />
-            <!-- Skip: the way past for people without Tailscale, or not ready to connect a source. -->
-            <Button Content="[text]" Command="{x:Bind ViewModel.SkipCommand}" Style="{StaticResource FooterButton}"
-                    AutomationProperties.AutomationId="Skip"
-                    Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowSkip)}" />
+            <!-- Skip, on every page (the owner, 13 Nov 2026): moves on without
+                 the page's check; on the last page it ends setup. -->
+            <Button Content="Skip" Command="{x:Bind ViewModel.SkipCommand}" Style="{StaticResource FooterButton}"
+                    AutomationProperties.AutomationId="Skip" />
             <Button Content="{x:Bind ViewModel.NextLabel}" Command="{x:Bind ViewModel.NextCommand}" Style="{StaticResource AccentFooterButton}"
                     Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowNext)}" KeyboardAcceleratorPlacementMode="Hidden">
                 <Button.KeyboardAccelerators>

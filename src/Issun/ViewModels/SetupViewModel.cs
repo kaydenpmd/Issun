@@ -75,8 +75,16 @@ public sealed class SetupViewModel : Observable, IDisposable
         }, () => _page != SetupPage.Source || Pairing.SourceConnected);
         SkipCommand = new Command(() =>
         {
-            Log.Write(_page == SetupPage.Tailscale ? "[setup] skipped the Tailscale check" : "[setup] skipped connecting a source");
-            Go(_page + 1);
+            Log.Write($"[setup] Skip on the {Describe(_page)} page");
+            if (_page == SetupPage.StartWithWindows)
+            {
+                // Past the last page there's nothing to go to: Skip ends setup
+                // as Finish does, keeping the startup choice as it stands.
+                Log.Write("[setup] Skip: setup finished");
+                CloseRequested?.Invoke();
+            }
+            else
+                Go(_page + 1);
         });
         CloseCommand = new Command(() => CloseRequested?.Invoke());
         OpenPortalCommand = new Command(() => Open(DeveloperPortal, "the Discord Developer Portal"));
@@ -168,16 +176,6 @@ public sealed class SetupViewModel : Observable, IDisposable
     /// <summary>Finish on the last page, where it ends setup (the owner's yes, 12 Nov 2026, after Microsoft's wizard guidance); Next elsewhere.</summary>
     public string NextLabel => _page == SetupPage.StartWithWindows ? "Finish" : "Next";
 
-    /// <summary>
-    /// Skip is always on the Tailscale page and on Connect your source (the
-    /// owner, 12 Nov 2026). On the first it goes on without Next's check, for
-    /// people who reach Issun some other way; on the second it goes on without
-    /// a source having connected, for people who'd rather connect later. There
-    /// it goes while a source is connected, since Next then does the same, and
-    /// comes back if the connection drops (the owner, 12 Nov 2026).
-    /// </summary>
-    public bool ShowSkip => _page == SetupPage.Tailscale || (_page == SetupPage.Source && !Pairing.SourceConnected);
-
     public Command BackCommand { get; }
     public AsyncCommand NextCommand { get; }
     public Command SkipCommand { get; }
@@ -246,7 +244,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         Raise(nameof(CloseLabel));
         Raise(nameof(ShowNext));
         Raise(nameof(NextLabel));
-        Raise(nameof(ShowSkip));
         if (page == SetupPage.Tailscale)
             CheckTailscaleCommand.Execute(null);
         // Without this Next stayed disabled after Back from the last page
@@ -444,13 +441,12 @@ public sealed class SetupViewModel : Observable, IDisposable
     /// <summary>
     /// Next on Connect your source follows whether a source is checking in
     /// (the owner, 12 Nov 2026: the check runs by itself, so Next only follows
-    /// it), and Skip goes while one is.
+    /// it).
     /// </summary>
     private void SourceConnectedChanged()
     {
         Log.Write(Pairing.SourceConnected ? "[setup] Connect your source: connected, Next available" : "[setup] Connect your source: waiting, Next greyed out");
         NextCommand.RaiseCanExecuteChanged();
-        Raise(nameof(ShowSkip));
     }
     private string? _discordLogged;
 
@@ -472,7 +468,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         OfferFunnel = StatusText.OfferFunnel(s.Tailscale);
         ShowUnattended = s.Tailscale is { Running: true };
         UnattendedStatus = Unattended(s.Tailscale?.Unattended);
-        Raise(nameof(ShowSkip));
         OfferUnattended = s.Tailscale is { Running: true, Unattended: false };
 
         Pairing.Refresh(s);

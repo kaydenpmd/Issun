@@ -183,6 +183,8 @@ if ($Step -in @("all","first")) {
     CheckFits $w "setup"
     Start-Sleep 2
     Dump $w "page 0"; Shot "setup-page-0" $w
+    function SkipShown { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "Skip"))); return [bool]($r -and $r.Current.Name -eq "Skip" -and -not $r.Current.IsOffscreen) }
+    Expect "Skip on the Discord page" (SkipShown)
     Click $w "Next" | Out-Null; Start-Sleep 3
     Dump $w "page 1"; Shot "setup-page-1" $w
     Click $w "Next" | Out-Null; Start-Sleep 4
@@ -216,6 +218,7 @@ if ($Step -in @("all","first")) {
     function Picked($id) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))); return [bool]($r -and $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) }
     function Pick($id) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))); $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Say "picked $id" }
     Shot "setup-page-3-radios" $w
+    Expect "Skip on the last page" (SkipShown)
     Expect "Yes is picked on a first run" (Picked "LaunchYes")
     Pick "LaunchNo"; Start-Sleep 2
     Expect "No removes Issun from startup" (-not (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue).Issun)

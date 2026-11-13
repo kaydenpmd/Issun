@@ -992,8 +992,10 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    af291a7 at 06:20, the last page included; the other steps (again, update,
    uninstall, winget, tailscale, address, qrrules) passed on earlier commits
    that day. The same steps pass on the WinUI build (see "Testing on a clean
-   PC" above). **24 commits on `main`, none pushed**, because a push releases and
-   the window still has `[text]` placeholders: Skip, the install link's title
+   PC" above). **Still none pushed: 75 commits on `main` ahead of GitHub as of
+   13 Nov 2026** (the WinUI move was merged into `main` locally on 12 Nov, at
+   the owner's "can we merge this all to main"), because a push releases and
+   the window still has 14 `[text]` placeholders: Skip, the install link's title
    and progress line, the new-key button, and the errors (no winget, install
    failed, no address, Funnel off, endpoint invalid, save failed, new key
    failed), besides the Tailscale cards above. Before asking the owner, check
@@ -1006,6 +1008,31 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    `spike/winui3/REPORT.md`, fce7811), and gave the go-ahead to the phased
    plan. See "The WinUI 3 move" below for what changed and how it was
    checked. Make further setup-window changes on top of it.
+   **Where it stood at the handoff of 13 Nov 2026 (03:00).** Installed on the
+   owner's PC: build 127 (ea3fc19), a local publish
+   (`tools/install-local.ps1`, CI's own command), not a release; builds 109 to
+   124 went in the same way the same night (see "Updating the installed
+   copy"). Done since the WinUI move and recorded in their own places: the Now
+   playing card as Windows' Quick Settings media card (58 px cover, title and
+   artist only, "Not playing" alone, empty square in
+   ControlAltFillColorQuarternary with no stroke), the explicit badge drawn to
+   SF Pro's 🅴 proportions ("Explicit" to screen readers), the cover hairline
+   one physical pixel in ControlStrokeColorDefault (the owner's stroke policy,
+   in the global CLAUDE.md), the full-bleed icon with every scaling step's
+   frame and the shell told after an install (`ShellIcons`), 1000 epx columns
+   in both windows, the key as password dots with its buttons under it, and
+   no Public address override. The demo plays songs from a list on the
+   owner's PC (`DemoSongs`). Open, beyond the placeholders:
+   - **Explicit by lookup may never fire.** Apple's public iTunes Search and
+     Lookup returned only clean editions on 13 Nov 2026, in every storefront
+     tried, so `trackExplicitness` from the store-ID lookup (used when the
+     source sends no `explicit`) may never say explicit. Not yet checked with
+     a known explicit store ID. Apple Music's web pages
+     (music.apple.com/us/search) still mark explicit items
+     (`showExplicitBadge` in their server-rendered data).
+   - **A flaky test** in Issun.Core failed once in eight runs on 13 Nov 2026
+     (not in anything changed that day); its name wasn't caught.
+   - The `cloudflared` service is still the owner's to remove.
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;
@@ -1194,6 +1221,17 @@ three changes the 36 itself needed isn't known, since the cache hid them all.
 and whenever `EnsureRegistered` finds a new build at the installed path, so a
 hand swap like these is covered too. Logged as `[install] told Windows the
 icons of the .exe and the Start menu entry may have changed`.
+
+**13 Nov 2026, builds 117 to 127**, each at the owner's ask ("install",
+"Install it"), with `tools/install-local.ps1` (the script these steps became):
+117, 119, 121, 122, 123, 124 and 127, down 7.5 to 17.7 s each, the build
+before kept as `Issun.exe.b<build>.bak` every time (so the folder holds
+several; deleting old ones is the owner's call). Build 117 logged the first
+`ShellIcons` refresh by itself. Build 127 was installed with
+`ISSUN_CLEAR_PUBLICBASE=1`, which dropped the removed override's 26-character
+value from settings.json while Issun was stopped (a backup is beside it as
+`settings.json.before-publicbase.bak`). Each time, Discord reconnected within
+2 s and the phone checked in within 30 s.
 
 **Two things the handover taught, for anyone repeating it:**
 

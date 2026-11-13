@@ -1067,8 +1067,10 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    owner's PC: build 127 (ea3fc19), a local publish (build 129, f6fede5, with
    the setup pages' slide, at 05:48 on 13 Nov 2026, at the owner's "install";
    then build 134, 96670f4, with Skip on every page and the Discord check on
-   Next, at 06:38, at "install and show me every current page"; 127 and 129
-   kept as `Issun.exe.b<build>.bak`)
+   Next, at 06:38, at "install and show me every current page"; then build
+   140, da4cf6a, with the Discord page's numbered cards and the owner's
+   wording, at 07:20, at "install"; 127, 129 and 134 kept as
+   `Issun.exe.b<build>.bak`)
    (`tools/install-local.ps1`, CI's own command), not a release; builds 109 to
    124 went in the same way the same night (see "Updating the installed
    copy"). Done since the WinUI move and recorded in their own places: the Now

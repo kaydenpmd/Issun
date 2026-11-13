@@ -123,13 +123,13 @@
                         <Button Content="Open Developer Portal" Command="{x:Bind ViewModel.OpenPortalCommand}" />
                     </tk:SettingsCard>
 
-                    <tk:SettingsCard Header="Application ID" Style="{StaticResource Row}">
+                    <tk:SettingsCard Header="Enter your application ID" Style="{StaticResource Row}">
                         <tk:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="2" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Width="{ThemeResource SettingsCardHeaderIconMaxSize}"
                                       AutomationProperties.AccessibilityView="Content" AutomationProperties.Name="2" />
                         </tk:SettingsCard.HeaderIcon>
                         <tk:SettingsCard.Description>
-                            <TextBlock Text="Copy this from the application's General Information page and paste it here." TextWrapping="Wrap" />
+                            <TextBlock Text="Copy it from the application's General Information page and paste it here." TextWrapping="Wrap" />
                         </tk:SettingsCard.Description>
                         <TextBox x:Name="ClientIdBox" Width="200"
                                  Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -147,7 +147,8 @@
                          add a third one that says "Make sure Discord is open"
                          with a button that says "Open""), their words. Next's
                          check needs Discord running; Open starts it. -->
-                    <tk:SettingsCard Header="Make sure Discord is open" Style="{StaticResource Row}">
+                    <tk:SettingsCard Header="Make sure Discord is open" Style="{StaticResource Row}"
+                                     Description="Discord needs to be open on this PC for Issun to connect to.">
                         <tk:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="3" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Width="{ThemeResource SettingsCardHeaderIconMaxSize}"
                                       AutomationProperties.AccessibilityView="Content" AutomationProperties.Name="3" />

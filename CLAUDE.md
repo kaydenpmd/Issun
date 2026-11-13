@@ -425,8 +425,11 @@ ever, and from **Set up again** in Settings after that. Four pages, in the
 owner's order of 12 Nov 2026:
 1. **Discord**: three numbered cards (the owner, 13 Nov 2026: "number the
    cards on the discord page and add a third one that says "Make sure Discord
-   is open" with a button that says "Open""): 1. the Developer Portal, 2. the
-   application ID, 3. Make sure Discord is open. The numbers sit in the
+   is open" with a button that says "Open""): 1. the Developer Portal, 2. "Enter
+   your application ID" ("Copy it from the application's General Information
+   page and paste it here."), 3. "Make sure Discord is open" ("Discord needs to
+   be open on this PC for Issun to connect to."), all the owner's words of the
+   same day. The numbers sit in the
    cards' icon space on the left ("can't you put numbers in their own space
    on the left yk more fancy"): a FontIcon holding the digit in the text font,
    as wide as the card lets an icon be (the Toolkit's

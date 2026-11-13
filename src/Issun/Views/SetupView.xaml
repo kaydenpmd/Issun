@@ -130,10 +130,15 @@
 
                     <!-- Next's answer from Discord, where the status card was
                          (the owner, 13 Nov 2026: "i want the error to be where
-                         the status card is rn"), as the Tailscale page puts its
-                         error under its cards. -->
-                    <TextBlock Text="{x:Bind ViewModel.ClientIdProblem}" Style="{StaticResource ErrorText}" Margin="2,8,0,0"
-                               Visibility="{x:Bind v:Bind.Present(ViewModel.ClientIdProblem)}" />
+                         the status card is rn", then "put the error text in its
+                         own card with a red ! or something"): WinUI's InfoBar at
+                         Error severity, Windows' own bar for an error, with its
+                         red icon and tinted fill, in the cards' column. No
+                         title and no close button: the next Next or an edit to
+                         the ID clears it. -->
+                    <InfoBar Severity="Error" IsClosable="False"
+                             IsOpen="{x:Bind v:Bind.Has(ViewModel.ClientIdProblem)}"
+                             Message="{x:Bind ViewModel.ClientIdProblem}" />
                 </StackPanel>
 
                 <!-- ───────────── 2. Tailscale ───────────── -->

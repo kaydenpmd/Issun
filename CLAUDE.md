@@ -432,9 +432,12 @@ owner's order of 12 Nov 2026:
    text with a spinner"). `DiscordIdCheck` opens a connection of its own,
    handshakes with the typed ID and closes; the presence connection is left
    alone. READY: the ID is saved and setup moves on. Anything else: the
-   reason goes in red below the ID's card, where the status card was ("i want
-   the error to be where the status card is rn"), as the Tailscale page's
-   error sits below its cards, in the main window's
+   reason goes below the ID's card, where the status card was ("i want the
+   error to be where the status card is rn"), in WinUI's InfoBar at Error
+   severity ("put the error text in its own card with a red ! or something"):
+   Windows' error bar, red-tinted, its icon a red circle with an ✕ (the ! in
+   a circle is Windows' warning bar, yellow), no title, no close button. The
+   words are the main window's
    Discord status wording (`PresenceWorker.DetailFor`: 4000 is "the
    application ID is invalid", no pipe is "Discord isn't running", and so on),
    and a box that isn't 17–20 digits gets "An application ID is 17–20 digits

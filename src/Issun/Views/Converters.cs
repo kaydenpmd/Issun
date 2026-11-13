@@ -20,4 +20,7 @@ public static class Bind
     /// <summary>Visible when the value is a non-empty string or any other non-null object.</summary>
     public static Visibility Present(object? value) =>
         value is null || value is string { Length: 0 } ? Visibility.Collapsed : Visibility.Visible;
+
+    /// <summary>True when the value is a non-empty string or any other non-null object: <see cref="Present"/> as a bool, for an InfoBar's IsOpen.</summary>
+    public static bool Has(object? value) => Present(value) == Visibility.Visible;
 }

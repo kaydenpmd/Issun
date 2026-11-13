@@ -217,7 +217,11 @@ def png(im):
 
 out = Path(sys.argv[1])
 big = frame(1024)
-frames = [(px, frame(px)) for px in (16, 20, 24, 32, 40, 48, 64)]
+# Every scaling step's size, not only 100%'s: at 150% the taskbar wants 36,
+# and with no 36 frame it drew the 32 one as it was, 4 px smaller each way
+# than Apple Music's beside it (12 Nov 2026). 30, 36 and 42 are 20 at 150%,
+# 24 at 150% and 24 at 175%; 60, 72, 80 and 96 are the larger steps of 48.
+frames = [(px, frame(px)) for px in (16, 20, 24, 30, 32, 36, 40, 42, 48, 60, 64, 72, 80, 96)]
 frames += [(px, big.resize((px, px), Image.LANCZOS)) for px in (128, 256)]
 # PNG for 128 and 256 (a 256 px BMP would be 256 KB of mostly tile), BMP below,
 # which everything that reads .ico files understands.

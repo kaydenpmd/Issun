@@ -14,7 +14,12 @@
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled"
                   IsTabStop="False">
-        <StackPanel Margin="24,12,24,24" MaxWidth="820">
+        <!-- MaxWidth 1000: Windows Settings' content column, measured maximized
+             on 26H2 build 26300.9457 at 150% (cards 998 epx wide;
+             design-research\microsoft\windows11-settings-content-width). No
+             theme resource gives a page's width, so it is typed. It was 820,
+             from Issun's first window, with no source. -->
+        <StackPanel Margin="24,12,24,24" MaxWidth="1000">
 
             <!-- ───────────── Couldn't start ───────────── -->
             <Border Style="{StaticResource Card}"

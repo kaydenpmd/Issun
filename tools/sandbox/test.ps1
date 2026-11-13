@@ -31,6 +31,23 @@ function Shot($name, $el) {
     } catch { Say "screenshot $name failed: $($_.Exception.Message)" }
 }
 
+# Frames of an element as fast as the screen gives them, for an animation:
+# held in memory with their times, saved afterwards as <name>-<ms>.png.
+function Frames($name, $el, $ms, [scriptblock]$start) {
+    # Not $w or $h: the script block runs in this scope and uses the test's $w, the window.
+    $r = $el.Current.BoundingRectangle; $fx=[int]$r.X; $fy=[int]$r.Y; $fw=[int]$r.Width; $fh=[int]$r.Height
+    $held = New-Object System.Collections.Generic.List[object]
+    $clock = [System.Diagnostics.Stopwatch]::StartNew()
+    & $start
+    while ($clock.ElapsedMilliseconds -lt $ms) {
+        $bmp = New-Object System.Drawing.Bitmap $fw, $fh
+        $g = [System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen($fx, $fy, 0, 0, $bmp.Size); $g.Dispose()
+        $held.Add([pscustomobject]@{ At = $clock.ElapsedMilliseconds; Bitmap = $bmp })
+    }
+    foreach ($f in $held) { $f.Bitmap.Save((Join-Path $out ("{0}-{1:D4}.png" -f $name, $f.At)), [System.Drawing.Imaging.ImageFormat]::Png); $f.Bitmap.Dispose() }
+    Say "frames $name ($($held.Count) in $ms ms, ${fw}x${fh})"
+}
+
 function FindWindow($title, $seconds) {
     $cond = New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $title)
     $deadline = (Get-Date).AddSeconds($seconds)
@@ -164,6 +181,13 @@ if ((Get-ItemProperty $personalize -ErrorAction SilentlyContinue).AppsUseLightTh
     Say "switched Windows to dark mode"
 }
 
+# Windows Sandbox is a remote session, and Windows turns animation effects off
+# there (Settings > Accessibility > Visual effects); WinUI then skips its
+# animations, and so does Issun. On, so the QR code's blur animation runs.
+Add-Type -Namespace IssunTest -Name Spi -MemberDefinition '[DllImport("user32.dll")] public static extern bool SystemParametersInfo(uint a, uint b, ref bool c, uint d); [DllImport("user32.dll", EntryPoint="SystemParametersInfo")] public static extern bool Set(uint a, uint b, System.IntPtr c, uint d);'
+$anim = $false; [IssunTest.Spi]::SystemParametersInfo(0x1042, 0, [ref]$anim, 0) | Out-Null
+if (-not $anim) { [IssunTest.Spi]::Set(0x1043, 0, [System.IntPtr]1, 3) | Out-Null; Say "turned Windows' animation effects on (were off)" }
+
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\Issun"
 $installed = Join-Path $installDir "Issun.exe"
 $download = Get-ChildItem "$env:USERPROFILE\Downloads\Issun-*.exe" | Select-Object -First 1
@@ -213,6 +237,29 @@ if ($Step -in @("all","first")) {
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Show")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
     Expect "a QR code with only the key can be shown" ($show -and $show.Current.IsEnabled)
+    # The QR code's blur (MetaMask's: 8 hidden, 4 at 30% while out of date),
+    # animated on Show and Hide: frames for the host to measure.
+    $qrImage = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "QR code with the address and key")))
+    if ($qrImage) {
+        Say "QR image: offscreen=$($qrImage.Current.IsOffscreen) rect=$($qrImage.Current.BoundingRectangle)"
+        Expect "the QR code is on screen to UI Automation" (-not $qrImage.Current.IsOffscreen)
+        if ($qrImage.Current.IsOffscreen) { $qrImage = $w }
+        Shot "qr-hidden" $qrImage
+        Frames "qr-show" $qrImage 700 { ClickId $w "ToggleQr" | Out-Null }
+        Shot "qr-shown" $qrImage
+        $endpointBox = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")))
+        $endpointEdit = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+            (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)),
+            (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")))))
+        if ($endpointEdit) {
+            $was = $endpointEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+            Frames "qr-stale" $qrImage 700 { $endpointEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue("https://example.test/now-playing") }
+            Shot "qr-stale" $qrImage
+            $endpointEdit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($was); Start-Sleep 1
+        } else { Say "no Endpoint field found for the out-of-date frames" }
+        Frames "qr-hide" $qrImage 700 { ClickId $w "ToggleQr" | Out-Null }
+        Shot "qr-hidden-again" $qrImage
+    } else { Say "FAIL no QR code image for the blur frames" }
     $next = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Next")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))

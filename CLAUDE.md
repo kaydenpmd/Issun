@@ -501,11 +501,36 @@ owner's order of 12 Nov 2026:
    is here too, and stays while connected, though Next then does the same.
    The ring is WinUI's own ProgressRing since the move
    to WinUI 3; the WPF build drew a copy of it (`Views/ProgressRing.cs`, in
-   git history). The QR code is blurred until Show. WinUI has no blur
-   effect, so the blur is done on the CPU (`Presentation/Blur.cs`) from the
-   code's own pixels (`PairingCode.Render`). A shown code decodes and a
-   blurred one doesn't (checked with `zxing-cpp`, 12 Nov 2026). The key was
-   blurred the same way (`Views/BlurredText`, in git history) until 13 Nov
+   git history). **The QR code is blurred until Show, by MetaMask's
+   numbers** (the owner, 13 Nov 2026, asked "where did you get the blur
+   level for the qr", had it researched, and chose "go metamask method"):
+   8 while hidden (MetaMask's `blur(8px)` for its recovery phrase and private
+   keys) and 4 at 30% opacity while the code is out of date and Regenerate
+   stands where Show was (MetaMask's expired QR code). A CSS blur's length is
+   the Gaussian's standard deviation, as Win2D's BlurAmount is, so they go in
+   as they are, in DIPs. The research, every source and commit, and the
+   comparison sheets are in the design library's
+   `cross-platform/secret-blur-values/`; the old 14 (a reach, sigma 4.67)
+   had no source at all. **The blur is animated, never cross-faded** ("do a
+   fancy blur/unblur animation none of that fake cross fade shit either"):
+   the code is drawn by the compositor through Win2D's GaussianBlurEffect
+   (soft borders, as a CSS blur), and its BlurAmount is animated, so every
+   frame is the code blurred by that frame's amount (`PairingCards.xaml.cs`).
+   WinUI's normal duration (ControlNormalAnimationDuration, 250 ms) on
+   Windows' Point to Point curve (0.55, 0.55, 0, 1), the nearest row Windows'
+   motion table has, as it has none for a blur; the 30% dim fades linearly at
+   ControlFasterAnimationDuration (83 ms), as Windows fades opacity. Nothing
+   moves when Windows' animation effects are off, and the log says so.
+   Measured in the sandbox (frames 30 ms apart, fitted against the sharp code
+   of the same run): hidden 7.5, out of date 4.0 at 0.30, and the in-between
+   frames fit a blur three to seven times better than a cross-fade. A hidden
+   or dimmed code doesn't decode with zxing-cpp; a shown one does. Windows
+   Sandbox runs with animation effects off, so its test turns them on.
+   An Image holds the sharp code at no opacity under the compositor's copy,
+   because an Image with no picture is offscreen to UI Automation and screen
+   readers would skip the code. Win2D (Microsoft.Graphics.Win2D 1.4.0) came
+   in for this; the CPU blur (`Presentation/Blur.cs`) went. The key was
+   blurred on the CPU too (`Views/BlurredText`, in git history) until 13 Nov
    2026, when the owner asked: "change the key blur to dots". Hidden, it is
    now one ● (U+25CF) per character, the character a PasswordBox hides its
    text with (`PairingViewModel.KeyDisplay`).
@@ -564,7 +589,9 @@ their shape. What had no direct WinUI equivalent, and what took its place:
   `MessageBoxW` through `DesktopShell.Message` and `AskYesNo`, the same box
   WPF's MessageBox drew, with the same flags. **The open-file dialog** is
   `GetOpenFileNameW` with WPF's title and filters (`DesktopShell.PickFile`).
-- **Blur**: none in WinUI; done on the CPU (see the setup window above).
+- **Blur**: none in WinUI's own API; Win2D's GaussianBlurEffect on a
+  composition brush since 13 Nov 2026 (the QR code; see the setup window
+  above). It was done on the CPU before.
 - **Triggers and converters**: the status dot is a control with visual
   states (`Views/StatusDot`), so its colours stay ThemeResources; visibility
   comes from x:Bind functions (`Views/Converters.cs`, class `Bind`). Every

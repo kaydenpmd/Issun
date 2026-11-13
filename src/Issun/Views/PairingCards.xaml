@@ -29,15 +29,27 @@
                          is where someone looks. Like Restart for an edited
                          field in Ammy. The owner's layout and word, 12 Nov 2026. -->
                     <Button Grid.Column="1" Content="{x:Bind ViewModel.ToggleQrLabel}" Command="{x:Bind ViewModel.ToggleQrCommand}"
+                            AutomationProperties.AutomationId="ToggleQr"
                             VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="64"
                             Visibility="{x:Bind v:Bind.Hidden(ViewModel.ShowReload)}" />
                     <Button Grid.Column="1" Content="Regenerate" Command="{x:Bind ViewModel.ReloadQrCommand}"
                             VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="64" AutomationProperties.AutomationId="ReloadQr"
                             Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowReload)}" />
                 </Grid>
-                <Image Source="{x:Bind ViewModel.Qr}" Width="200" Height="200" Margin="0,12,0,0" HorizontalAlignment="Left"
-                       Stretch="Fill" AutomationProperties.Name="QR code with the address and key"
-                       Visibility="{x:Bind v:Bind.Visible(ViewModel.HasQr)}" />
+                <!-- The code you see is drawn by the compositor, as a child
+                     visual of QrHost, through Win2D's Gaussian blur, so its
+                     blur can be animated (PairingCards.xaml.cs). The Image
+                     under it holds the sharp code at no opacity: without a
+                     picture of its own an Image is offscreen to UI Automation
+                     (sandbox, 13 Nov 2026), and screen readers would skip the
+                     code. Siblings, as an element's opacity would apply to a
+                     visual attached under it. -->
+                <Grid Width="200" Height="200" Margin="0,12,0,0" HorizontalAlignment="Left"
+                      Visibility="{x:Bind v:Bind.Visible(ViewModel.HasQr)}">
+                    <Image Source="{x:Bind ViewModel.QrSource}" Stretch="Fill" Opacity="0"
+                           AutomationProperties.Name="QR code with the address and key" />
+                    <Border x:Name="QrHost" />
+                </Grid>
             </StackPanel>
         </Border>
 

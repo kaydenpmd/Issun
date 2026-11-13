@@ -155,8 +155,8 @@ public sealed class PairingViewModel : Observable
                 Log.Write(dirty ? $"[{_tag}] endpoint edited" : $"[{_tag}] endpoint edit undone");
             _endpointDirty = dirty;
             Raise(nameof(ShowReload));
-            Raise(nameof(QrBlur));
-            UpdateQrImage();
+            Raise(nameof(QrBlurAmount));
+        Raise(nameof(QrOpacity));
             CopyEndpointCommand.RaiseCanExecuteChanged();
         }
     }
@@ -216,8 +216,8 @@ public sealed class PairingViewModel : Observable
                 Log.Write($"[{_tag}] new key during an endpoint edit: the QR code waits for the reload button");
             _qrKeyStale = true;
             Raise(nameof(ShowReload));
-            Raise(nameof(QrBlur));
-            UpdateQrImage();
+            Raise(nameof(QrBlurAmount));
+        Raise(nameof(QrOpacity));
             return;
         }
         _qrKey = key;
@@ -278,8 +278,8 @@ public sealed class PairingViewModel : Observable
         _qrKeyStale = false;
         _qrKey = _host.Settings.Key;
         Raise(nameof(ShowReload));
-        Raise(nameof(QrBlur));
-        UpdateQrImage();
+        Raise(nameof(QrBlurAmount));
+        Raise(nameof(QrOpacity));
         FillEndpoint(address.Length > 0 ? address + "/now-playing" : null);
         Log.Write($"[{_tag}] QR code redrawn {(address.Length > 0 ? "with" : "without")} an endpoint");
         return Task.FromResult(true);
@@ -315,11 +315,17 @@ public sealed class PairingViewModel : Observable
     public string ToggleKeyLabel => _keyShown ? "Hide" : "Show";
 
     /// <summary>
-    /// A Gaussian blur this wide on 13 px text or a 200 px code leaves nothing
-    /// legible or scannable. It hides the key from a glance or a screenshot;
-    /// it isn't encryption.
+    /// MetaMask's blurs, the owner's choice of 13 Nov 2026 ("go metamask
+    /// method"), measured in its code (design library,
+    /// cross-platform/secret-blur-values): a secret hidden until it's revealed
+    /// gets <c>filter: blur(8px)</c> (its recovery phrase and private keys), and
+    /// a QR code that has expired gets <c>blur(4px)</c> at 30% opacity. A CSS
+    /// blur's length is the Gaussian's standard deviation, as WinUI's
+    /// BlurAmount is, so these go in as they are, in DIPs. No system value
+    /// exists for this: Windows itself doesn't blur secrets. A blur hides the
+    /// code from a glance or a screenshot; it isn't encryption.
     /// </summary>
-    private const double BlurRadius = 14;
+    private const double HiddenBlur = 8, StaleBlur = 4, StaleOpacity = 0.3;
 
     // ───────────────────────────── QR code ─────────────────────────────
 
@@ -335,8 +341,8 @@ public sealed class PairingViewModel : Observable
             if (!Set(ref _qrShown, value))
                 return;
             Raise(nameof(ToggleQrLabel));
-            Raise(nameof(QrBlur));
-            UpdateQrImage();
+            Raise(nameof(QrBlurAmount));
+        Raise(nameof(QrOpacity));
             Log.Write($"[{_tag}] QR code {(value ? "shown" : "hidden")}");
         }
     }
@@ -348,52 +354,37 @@ public sealed class PairingViewModel : Observable
     public string ToggleQrLabel => _qrShown ? "Hide" : "Show";
 
     /// <summary>
-    /// Blurred while hidden, and while it needs regenerating (the owner,
-    /// 12 Nov 2026): a code that's out of date shouldn't be scanned, and
-    /// Regenerate stands where Show was.
+    /// How blurred the code is drawn, as a Gaussian standard deviation in DIPs:
+    /// MetaMask's 8 while hidden, its 4 for an expired code while the code
+    /// needs regenerating (the owner, 12 Nov 2026: a code that's out of date
+    /// shouldn't be scanned, and Regenerate stands where Show was), else
+    /// sharp. PairingCards animates between them.
     /// </summary>
-    public double QrBlur => _qrShown && !ShowReload ? 0 : BlurRadius;
+    public double QrBlurAmount => !_qrShown ? HiddenBlur : ShowReload ? StaleBlur : 0;
 
-    /// <summary>The code as drawn: sharp, or blurred while <see cref="QrBlur"/> says so.</summary>
-    public ImageSource? Qr { get => _qr; private set => Set(ref _qr, value); }
-    private ImageSource? _qr;
+    /// <summary>MetaMask's 30% for an expired code, while the code needs regenerating and isn't hidden.</summary>
+    public double QrOpacity => _qrShown && ShowReload ? StaleOpacity : 1;
 
     public bool HasQr => _qrPixels is not null;
 
-    /// <summary>The code's pixels, sharp; the image shown is made from these.</summary>
+    /// <summary>The code's pixels, always sharp: the blur is drawn over them by the compositor (PairingCards), so the picture is never a copy blurred in advance.</summary>
+    public Pixels? QrPixels => _qrPixels;
     private Pixels? _qrPixels;
-    private Pixels? _qrPixelsBlurred;
 
-    /// <summary>The Image the code is drawn in is 200 wide (PairingCards).</summary>
-    private const double QrWidth = 200;
+    /// <summary>
+    /// The sharp code as an image, for the Image that holds the code's place
+    /// at no opacity, so UI Automation sees a real image there (PairingCards).
+    /// Never visible: what's seen is the compositor's blurred copy.
+    /// </summary>
+    public ImageSource? QrSource { get => _qrSource; private set => Set(ref _qrSource, value); }
+    private ImageSource? _qrSource;
 
     private void SetQrPixels(Pixels? pixels)
     {
         _qrPixels = pixels;
-        _qrPixelsBlurred = null;
-        _qrImageBlurred = null;
+        QrSource = pixels is null ? null : Images.FromPixels(pixels);
         Raise(nameof(HasQr));
-        UpdateQrImage();
-    }
-
-    private bool? _qrImageBlurred;
-
-    /// <summary>Puts up the sharp code or the blurred one, whichever QrBlur asks for now.</summary>
-    private void UpdateQrImage()
-    {
-        if (_qrPixels is not { } sharp)
-        {
-            _qrImageBlurred = null;
-            Qr = null;
-            return;
-        }
-        var blurred = QrBlur > 0;
-        if (blurred == _qrImageBlurred)
-            return;
-        _qrImageBlurred = blurred;
-        if (blurred)
-            _qrPixelsBlurred ??= Blur.Gaussian(sharp, QrBlur * sharp.Width / QrWidth);
-        Qr = Images.FromPixels(blurred ? _qrPixelsBlurred! : sharp);
+        Raise(nameof(QrPixels));
     }
 
     private string? _qrFor;

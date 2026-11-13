@@ -53,6 +53,11 @@
          WinUI itself lacks and Microsoft's settings guidance points to. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
+    <!-- Win2D, Microsoft's effects library for WinUI: its GaussianBlurEffect
+         is how a composition brush blurs, which WinUI's own API doesn't
+         expose. Used for the QR code's animated blur (PairingCards), 13 Nov
+         2026. 1.4.0 (16 Mar 2026) needs only WinUI 1.8, which 2.6.5 covers. -->
+    <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
   </ItemGroup>
 
   <ItemGroup>

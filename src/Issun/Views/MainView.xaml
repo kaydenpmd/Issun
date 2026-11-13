@@ -89,12 +89,15 @@
                         <!-- A track -->
                         <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.HasTrack)}">
                             <!-- Two lines at most: some titles carry every remix credit.
-                                 An explicit track's title ends in a typed 🅴;
-                                 see NowPlayingText.CardTitle. -->
-                            <TextBlock Text="{x:Bind ViewModel.Title}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                 An explicit track's title ends in a typed 🅴, in
+                                 Segoe UI Symbol rather than the fallback's colour
+                                 emoji; see NowPlayingText.ExplicitBadge. -->
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}"
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                                       ToolTipService.ToolTip="{x:Bind ViewModel.Title}" />
+                                       ToolTipService.ToolTip="{x:Bind ViewModel.Title}">
+                                <Run Text="{x:Bind ViewModel.Title}" /><Run Text="{x:Bind ViewModel.ExplicitBadge}" FontFamily="Segoe UI Symbol" />
+                            </TextBlock>
                             <TextBlock Text="{x:Bind ViewModel.Artist}" Style="{StaticResource CaptionTextBlockStyle}"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}" />

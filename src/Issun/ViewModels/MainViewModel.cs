@@ -106,7 +106,8 @@ public sealed partial class MainViewModel : Observable, IDisposable
         // ── Now playing ──
         if (s.Track is { } track)
         {
-            Title = NowPlayingText.CardTitle(track, s.Explicit);
+            Title = NowPlayingText.Title(track);
+            ExplicitBadge = NowPlayingText.ExplicitBadge(s.Explicit);
             Artist = NowPlayingText.Artist(track);
         }
         HasTrack = s.Track is not null;
@@ -146,6 +147,10 @@ public sealed partial class MainViewModel : Observable, IDisposable
 
     public string Title { get => _title; private set => Set(ref _title, value); }
     private string _title = "";
+
+    /// <summary>" 🅴" after an explicit track's title, else empty; see NowPlayingText.ExplicitBadge.</summary>
+    public string ExplicitBadge { get => _explicitBadge; private set => Set(ref _explicitBadge, value); }
+    private string _explicitBadge = "";
 
     public string Artist { get => _artist; private set => Set(ref _artist, value); }
     private string _artist = "";

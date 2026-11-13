@@ -683,11 +683,19 @@ cosmetic annoyance; a link that opens the wrong song is a broken promise.
 
 **So does explicitness, when the source doesn't say** (added 23 Sept 2026, the
 window's "E" after the title). The E is a typed 🅴 (U+1F174) after a space, in
-the title's own colour (`NowPlayingText.CardTitle`). WPF's font fallback drew
-it with Segoe UI Symbol, seen rendering on 24 Sept 2026, and WinUI's draws it
-too (the demo's explicit track, rendered 12 Nov 2026). (Yu Gothic and a few
-other Japanese fonts have the character too; fallback picks Segoe UI Symbol.) It replaced a hand-drawn badge the owner asked to
-have rolled back as more complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`
+the title's own colour (`NowPlayingText.ExplicitBadge`), as iOS's Lock Screen
+does it: iOS 26.1's `MRUNowPlayingInfo` appends the badge to the title as text,
+and in SF Pro U+1F174 is the SF Symbol `e.square.fill` at small scale
+(`uni10009D.small`), cap height. WPF's font fallback drew it with Segoe UI
+Symbol (24 Sept 2026). **WinUI's fallback picks Segoe UI Emoji instead**, a
+colour emoji that hangs 289/2048 below the baseline, and the owner saw it on
+build 114 (13 Nov 2026): "this explicit symbol looks like shit". So since then
+the badge is its own `Run` with `FontFamily="Segoe UI Symbol"`, whose 🅴 runs
+exactly from the baseline to cap height (0-1434, Segoe's cap height) and takes
+the title's colour. The research, Apple Music for Windows' own badge included,
+is in the design library, `apple\apple-music-windows-explicit-badge`. It
+replaced a hand-drawn badge the owner asked to have rolled back as more
+complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`
 first: only a JSON `true` or `false` counts, and `false` beats the catalog.
 Ammy sends only `true`, because iOS's `isExplicitItem` is a plain Bool whose
 `false` also means "unrated". Absent, it falls back to `trackExplicitness` from

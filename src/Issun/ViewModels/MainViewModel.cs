@@ -213,7 +213,7 @@ public sealed partial class MainViewModel : Observable, IDisposable
         if (_coverUrl != url || _disposed)
             return;
         // Decoded at the card's size times the screen's scale, not the
-        // source's 600+ px; 256 covers the 112 px card up to 225%.
+        // source's 600+ px; 256 covers the 58 px cover up to 400%.
         var image = bytes is null ? null : await Images.DecodeAsync(bytes, 256, "cover art");
         if (_coverUrl == url && !_disposed)
             Cover = image;

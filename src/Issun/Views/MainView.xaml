@@ -45,11 +45,17 @@
                          ControlCornerRadius, 4, which Microsoft Learn's
                          "Geometry" page gives to in-page elements. It is drawn
                          over the art, as Apple Music draws its own, so a cover
-                         the same colour as the card still has an edge. -->
-                    <Grid Width="112" Height="112" VerticalAlignment="Top">
+                         the same colour as the card still has an edge.
+
+                         58 by 58: Windows' own media card in Quick Settings,
+                         measured 12 Nov 2026 on 26H2 build 26300.9457 at 150%,
+                         draws its cover 87 px square, 58 effective pixels. No
+                         theme resource gives that size, so it is typed here
+                         (design-research\microsoft\windows11-media-controls). -->
+                    <Grid Width="58" Height="58" VerticalAlignment="Top">
                         <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource SubtleFillColorSecondaryBrush}">
                             <TextBlock Text="&#xE8D6;" FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                       FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                        AutomationProperties.Name="No cover" />
                         </Border>

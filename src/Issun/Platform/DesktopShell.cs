@@ -54,6 +54,38 @@ public static class DesktopShell
         Start(uri.AbsoluteUri, "the link");
     }
 
+    /// <summary>
+    /// Opens the Discord desktop app, or brings it to the front, through the
+    /// discord:// link Discord registers for itself (HKCU\Software\Classes\discord,
+    /// "Discord.exe --url -- %1", seen on this PC 13 Nov 2026), the link
+    /// discord.com's own "Open Discord" uses. Where Discord hasn't registered
+    /// it (not installed), opens Discord's download page instead.
+    /// Returns which it did, for the log.
+    /// </summary>
+    public static string OpenDiscord()
+    {
+        bool registered;
+        try
+        {
+            using var key = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(@"discord\shell\open\command");
+            registered = key?.GetValue(null) is string { Length: > 0 };
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"[ui] couldn't read Discord's link registration: {ex.Message}");
+            registered = false;
+        }
+        if (registered)
+        {
+            Start("discord://", "Discord");
+            return "Discord";
+        }
+        Start(DiscordDownload, "Discord's download page");
+        return "Discord's download page (Discord isn't installed: no discord:// link registered)";
+    }
+
+    public const string DiscordDownload = "https://discord.com/download";
+
     /// <summary>Opens a folder in Explorer, creating it first so the click never lands on "can't find".</summary>
     public static void OpenFolder(string path)
     {

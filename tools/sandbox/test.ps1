@@ -189,6 +189,9 @@ if ($Step -in @("all","first")) {
     # page stays with the reason under the ID, and Skip moves on.
     function NameShown($name) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))); return [bool]($r -and -not $r.Current.IsOffscreen) }
     Expect "no Discord status card" (-not (NameShown "Set the Discord application ID in Settings. Presence stays off until there is one."))
+    Expect "the cards are numbered, with Make sure Discord is open third" ((NameShown "1. Make an application") -and (NameShown "2. Application ID") -and (NameShown "3. Make sure Discord is open"))
+    $openDiscord = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "OpenDiscord")))
+    Expect "the third card has Open" ($openDiscord -and $openDiscord.Current.Name -eq "Open")
     Click $w "Next" | Out-Null; Start-Sleep 2
     Expect "Next with no ID stays and says why" ((OnPage $w "Connect to Discord") -and (NameShown "An application ID is 17$([char]0x2013)20 digits long."))
     $idBox = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Discord application ID")))

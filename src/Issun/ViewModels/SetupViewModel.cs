@@ -83,6 +83,7 @@ public sealed class SetupViewModel : Observable, IDisposable
         });
         CloseCommand = new Command(() => CloseRequested?.Invoke());
         OpenPortalCommand = new Command(() => Open(DeveloperPortal, "the Discord Developer Portal"));
+        OpenDiscordCommand = new Command(() => Log.Write($"[setup] Open on the Discord page: opening {DesktopShell.OpenDiscord()}"));
         // Installs with winget, as the owner asked (12 Nov 2026). Where there is
         // no winget (some Windows 10 and LTSC installs, Windows Sandbox) it opens
         // the download page instead, as the button did before. The words are
@@ -258,6 +259,9 @@ public sealed class SetupViewModel : Observable, IDisposable
     // ───────────────────────────── Discord ─────────────────────────────
 
     public Command OpenPortalCommand { get; }
+
+    /// <summary>The third card's Open (the owner, 13 Nov 2026): starts Discord, or brings it forward.</summary>
+    public Command OpenDiscordCommand { get; }
 
     private string _clientId;
 

@@ -423,7 +423,13 @@ run of a build that has this.
 **The setup window** opens by itself on a first run (no settings.json), once
 ever, and from **Set up again** in Settings after that. Four pages, in the
 owner's order of 12 Nov 2026:
-1. **Discord**: the Developer Portal card and the application ID. **Next
+1. **Discord**: three numbered cards (the owner, 13 Nov 2026: "number the
+   cards on the discord page and add a third one that says "Make sure Discord
+   is open" with a button that says "Open""): 1. the Developer Portal, 2. the
+   application ID, 3. Make sure Discord is open, whose Open starts Discord
+   through the discord:// link Discord registers for itself, or opens
+   discord.com/download where none is registered (`DesktopShell.OpenDiscord`).
+   **Next
    checks the ID with Discord, once per click** (the owner, 13 Nov 2026:
    "remove the third card from the discord page. make click send the request
    and pop an error somewhere if the request returns wrong. it will only check

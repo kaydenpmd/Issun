@@ -114,18 +114,27 @@
                 <StackPanel x:Name="DiscordStep">
                     <TextBlock Text="Connect to Discord" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
 
-                    <tk:SettingsCard Header="Make an application" Style="{StaticResource Row}"
+                    <tk:SettingsCard Header="1. Make an application" Style="{StaticResource Row}"
                                      Description="In the Discord Developer Portal, select New Application and give it a name.">
                         <Button Content="Open Developer Portal" Command="{x:Bind ViewModel.OpenPortalCommand}" />
                     </tk:SettingsCard>
 
-                    <tk:SettingsCard Header="Application ID" Style="{StaticResource Row}">
+                    <tk:SettingsCard Header="2. Application ID" Style="{StaticResource Row}">
                         <tk:SettingsCard.Description>
                             <TextBlock Text="Copy this from the application's General Information page and paste it here." TextWrapping="Wrap" />
                         </tk:SettingsCard.Description>
                         <TextBox x:Name="ClientIdBox" Width="200"
                                  Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  AutomationProperties.Name="Discord application ID" />
+                    </tk:SettingsCard>
+
+                    <!-- Numbered, with this third card, at the owner's ask of
+                         13 Nov 2026 ("number the cards on the discord page and
+                         add a third one that says "Make sure Discord is open"
+                         with a button that says "Open""), their words. Next's
+                         check needs Discord running; Open starts it. -->
+                    <tk:SettingsCard Header="3. Make sure Discord is open" Style="{StaticResource Row}">
+                        <Button Content="Open" Command="{x:Bind ViewModel.OpenDiscordCommand}" AutomationProperties.AutomationId="OpenDiscord" />
                     </tk:SettingsCard>
 
                     <!-- Next's answer from Discord, where the status card was

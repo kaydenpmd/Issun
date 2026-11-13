@@ -1114,6 +1114,19 @@ before stopping anything. `/version` answered `issun 0.1.0 (48)`; Discord
 reconnected and the phone's next push (Ammy 1.0 (167)) landed within 2 s of
 the start.
 
+**12 Nov 2026, build 48 to 109, the first WinUI 3 build, at the owner's
+"install the newest build on my pc idc about placeholder text".** Not a
+release: `main` (72d0c0b) wasn't pushed, so build 109 was published locally
+with CI's exact command (`-p:IssunBuild=109 -p:IssunCommit=72d0c0b`, the
+tests passing first), SHA-256 F6EF58BC…ECBF5B9. Build 48 is kept as
+`Issun.exe.b48.bak`. **One new trap:** after the rename, `Get-Process` still
+reports the running process under the old path, `Issun.exe`, so a
+`Where-Object Path -eq <the .bak>` filter matched nothing and build 48 kept
+running. The new copy's launch then handed off to it and exited. Stop the old
+one by the process ID you noted before the rename. Once that was done, build
+109 answered `/version` within 4 s, connected to Discord at once, and deleted
+377 MB of earlier builds' unpacked files from `%TEMP%\.net\Issun`.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

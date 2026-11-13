@@ -223,9 +223,12 @@ builds are; a local build lands in `src/Issun/bin/x64/Debug/net9.0-windows10.0.2
   it off the screen; the render is at 1.25x through `RasterizationScale`.
   Each PNG gets a `.text.json` beside it: every visible piece of text and
   where it sits, for wording pages.
-- `--uninstall`: what Settings › Apps runs. Asks first, quits a running Issun,
-  then removes the Run entry, the Start menu entry, the Apps entry and the
-  install folder. Settings, key, logs and history stay.
+- `--uninstall`: what Settings › Apps runs. Quits a running Issun, then
+  removes the Run entry, the Start menu entry, the Apps entry and the install
+  folder. Settings, key, logs and history stay. It asks nothing since 12 Nov
+  2026 (the owner: "drop it", of the light Win32 "Uninstall Issun?" box):
+  Windows 11's Settings asks first in its own flyout. Control Panel's
+  Programs and Features doesn't, so from there it simply uninstalls.
 - `ISSUN_HOME`: puts both the config and data folders under one directory
   (see `Paths.cs`).
 

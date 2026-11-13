@@ -102,9 +102,16 @@
                  column (and PowerToys' PageMaxWidth). The footer below keeps
                  to the same column. -->
             <Grid Margin="24,20,24,12" MaxWidth="1000">
+                <!-- The pages slide in a Frame, with WinUI's own navigation
+                     transition (SetupView.xaml.cs says which). The four pages
+                     below are written here, where x:Bind reaches them, and the
+                     code moves each into the Frame's page as it's shown. -->
+                <Frame x:Name="Pages" IsNavigationStackEnabled="False" IsTabStop="False" />
+
+                <Grid x:Name="StepStore" Visibility="Collapsed">
 
                 <!-- ───────────── 1. Discord ───────────── -->
-                <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.OnDiscordPage)}">
+                <StackPanel x:Name="DiscordStep">
                     <TextBlock Text="Connect to Discord" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
 
                     <tk:SettingsCard Header="Make an application" Style="{StaticResource Row}"
@@ -139,7 +146,7 @@
                 </StackPanel>
 
                 <!-- ───────────── 2. Tailscale ───────────── -->
-                <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.OnTailscalePage)}">
+                <StackPanel x:Name="TailscaleStep">
                     <TextBlock Text="Make this PC reachable with a Tailscale Funnel" Style="{StaticResource MainInstruction}" />
                     <TextBlock Style="{StaticResource PageBody}"
                                Text="This step will give your PC a persistent address to connect to. Without one, you'll be stuck with a rotating IP address.&#x0a;Tailscale is a free service." />
@@ -215,7 +222,7 @@
                 </StackPanel>
 
                 <!-- ───────────── 3. Start with Windows ───────────── -->
-                <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.OnStartPage)}">
+                <StackPanel x:Name="StartStep">
                     <TextBlock Text="Launch Issun on startup?" Style="{StaticResource MainInstruction}" Margin="0,0,0,12" />
 
                     <!-- Yes and No radio buttons under the question (the owner,
@@ -230,7 +237,7 @@
                 </StackPanel>
 
                 <!-- ───────────── 4. Source ───────────── -->
-                <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.OnSourcePage)}">
+                <StackPanel x:Name="SourceStep">
                     <TextBlock Text="Connect your source" Style="{StaticResource MainInstruction}" />
                     <TextBlock Style="{StaticResource PageBody}"
                                Text="Complete these fields in the service that you're connecting to Issun." />
@@ -238,6 +245,7 @@
                     <!-- The cards are the main window's too (Views/PairingCards). -->
                     <ContentControl x:Name="PairingHost" HorizontalContentAlignment="Stretch" IsTabStop="False" />
                 </StackPanel>
+                </Grid>
             </Grid>
         </ScrollViewer>
 

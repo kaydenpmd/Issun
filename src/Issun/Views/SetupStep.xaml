@@ -1,0 +1,7 @@
+<Page x:Class="Issun.Views.SetupStep"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      IsTabStop="False">
+    <!-- One page of the setup window inside its Frame. It holds whichever of
+         SetupView's four pages it was navigated to with (SetupStep.xaml.cs). -->
+</Page>

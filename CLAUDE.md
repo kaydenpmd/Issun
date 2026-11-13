@@ -477,7 +477,16 @@ The structure is Microsoft's wizard guidance, saved in the design library at
 `microsoft/windows-setup-wizards/`: no welcome page, a main instruction per page
 (Windows 11's Title style, 28/36 semibold), Back, Next and Cancel, Cancel
 becoming Close on the last page. The rest is the main window's cards. Every
-step logs as `[setup]`. Command links (Windows' title-and-note buttons, measured
+step logs as `[setup]`. Moving between pages slides, since 13 Nov 2026 (the
+owner: "let's add transition animations between issun's setup pages"): the
+pages sit in a `Frame` and use WinUI's own horizontal slide, Next and Skip
+from the right, Back from the left, the first page with none. Microsoft's Page
+transitions guidance (design library, `microsoft/windows-page-transitions/`)
+has it for "sibling pages" next to each other and says nothing about wizards,
+so it is the nearest documented fit, not a rule. The pages are still written in
+`SetupView.xaml` for x:Bind and moved into each `SetupStep` page as it's shown;
+a `StepSlot` remembers which one holds it (Back threw otherwise). Not yet seen
+moving on the owner's screen. Command links (Windows' title-and-note buttons, measured
 in the library's `microsoft/command-links/`) were rendered for the Tailscale
 page's choice on 12 Nov 2026 and set aside for Next and Skip.
 

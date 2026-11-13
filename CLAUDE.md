@@ -686,13 +686,18 @@ window's "E" after the title). The E is a typed 🅴 (U+1F174) after a space, in
 the title's own colour (`NowPlayingText.ExplicitBadge`), as iOS's Lock Screen
 does it: iOS 26.1's `MRUNowPlayingInfo` appends the badge to the title as text,
 and in SF Pro U+1F174 is the SF Symbol `e.square.fill` at small scale
-(`uni10009D.small`), cap height. WPF's font fallback drew it with Segoe UI
-Symbol (24 Sept 2026). **WinUI's fallback picks Segoe UI Emoji instead**, a
-colour emoji that hangs 289/2048 below the baseline, and the owner saw it on
-build 114 (13 Nov 2026): "this explicit symbol looks like shit". So since then
-the badge is its own `Run` with `FontFamily="Segoe UI Symbol"`, whose 🅴 runs
-exactly from the baseline to cap height (0-1434, Segoe's cap height) and takes
-the title's colour. The research, Apple Music for Windows' own badge included,
+(`uni10009D.small`), cap height. Windows' font fallback draws it with Segoe UI
+Symbol, in WPF (24 Sept 2026) and in WinUI: its 🅴 runs exactly from the
+baseline to cap height (0-1434, Segoe's cap height) in the title's colour.
+Since 13 Nov 2026 the badge is its own `Run` with `FontFamily="Segoe UI
+Symbol"`, which pins that rather than leaving it to fallback. **That changed
+no pixel**: Claude took the owner's dislike of the badge on build 114 ("this
+explicit symbol looks like shit") for fallback having picked Segoe UI Emoji's
+colour emoji, and a render of the same song before and after the change is
+identical. What the owner dislikes is Segoe UI Symbol's design, an E three
+quarters of the square's height in thin strokes, against Apple's (SF Pro's
+glyph and Apple Music for Windows' badge): an E half the height in a softer
+square. Still open. The research, Apple Music for Windows' own badge included,
 is in the design library, `apple\apple-music-windows-explicit-badge`. It
 replaced a hand-drawn badge the owner asked to have rolled back as more
 complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`

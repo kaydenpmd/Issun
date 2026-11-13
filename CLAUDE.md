@@ -1096,8 +1096,10 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    then build 134, 96670f4, with Skip on every page and the Discord check on
    Next, at 06:38, at "install and show me every current page"; then build
    140, da4cf6a, with the Discord page's numbered cards and the owner's
-   wording, at 07:20, at "install"; 127, 129 and 134 kept as
-   `Issun.exe.b<build>.bak`)
+   wording, at 07:20, at "install"; then build 142, 1f9e7a5, with
+   MetaMask's animated QR blur, at 15:34 ("Yes, install"; the script's first
+   try stopped at its own test run, which then passed twice, cause not
+   found); 127, 129, 134 and 140 kept as `Issun.exe.b<build>.bak`)
    (`tools/install-local.ps1`, CI's own command), not a release; builds 109 to
    124 went in the same way the same night (see "Updating the installed
    copy"). Done since the WinUI move and recorded in their own places: the Now

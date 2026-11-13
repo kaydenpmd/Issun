@@ -426,7 +426,11 @@ owner's order of 12 Nov 2026:
 1. **Discord**: three numbered cards (the owner, 13 Nov 2026: "number the
    cards on the discord page and add a third one that says "Make sure Discord
    is open" with a button that says "Open""): 1. the Developer Portal, 2. the
-   application ID, 3. Make sure Discord is open, whose Open starts Discord
+   application ID, 3. Make sure Discord is open. The numbers sit in the
+   cards' icon space on the left ("can't you put numbers in their own space
+   on the left yk more fancy"): a FontIcon holding the digit in the text font,
+   20 wide so every header starts at the same place, and exposed to UI
+   Automation (icons otherwise aren't), so screen readers read them. Open starts Discord
    through the discord:// link Discord registers for itself, or opens
    discord.com/download where none is registered (`DesktopShell.OpenDiscord`).
    **Next

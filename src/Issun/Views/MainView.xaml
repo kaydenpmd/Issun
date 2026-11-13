@@ -62,12 +62,16 @@
                          theme resource gives that size, so it is typed here
                          (design-research\microsoft\windows11-media-controls). -->
                     <Grid Grid.Column="1" Width="58" Height="58" VerticalAlignment="Center">
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource SubtleFillColorSecondaryBrush}">
-                            <TextBlock Text="&#xE8D6;" FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                       FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                       AutomationProperties.Name="No cover" />
-                        </Border>
+                        <!-- No cover: an empty square, as Ammy's (and Control Center's)
+                             is, no symbol (the owner, 13 Nov 2026). Its fill is the one
+                             WinUI gives its own empty picture, PersonPicture's
+                             ControlAltFillColorQuarternary (generic.xaml, WinAppSDK
+                             2.6.5), which shows on the card in both themes: #18000000 in
+                             light and #12FFFFFF in dark, on the card's #B3FFFFFF and
+                             #0DFFFFFF. It was SubtleFillColorSecondary, a hover fill, and
+                             ControlFillColorDefault is the card's own colour in light.
+                             PersonPicture keeps a stroke too, so the hairline below stays. -->
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource ControlAltFillColorQuarternaryBrush}" />
                         <Border CornerRadius="{ThemeResource ControlCornerRadius}"
                                 Visibility="{x:Bind v:Bind.Visible(ViewModel.HasCover)}">
                             <Border.Background>

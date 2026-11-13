@@ -429,13 +429,14 @@ owner's order of 12 Nov 2026:
    your application ID" ("Copy it from the application's General Information
    page and paste it here."), 3. "Make sure Discord is open" ("Discord needs to
    be open on this PC for Issun to connect to."), all the owner's words of the
-   same day. The numbers sit in the
+   same day; its button, first "Open", is "Open Discord" (the owner, the
+   same day). The numbers sit in the
    cards' icon space on the left ("can't you put numbers in their own space
    on the left yk more fancy"): a FontIcon holding the digit in the text font,
    as wide as the card lets an icon be (the Toolkit's
    `SettingsCardHeaderIconMaxSize`, not a typed 20; the owner: "use semantic
    spacing") so every header starts at the same place, and exposed to UI
-   Automation (icons otherwise aren't), so screen readers read them. Open starts Discord
+   Automation (icons otherwise aren't), so screen readers read them. Open Discord starts Discord
    through the discord:// link Discord registers for itself, or opens
    discord.com/download where none is registered (`DesktopShell.OpenDiscord`).
    **Next

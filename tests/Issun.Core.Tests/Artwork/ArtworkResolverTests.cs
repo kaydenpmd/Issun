@@ -426,17 +426,17 @@ public class ArtworkResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task The_public_base_setting_overrides_tailscale_and_is_read_per_call()
+    public async Task The_public_base_follows_tailscale_and_is_read_per_call()
     {
         _config.DetectedPublicBase = PublicBase;
         using var resolver = Make(FakeItunes.Serving(NoResults));
         var first = await resolver.ResolveAsync(Track(jpeg: Py.Jpeg()), CancellationToken.None);
 
-        _config.Settings = _config.Settings with { PublicBase = "https://relay.example.net" };
+        _config.DetectedPublicBase = "https://renamed-pc.example-tailnet.ts.net";
         var second = await resolver.ResolveAsync(Track(), CancellationToken.None);
 
         Assert.StartsWith(PublicBase + "/art/", first.Url);
-        Assert.StartsWith("https://relay.example.net/art/", second.Url);
+        Assert.StartsWith("https://renamed-pc.example-tailnet.ts.net/art/", second.Url);
     }
 
     [Fact]

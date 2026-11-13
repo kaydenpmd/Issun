@@ -253,12 +253,14 @@ public sealed class PairingViewModel : Observable
     }
 
     /// <summary>
-    /// Applies the field: saves it as Settings' Public address (empty when it
-    /// is Tailscale's own or blank, so Issun keeps following Tailscale) and
-    /// redraws the QR code with it. A blank field leaves the endpoint out of
-    /// the code, so the source keeps its own.
+    /// Applies the field to the QR code: the code is redrawn with it, and a
+    /// blank field leaves the endpoint out of the code, so the source keeps its
+    /// own. Nothing is saved. Issun's own address is always Tailscale's: the
+    /// Public address override that this used to save went on 13 Nov 2026 (the
+    /// owner: "clear that publicbase mechanic"), after the old Cloudflare
+    /// address it held from relay.py's .env kept showing in setup.
     /// </summary>
-    private async Task<bool> ApplyEndpointAsync()
+    private Task<bool> ApplyEndpointAsync()
     {
         var typed = _endpointText;
         var address = NormaliseAddress(typed);
@@ -266,21 +268,12 @@ public sealed class PairingViewModel : Observable
         {
             EndpointProblem = "[text]";
             Log.Write($"[{_tag}] not applying an endpoint of {typed.Trim().Length} characters: not an https address");
-            return false;
+            return Task.FromResult(false);
         }
         var tailscale = _host.Snapshot.Tailscale?.PublicBase?.TrimEnd('/');
-        var setting = address == tailscale ? "" : address;
-        if (setting != _host.Settings.PublicBase)
-        {
-            Log.Write(setting.Length == 0
-                ? $"[{_tag}] endpoint applied: Issun follows Tailscale's address"
-                : $"[{_tag}] endpoint applied: a public address of {setting.Length} characters{(setting.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) ? ", a Tailscale name" : "")}");
-            await _host.UpdateSettingsAsync(_host.Settings with { PublicBase = setting });
-        }
-        else
-        {
-            Log.Write($"[{_tag}] endpoint applied: the setting was already that");
-        }
+        Log.Write(address.Length == 0 ? $"[{_tag}] endpoint applied: none, so the code carries only the key"
+            : address == tailscale ? $"[{_tag}] endpoint applied: Tailscale's address"
+            : $"[{_tag}] endpoint applied: an address of {address.Length} characters, for the QR code only");
         _endpointDirty = false;
         _qrKeyStale = false;
         _qrKey = _host.Settings.Key;
@@ -289,7 +282,7 @@ public sealed class PairingViewModel : Observable
         UpdateQrImage();
         FillEndpoint(address.Length > 0 ? address + "/now-playing" : null);
         Log.Write($"[{_tag}] QR code redrawn {(address.Length > 0 ? "with" : "without")} an endpoint");
-        return true;
+        return Task.FromResult(true);
     }
 
     // ───────────────────────────── Key ─────────────────────────────

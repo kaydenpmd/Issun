@@ -464,7 +464,10 @@ if ($Step -eq "address") {
     $r = $w.FindFirst($Tree::Descendants, $reload)
     Expect "the reload button goes once applied" (-not $r -or $r.Current.IsOffscreen)
     $sj = Get-Content "$env:APPDATA\Issun\settings.json" -Raw | ConvertFrom-Json
-    Expect "saved as Settings' public address" ($sj.publicBase -eq "https://issun-test.example.com")
+    # Since 13 Nov 2026 a typed endpoint goes into the QR code only: the
+    # Public address override it used to be saved as is gone.
+    Expect "not saved to settings" (-not $sj.publicBase)
+    Expect "the field keeps it" ($value.Current.Value -eq "https://issun-test.example.com/now-playing")
     $oldKey = $sj.key
     ClickId $w "NewKey" | Out-Null; Start-Sleep 2
     $sj = Get-Content "$env:APPDATA\Issun\settings.json" -Raw | ConvertFrom-Json

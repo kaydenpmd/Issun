@@ -23,14 +23,6 @@ public sealed record Settings
     /// <summary>RELAY_PORT. Tailscale Funnel proxies to localhost on this port.</summary>
     public int Port { get; init; } = 8787;
 
-    /// <summary>
-    /// PUBLIC_BASE override, e.g. https://kaydenspc.example.ts.net, no trailing
-    /// slash. Empty means derive it from Tailscale (see <see cref="IConfig.PublicBase"/>).
-    /// Needed for phone-uploaded artwork: Discord's CDN fetches the image itself
-    /// and cannot reach 127.0.0.1.
-    /// </summary>
-    public string PublicBase { get; init; } = "";
-
     /// <summary>STATUS_LINE: "name", "state" or "details" — which line the compact member list shows.</summary>
     public string StatusLine { get; init; } = "state";
 
@@ -54,9 +46,12 @@ public interface IConfig
     Settings Settings { get; }
 
     /// <summary>
-    /// PUBLIC_BASE as the running components should use it: the Settings
-    /// override if set, otherwise https://&lt;tailscale dns name&gt;, otherwise "".
-    /// Never has a trailing slash.
+    /// This PC's public address: https://&lt;tailscale dns name&gt;, or "" until
+    /// Tailscale reports one. Never has a trailing slash. Needed for
+    /// phone-uploaded artwork, since Discord's CDN fetches the image itself and
+    /// can't reach 127.0.0.1. There was a Settings override (relay.py's
+    /// PUBLIC_BASE) until 13 Nov 2026; the owner had it removed, and a
+    /// settings.json that still holds publicBase is read as if it didn't.
     /// </summary>
     string PublicBase { get; }
 }
@@ -82,8 +77,7 @@ public sealed class MutableConfig : IConfig
         set => Volatile.Write(ref _detectedBase, (value ?? "").TrimEnd('/'));
     }
 
-    public string PublicBase =>
-        Settings.PublicBase is { Length: > 0 } explicitBase ? explicitBase.TrimEnd('/') : DetectedPublicBase;
+    public string PublicBase => DetectedPublicBase;
 }
 
 public interface ISettingsStore

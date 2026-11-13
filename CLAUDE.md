@@ -34,9 +34,12 @@ old Cloudflare tunnel address "in favor of tailscale. need to live among the
 people", so Tailscale Funnel is to be the only way in. On 9 Oct 2026, and
 still on 27 Oct, that was not yet true: the `cloudflared` service still ran, and Issun's Public address
 setting still held the old address, imported from relay.py's `.env`, which
-overrides the Tailscale name for the window's endpoint and for uploaded-cover
-URLs. Ammy's CLAUDE.md ("Funnel is the only endpoint") has the steps left,
-which are the owner's to take.
+overrode the Tailscale name for the window's endpoint and for uploaded-cover
+URLs. On 13 Nov 2026 the owner saw setup fill in ammy.kaydenpmd.net and had the
+whole override removed ("clear that publicbase mechanic"): Issun's address is
+always Tailscale's now, and a settings.json that still holds `publicBase` is
+read as if it didn't. Ammy's CLAUDE.md ("Funnel is the only endpoint") has the
+cloudflared steps left, which are the owner's to take.
 
 Ammy's CLAUDE.md learned this the hard way, twice: documented state decays in
 whichever direction you are not looking. **Check `git log`, not this file.**
@@ -399,7 +402,7 @@ repoints the entry when Issun runs from a new path, which is what happens on
 every update, because each release has a new filename.
 
 **Tailscale's state is Tailscale's.** Issun reads `tailscale status --json` (the
-MagicDNS name, which becomes `PublicBase` unless Settings overrides it),
+MagicDNS name, which becomes `PublicBase`; there is no override since 13 Nov 2026),
 `tailscale funnel status --json`, and, while Tailscale is running, `tailscale
 debug prefs` for Run unattended. It changes nothing unless the owner clicks
 **Turn on Funnel** or the setup window's **Turn on** for Run unattended.
@@ -444,13 +447,11 @@ owner's order of 12 Nov 2026:
    key, the in-place "Replace the key?" question and the Copied notes. Its
    endpoint edit is applied when the window closes, as leaving the page
    applies setup's. "New key" is the owner's word, given for the main window.
-   The endpoint field is also the only place the public address is set: the
-   main window's Settings › Advanced, which held a Public address field, went
-   on 12 Nov 2026 (the owner: "remove advanced"), and Apply no longer touches
-   that setting (`SettingsForm` has no field for it). Editing the endpoint shows
-   a reload button beside Show, as an edited field shows Restart in Ammy; it
-   saves the field as the public address (or clears it when it's Tailscale's
-   own, so Issun keeps following Tailscale) and redraws the code. Leaving the
+   The endpoint field sets what the QR code carries and nothing else: since
+   13 Nov 2026 nothing saves it (the Public address override it used to be
+   saved as is gone; Settings › Advanced, its other home, went on 12 Nov 2026).
+   Editing the endpoint shows a reload button beside Show, as an edited field
+   shows Restart in Ammy; it redraws the code with the field. Leaving the
    page or closing the window applies an edit too. The last card waits for the
    source by itself (the owner, 12 Nov 2026): a 16 px ProgressRing and
    "Waiting..." with Next greyed out until a source is checking in, then

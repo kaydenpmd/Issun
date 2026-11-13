@@ -48,7 +48,6 @@ public class SettingsStoreTests : IDisposable
             DiscordClientId = "123456789012345678",
             Key = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             Port = 9123,
-            PublicBase = "https://mypc.example-tailnet.ts.net",
             StatusLine = "details",
             ShowAlbum = true,
             PublicRead = true,
@@ -199,7 +198,7 @@ public class SettingsStoreTests : IDisposable
         Assert.Equal("123456789012345678", store.Current.DiscordClientId);
         Assert.Equal(9005, store.Current.Port);
         Assert.Equal("details", store.Current.StatusLine);
-        Assert.Equal("https://mypc.example-tailnet.ts.net", store.Current.PublicBase);
+        // publicBase, the removed override, is ignored like any unknown field.
     }
 
     [Fact]

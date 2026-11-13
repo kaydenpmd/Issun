@@ -420,8 +420,6 @@ public sealed class IssunHost : IIssunHost
             return "A Discord application ID is all digits.";
         if (s.StatusLine is not ("name" or "state" or "details"))
             return "Status line must be name, state or details.";
-        if (s.PublicBase.Length > 0 && !(Uri.TryCreate(s.PublicBase, UriKind.Absolute, out var u) && u.Scheme == Uri.UriSchemeHttps))
-            return "The public base must be an https:// address.";
         if (s.ArtMinScore is < 0 or > 1 || double.IsNaN(s.ArtMinScore))
             return "The art match threshold is between 0 and 1.";
         return null;

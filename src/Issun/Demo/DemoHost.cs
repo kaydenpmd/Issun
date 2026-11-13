@@ -421,7 +421,7 @@ public sealed class DemoHost : IIssunHost
             Discord = discord,
             Server = new ServerStatus(true, _settings.Port, null),
             Tailscale = _tailscale,
-            PublicBase = _settings.PublicBase.Length > 0 ? _settings.PublicBase.TrimEnd('/') : _tailscale.PublicBase ?? "",
+            PublicBase = _tailscale.PublicBase ?? "",
         };
     }
 

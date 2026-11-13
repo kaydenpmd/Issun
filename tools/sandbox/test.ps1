@@ -363,14 +363,12 @@ if ($Step -in @("all","uninstall")) {
     $un = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Issun" -ErrorAction SilentlyContinue
     if (-not $un) { Say "FAIL no Apps entry to uninstall from" } else {
         Start-Process cmd.exe -ArgumentList "/c", "`"$($un.UninstallString)`"" -WindowStyle Hidden
-        $box = FindWindow "Uninstall Issun" 30
-        if (-not $box) { Say "FAIL no uninstall question"; Shot "no-uninstall-box" $null }
-        else {
-            Shot "uninstall-question" $box
-            AnswerBox "Uninstall Issun" "y"
-            Start-Sleep 15
-            if (FindWindow "Uninstall Issun" 1) { Say "FAIL a second uninstall box"; Shot "uninstall-second" $null }
-        }
+        # No question of Issun's own since 12 Nov 2026 (Settings asks first,
+        # in its own flyout); any box here is the "still running" one.
+        Start-Sleep 15
+        $box = FindWindow "Uninstall Issun" 1
+        Expect "no box of Issun's own" (-not $box)
+        if ($box) { Shot "uninstall-box" $null }
     }
     State "after uninstall"
     Expect "install folder removed" (-not (Test-Path $installDir))

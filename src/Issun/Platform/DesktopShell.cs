@@ -88,8 +88,4 @@ public static class DesktopShell
     /// <summary>Windows' message box with OK: what WPF's MessageBox.Show drew, through the same user32 call.</summary>
     public static void Message(string text, string caption, Icon icon) =>
         Native.MessageBoxW(0, text, caption, Native.MB_OK | (uint)icon);
-
-    /// <summary>Yes and No, with No the default, as Uninstall asks.</summary>
-    public static bool AskYesNo(string text, string caption) =>
-        Native.MessageBoxW(0, text, caption, Native.MB_YESNO | Native.MB_ICONQUESTION | Native.MB_DEFBUTTON2) == Native.IDYES;
 }

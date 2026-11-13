@@ -239,20 +239,15 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Settings › Apps › Uninstall. The settings, key, logs and check-in
-    /// history stay, so installing again picks up where this left off; the
-    /// message says so, since nothing else would.
+    /// Settings › Apps › Uninstall. No question of Issun's own: Windows 11's
+    /// Settings asks first, in its own flyout, before it runs this, so asking
+    /// again was a second "are you sure" (the owner, 12 Nov 2026: "drop it").
+    /// The settings, key, logs and check-in history stay, so installing again
+    /// picks up where this left off.
     /// </summary>
     private static void Uninstall(SelfInstall install)
     {
         Log.Write($"[install] uninstall requested ({IssunInfo.Wire}, {install.ExePath})");
-        if (!DesktopShell.AskYesNo(
-                "Uninstall Issun?\n\nYour settings, key and logs stay on this PC, so installing Issun again picks up where it left off.",
-                "Uninstall Issun"))
-        {
-            Log.Write("[install] uninstall cancelled");
-            return;
-        }
         if (!SingleInstance.AskRunningToQuit("Issun", TimeSpan.FromSeconds(10)))
         {
             DesktopShell.Message("Issun is still running. Quit it from its icon in the notification area, then uninstall it again.",

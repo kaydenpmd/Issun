@@ -60,10 +60,15 @@
             </StackPanel>
         </Border>
 
-        <tk:SettingsCard Header="Key" Style="{StaticResource Row}">
+        <!-- Vertical: the toolkit's own arrangement with the buttons under the
+             header and key, so the key has the card's whole width and wraps
+             there if a key is ever too long for it (the owner, 13 Nov 2026).
+             Monospace, as the key was drawn before. -->
+        <tk:SettingsCard Header="Key" Style="{StaticResource Row}" ContentAlignment="Vertical">
             <tk:SettingsCard.Description>
                 <StackPanel>
-                    <v:BlurredText Text="{x:Bind ViewModel.KeyText}" Radius="{x:Bind ViewModel.KeyBlur}" Margin="0,3,0,0" />
+                    <TextBlock Text="{x:Bind ViewModel.KeyDisplay}" Margin="0,3,0,0" TextWrapping="Wrap"
+                               FontFamily="{StaticResource MonoFont}" />
                     <TextBlock Text="{x:Bind ViewModel.KeyProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
                                Visibility="{x:Bind v:Bind.Present(ViewModel.KeyProblem)}" />
                 </StackPanel>

@@ -458,12 +458,17 @@ owner's order of 12 Nov 2026:
    is here too, hidden while connected (Next then does the same) and back if
    the connection drops. The ring is WinUI's own ProgressRing since the move
    to WinUI 3; the WPF build drew a copy of it (`Views/ProgressRing.cs`, in
-   git history). The QR code and the key are blurred until Show. WinUI has no
-   blur effect, so the blur is done on the CPU (`Presentation/Blur.cs`): the
-   code from its own pixels (`PairingCode.Render`), the key from a render of
-   an invisible copy of its text (`Views/BlurredText`); the sharp key is never
-   drawn while blurred. A shown code decodes and a blurred one doesn't
-   (checked with `zxing-cpp`, 12 Nov 2026).
+   git history). The QR code is blurred until Show. WinUI has no blur
+   effect, so the blur is done on the CPU (`Presentation/Blur.cs`) from the
+   code's own pixels (`PairingCode.Render`). A shown code decodes and a
+   blurred one doesn't (checked with `zxing-cpp`, 12 Nov 2026). The key was
+   blurred the same way (`Views/BlurredText`, in git history) until 13 Nov
+   2026, when the owner asked: "change the key blur to dots". Hidden, it is
+   now one ● (U+25CF) per character, the character a PasswordBox hides its
+   text with (`PairingViewModel.KeyDisplay`).
+   Both windows' columns stop at 1000 effective pixels since the same day,
+   Windows Settings' measured width and PowerToys' `PageMaxWidth`; the setup
+   window's buttons keep to the same column.
 4. **Start with Windows**, ticked by default on a first run. Last, so Cancel is
    Close here and Next is gone.
 

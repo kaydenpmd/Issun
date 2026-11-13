@@ -52,6 +52,7 @@ public sealed class PairingViewModel : Observable
             await _host.RegenerateKeyAsync();
             KeyShown = true;
             Raise(nameof(KeyText));
+            Raise(nameof(KeyDisplay));
             KeyChanged();
         }, ex =>
         {
@@ -86,6 +87,7 @@ public sealed class PairingViewModel : Observable
         if (!_endpointTouched && s.EndpointUrl != _qrEndpoint)
             FillEndpoint(s.EndpointUrl);
         Raise(nameof(KeyText));
+        Raise(nameof(KeyDisplay));
         KeyChanged();
         UpdateQr();
         Tick(s);
@@ -299,7 +301,7 @@ public sealed class PairingViewModel : Observable
         {
             if (Set(ref _keyShown, value))
             {
-                Raise(nameof(KeyBlur));
+                Raise(nameof(KeyDisplay));
                 Raise(nameof(ToggleKeyLabel));
                 Log.Write($"[{_tag}] key {(value ? "shown" : "hidden")}");
             }
@@ -307,9 +309,16 @@ public sealed class PairingViewModel : Observable
     }
     private bool _keyShown;
 
-    /// <summary>The key itself, drawn blurred until Show (<see cref="KeyBlur"/>), as the owner asked.</summary>
+    /// <summary>The key itself, for Copy and the QR code.</summary>
     public string KeyText => _host.Settings.Key;
-    public double KeyBlur => _keyShown ? 0 : BlurRadius;
+
+    /// <summary>
+    /// The key as the card shows it: itself after Show, and until then one
+    /// ● (U+25CF) per character, the character a Windows PasswordBox hides
+    /// its text with (the owner, 13 Nov 2026: "change the key blur to dots";
+    /// it was blurred). The QR code keeps its blur.
+    /// </summary>
+    public string KeyDisplay => _keyShown ? KeyText : new string('●', KeyText.Length);
     public string ToggleKeyLabel => _keyShown ? "Hide" : "Show";
 
     /// <summary>

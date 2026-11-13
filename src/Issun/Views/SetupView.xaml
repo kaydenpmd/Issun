@@ -98,7 +98,10 @@
         </Grid.RowDefinitions>
 
         <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsTabStop="False">
-            <Grid Margin="24,20,24,12">
+            <!-- MaxWidth 1000, as the main window: Windows Settings' content
+                 column (and PowerToys' PageMaxWidth). The footer below keeps
+                 to the same column. -->
+            <Grid Margin="24,20,24,12" MaxWidth="1000">
 
                 <!-- ───────────── 1. Discord ───────────── -->
                 <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.OnDiscordPage)}">
@@ -242,7 +245,10 @@
              right-aligned, in that order. Enter is Next and Escape is Cancel,
              as WPF's IsDefault and IsCancel made them; the accelerators' own
              tooltips are hidden, since they would add words to the window. -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12,24,24">
+        <!-- In the page's 1000-wide column, so on a wide window the buttons stay
+             under the page's right edge rather than at the window's. -->
+        <Grid Grid.Row="1" Margin="24,12,24,24" MaxWidth="1000">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="Back" Command="{x:Bind ViewModel.BackCommand}" Style="{StaticResource FooterButton}" />
             <!-- Skip: the way past for people without Tailscale, or not ready to connect a source. -->
             <Button Content="[text]" Command="{x:Bind ViewModel.SkipCommand}" Style="{StaticResource FooterButton}"
@@ -261,5 +267,6 @@
                 </Button.KeyboardAccelerators>
             </Button>
         </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

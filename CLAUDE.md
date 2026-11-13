@@ -1133,6 +1133,25 @@ B3839E76…1D5415), build 109 kept as `Issun.exe.b109.bak`, and the running
 Issun stopped by the process ID read before the rename, which worked first
 time.
 
+**Same night, builds 113 and 114, and why the bigger icon didn't show.**
+Build 111's full-bleed tile still measured 31-32 px on the taskbar beside
+Apple Music's 36. Three things, fixed in turn. Build 113 loads the window's
+and the tray's icons at the window's DPI (`Native.IconSize`; plain
+`GetSystemMetrics` had given 32 and 16 at 150%, though the system DPI is
+144), and logs the sizes: `tray icon 24 px`, `main window: icons 48 and 24
+px at 144 dpi`. Build 114's `.ico` carries a frame for every scaling step (30,
+36, 42, 60, 72, 80, 96 added). Neither changed the taskbar, because it
+wasn't reading the window or the new file at all. Issun isn't pinned, so the
+taskbar draws the Start menu shortcut's icon from Explorer's icon cache, which
+still held build 48's picture: the `.exe`'s path never changes, so nothing
+tells the shell it did, and `ie4uinit -show` didn't help. What did, at once:
+touching `Issun.lnk`'s write time and `SHChangeNotify(SHCNE_UPDATEITEM,
+SHCNF_PATHW | SHCNF_FLUSH)` for the `.exe` and the shortcut, then
+`SHCNE_ASSOCCHANGED`. Then 36 x 36, the same as Apple Music's. Which of the
+three changes the 36 itself needed isn't known, since the cache hid them all.
+**After an icon change, notify the shell, or no one sees it.** Builds 111 and
+113 kept as `.bak` beside the `.exe`.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

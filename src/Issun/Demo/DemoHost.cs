@@ -7,7 +7,8 @@ using Issun.Core;
 namespace Issun.Demo;
 
 /// <summary>
-/// A pretend host for --demo and --screenshot: made-up tracks, a phone that
+/// A pretend host for --demo and --screenshot: made-up tracks (or, on the
+/// owner's PC, songs from a list kept there; see DemoSongs), a phone that
 /// checks in every five seconds, a Discord connection that drops and comes
 /// back, and a phone that goes quiet once per loop — every state the window
 /// has to draw, cycling in about three minutes.
@@ -110,6 +111,23 @@ public sealed class DemoHost : IIssunHost
             new("Konohana", "Sakuya", "Guardian Saplings", 276, "1440000005",
                 DemoCovers.Create(Color.FromRgb(236, 240, 222), Color.FromRgb(170, 200, 150), Color.FromRgb(236, 150, 170), 5)),
         ];
+
+        // On the owner's PC, real songs picked at random from a list kept
+        // there (DemoSongs) take the plain songs' places, and the explicit
+        // one's when the list has an explicit song. "i" and the long title
+        // stay: they are there for their edge cases.
+        var own = DemoSongs.LoadShuffled();
+        DemoTrack? Take(Func<DemoSongs.Song, bool> fits)
+        {
+            var song = own.FirstOrDefault(fits);
+            if (song is null)
+                return null;
+            own.Remove(song);
+            return new DemoTrack(song.Title, song.Artist, song.Album, song.Duration, song.StoreId, song.Cover, song.Explicit);
+        }
+        _tracks[0] = Take(_ => true) ?? _tracks[0];
+        _tracks[2] = Take(s => s.Explicit) ?? _tracks[2];
+        _tracks[4] = Take(_ => true) ?? _tracks[4];
     }
 
     public event Action? Changed;

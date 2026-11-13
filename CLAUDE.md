@@ -219,6 +219,15 @@ builds are; a local build lands in `src/Issun/bin/x64/Debug/net9.0-windows10.0.2
   it.
 - `--demo`: `HostFactory` returns `DemoHost`, a fake whose track and
   statuses change over time. It must not write into the real data folder.
+  On the owner's PC its plain songs are real ones, picked at random each run
+  from `%LOCALAPPDATA%\Issun demo songs\songs.json`, with their covers in
+  `covers\` beside it (`DemoSongs`). That list is the owner's listening, so it
+  stays on that PC and out of this public repository (the owner, 12 Nov 2026:
+  "On this PC only"); anywhere else the demo keeps its made-up songs. It was
+  picked from the most-played titles in issun.log and relay.log, matched with
+  iTunes Search, and the scripts that made it are in that folder. Search
+  returned only clean editions, so no song there is explicit and the made-up
+  explicit song stays.
 - `--screenshot <png>` (with `--demo`): renders the window offscreen to a PNG
   after layout, then exits. **This is how a session looks at the UI**: render,
   then Read the PNG. It never puts a window on the owner's desktop.

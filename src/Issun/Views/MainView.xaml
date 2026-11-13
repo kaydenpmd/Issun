@@ -89,15 +89,42 @@
                         <!-- A track -->
                         <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.HasTrack)}">
                             <!-- Two lines at most: some titles carry every remix credit.
-                                 An explicit track's title ends in a typed 🅴, in
-                                 Segoe UI Symbol rather than the fallback's colour
-                                 emoji; see NowPlayingText.ExplicitBadge. -->
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}"
-                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
-                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                                       ToolTipService.ToolTip="{x:Bind ViewModel.Title}">
-                                <Run Text="{x:Bind ViewModel.Title}" /><Run Text="{x:Bind ViewModel.ExplicitBadge}" FontFamily="Segoe UI Symbol" />
-                            </TextBlock>
+                                 A RichTextBlock (Body Strong's size and weight) rather
+                                 than a TextBlock, so the explicit badge can sit in the
+                                 line after the title, where iOS's Lock Screen puts it.
+
+                                 The badge is Apple's: SF Pro's 🅴 (U+1F174), which is
+                                 the SF Symbol e.square.fill at small scale. SF Pro
+                                 can't ship here, and Segoe UI Symbol's 🅴, typed until
+                                 13 Nov 2026, is a different design the owner turned
+                                 down ("this explicit symbol looks like shit"), so it
+                                 is drawn from SF Pro's proportions, measured from the
+                                 rasterised glyph (design-research\apple\
+                                 apple-music-windows-explicit-badge), in a 100-unit
+                                 square: corners rounded 15; the E cut out of it,
+                                 x 32.3-67.7, y 23.7-74.9, stem 10.1 wide, arms 8.2
+                                 tall with round ends, the middle one 7.7 and ending
+                                 at 66.2. A hole, so the card shows through it.
+                                 Side 9.8: the square is SF Pro's cap height, and Body
+                                 Strong is Segoe UI Variable at 14, whose cap height is
+                                 1434/2048 of that. No theme resource gives a cap
+                                 height. Preceded by a space, as the Lock Screen
+                                 appends " %@"; in the title's colour, as there. -->
+                            <RichTextBlock Style="{StaticResource BodyRichTextBlockStyle}" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
+                                           Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                           ToolTipService.ToolTip="{x:Bind ViewModel.Title}">
+                                <Paragraph>
+                                    <Run Text="{x:Bind ViewModel.Title}" /><Run Text="{x:Bind ViewModel.ExplicitSpace}" /><InlineUIContainer>
+                                        <Path Width="9.8" Height="9.8" Stretch="Fill"
+                                              Visibility="{x:Bind v:Bind.Visible(ViewModel.IsExplicit)}"
+                                              Fill="{ThemeResource TextFillColorPrimaryBrush}"
+                                              AutomationProperties.Name="[text]"
+                                              Data="F0 M15,0 H85 A15,15 0 0 1 100,15 V85 A15,15 0 0 1 85,100 H15 A15,15 0 0 1 0,85 V15 A15,15 0 0 1 15,0 Z
+                                                    M34.8,23.7 H63.6 A4.1,4.1 0 0 1 63.6,31.9 H42.4 V45.1 H62.3 A3.85,3.85 0 0 1 62.3,52.8 H42.4 V66.7 H63.6 A4.1,4.1 0 0 1 63.6,74.9 H34.8 A2.5,2.5 0 0 1 32.3,72.4 V26.2 A2.5,2.5 0 0 1 34.8,23.7 Z" />
+                                    </InlineUIContainer>
+                                </Paragraph>
+                            </RichTextBlock>
                             <TextBlock Text="{x:Bind ViewModel.Artist}" Style="{StaticResource CaptionTextBlockStyle}"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}" />

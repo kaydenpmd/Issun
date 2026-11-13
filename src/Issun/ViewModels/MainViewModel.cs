@@ -107,7 +107,7 @@ public sealed partial class MainViewModel : Observable, IDisposable
         if (s.Track is { } track)
         {
             Title = NowPlayingText.Title(track);
-            ExplicitBadge = NowPlayingText.ExplicitBadge(s.Explicit);
+            IsExplicit = s.Explicit;
             Artist = NowPlayingText.Artist(track);
         }
         HasTrack = s.Track is not null;
@@ -148,9 +148,20 @@ public sealed partial class MainViewModel : Observable, IDisposable
     public string Title { get => _title; private set => Set(ref _title, value); }
     private string _title = "";
 
-    /// <summary>" 🅴" after an explicit track's title, else empty; see NowPlayingText.ExplicitBadge.</summary>
-    public string ExplicitBadge { get => _explicitBadge; private set => Set(ref _explicitBadge, value); }
-    private string _explicitBadge = "";
+    /// <summary>Whether the card draws the explicit badge after the title (MainView.xaml says how).</summary>
+    public bool IsExplicit
+    {
+        get => _isExplicit;
+        private set
+        {
+            if (Set(ref _isExplicit, value))
+                Raise(nameof(ExplicitSpace));
+        }
+    }
+    private bool _isExplicit;
+
+    /// <summary>The space between the title and the badge, as the Lock Screen appends " %@"; empty with no badge.</summary>
+    public string ExplicitSpace => _isExplicit ? " " : "";
 
     public string Artist { get => _artist; private set => Set(ref _artist, value); }
     private string _artist = "";

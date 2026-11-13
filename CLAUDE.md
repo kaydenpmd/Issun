@@ -697,7 +697,15 @@ colour emoji, and a render of the same song before and after the change is
 identical. What the owner dislikes is Segoe UI Symbol's design, an E three
 quarters of the square's height in thin strokes, against Apple's (SF Pro's
 glyph and Apple Music for Windows' badge): an E half the height in a softer
-square. Still open. The research, Apple Music for Windows' own badge included,
+square. **The owner chose "Draw Apple's design"**, so since 13 Nov 2026 the
+badge is drawn: a `Path` in the title's `RichTextBlock` (an
+`InlineUIContainer` after a space), built from SF Pro's 🅴 measured as
+fractions of its square (corners 0.15, the E cut out at x 0.32-0.68 and y
+0.24-0.75, stem 0.10, arms 0.08 with round ends, the middle one shorter), at
+Segoe UI Variable's cap height for Body Strong, 9.8 epx. `MainView.xaml` has
+the numbers and their source. Only proportions are copied, no outline from the
+font, which can't ship here. Rendered at 1.25x it spans the capitals' rows to
+within half a pixel. Its screen-reader name is `[text]`, the owner's to write. The research, Apple Music for Windows' own badge included,
 is in the design library, `apple\apple-music-windows-explicit-badge`. It
 replaced a hand-drawn badge the owner asked to have rolled back as more
 complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`

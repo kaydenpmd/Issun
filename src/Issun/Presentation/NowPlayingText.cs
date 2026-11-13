@@ -12,20 +12,6 @@ public static class NowPlayingText
     public static string Title(TrackInfo t) => TrackText.Title(t);
     public static string Artist(TrackInfo t) => TrackText.Artist(t);
 
-    /// <summary>
-    /// What follows an explicit track's title on the card: a space and 🅴
-    /// (U+1F174), typed rather than drawn, as iOS's Lock Screen appends its
-    /// badge to the title as text (MRUNowPlayingInfo in iOS 26.1: the title
-    /// <c>stringByAppendingFormat:@" %@"</c> the badge). In SF Pro that
-    /// character is the SF Symbol e.square.fill, at cap height. Empty for
-    /// any other track. The card sets this run's font to Segoe UI Symbol,
-    /// whose 🅴 is also exactly cap height and takes the text's colour:
-    /// left to fallback, WinUI drew Segoe UI Emoji's, a colour emoji that
-    /// hangs below the baseline (the owner, 13 Nov 2026: "this explicit
-    /// symbol looks like shit").
-    /// </summary>
-    public static string ExplicitBadge(bool isExplicit) => isExplicit ? " \U0001F174" : "";
-
     /// <summary>What the card says instead of a track, which depends on why there isn't one.</summary>
     public static string NothingPlayingDetail(HostSnapshot s) =>
         s.LastCheckinAt <= 0 ? "Nothing has checked in yet." :

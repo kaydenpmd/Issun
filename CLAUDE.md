@@ -1518,6 +1518,16 @@ cropped, at the owner's "Push and install".** `main` (6c5c3df), SHA-256
 B41CAF81…A5DE56, build 158 kept as `Issun.exe.b158.bak`, Discord reconnected
 within a second.
 
+**Same day, build 160 to 162 (6.3 s down), for one-line titles and artists,
+at the owner's "Push and install".** `main` (d29637b), SHA-256
+6855D6D3…DAF69A4E, build 160 kept as `Issun.exe.b160.bak`, Discord reconnected
+at once. The first run of `install-local.ps1` stopped at "tests did not pass"
+and changed nothing; `dotnet test` straight after passed 1157 of 1157, only
+the live Issun was running, and the second run went through. The script only
+looks for "Passed!" in the test output, so a failed build (a file in use,
+most likely, after a session of test renders) reads the same; why isn't
+known.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

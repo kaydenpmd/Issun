@@ -262,6 +262,17 @@ and a drop shadow (28 Oct to 14 Nov 2026), and the frames from 32 px down laid
 out by hand; before that, an ink-circle placeholder drawn by
 `tools/make-icon.ps1`. Both are in git history.
 
+**Never assume the display's scale.** The owner, 14 Nov 2026: "i'm often away
+from my home setup which is 3840*2160 150%, at my laptop which is 1920*1080
+100% / i also often remote desktop from a phone or tablet / so don't assume my
+current display resolution". So anything sized in pixels (the window's and
+tray's icons, the cover's decode, its hairline) is read from the window's
+current scale and redone when it changes (`XamlRoot.Changed`), and a log line's
+dpi says which display that moment was on. The cover is decoded to exactly the
+pixels it is drawn at since 14 Nov 2026 (`MainViewModel.CoverScale`): a fixed
+256 px decode, shrunk on the fly by the compositor's bilinear filter, was
+blocky at 100%, where the 58 epx cover is 58 px.
+
 ## Rules every module follows
 
 - **Thread-safe.** HTTP requests arrive on Kestrel's threads, the presence

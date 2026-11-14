@@ -183,6 +183,9 @@ activity has no image; the test above, with no cover, showed a question-mark
 placeholder there because the application has no icon. A 1024 px square of
 Issun's icon, drawn by `tools/make_icon.py` with a square tile (the owner, 14
 Nov 2026: "no transparent corners"), was handed over for the Developer Portal.
+The icon went to Discord's colours later that day, so that square was redrawn
+(`tools/make_icon.py issun-1024.png --square`): the black-and-white one is the
+old icon and shouldn't be uploaded.
 
 ## Layout
 
@@ -220,11 +223,33 @@ comments in `Contracts.cs` say which function each member replaces.
 | ui | `App`, `MainWindow`, `SetupWindow`, the tray, `DemoHost`, `HostFactory` | a PowerShell window and `relay.log` |
 
 **The icon, since 28 Oct 2026, is two waves arriving at a speech bubble**, the
-owner's pick. `tools/make_icon.py` draws it in the style of the owner's iPhone
-apps (Albums' squircle, black, greys and gradient), with the frames from 32 px
-down laid out by hand. It is the second half of Ammy's icon, where the same two
-waves leave an album cover. The ink-circle placeholder before it was drawn by
-`tools/make-icon.ps1`, still in git history.
+owner's pick. It is the second half of Ammy's icon, where the same two waves
+leave an album cover. **Since 14 Nov 2026 it is drawn the way Discord draws
+its own on Windows**, the owner's call: "i just realized issun is more of a
+discord-adjacent tool than it is an apple music-adjacent one and i want to sell
+that". `tools/make_icon.py` makes three things:
+- `Assets\issun.ico`, the app icon (.exe, taskbar, Start, title bar): a flat
+  blurple disc edge to edge (#5662F6, the pixels of Discord's own `app.ico`),
+  the picture white on it, as far out as Clyde (0.68 of the radius). No
+  gradient, no shadow: Discord's has neither ("if you're using any gradients
+  or shadows in the icon then remove them").
+- `Assets\tray.ico`, the tray's: the white picture alone with no disc, as
+  Discord's tray icon is its logomark alone ("it's just discord's logomark in
+  white with no bg. copy this for issun"), with Discord's soft black halo
+  copied size by size so it shows on a light taskbar. It rides in the .exe as
+  a managed resource (`Issun.tray.ico`), since a .NET .exe carries one icon
+  resource, and `Native.LoadTrayIcon` picks its frame; the log says which
+  (`tray icon 24 px, from its 24 px frame`).
+- with `--square`, a 1024 px PNG for the Discord application's icon in the
+  Developer Portal: the same picture on a blurple square to the corners.
+Both waves are white now; the old icon's darker nearer wave had no second
+colour to use. Below 20 px only the nearer wave is drawn. The measurements of
+Discord's icons are in the design library, `discord/windows-icons/`.
+
+Before that it was black and greys on Albums' white squircle, with a gradient
+and a drop shadow (28 Oct to 14 Nov 2026), and the frames from 32 px down laid
+out by hand; before that, an ink-circle placeholder drawn by
+`tools/make-icon.ps1`. Both are in git history.
 
 ## Rules every module follows
 

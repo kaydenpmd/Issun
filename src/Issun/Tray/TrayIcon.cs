@@ -67,11 +67,14 @@ public sealed class TrayIcon : IDisposable
         // rather than the 256 px one scaled down to mush.
         // At this window's DPI: plain GetSystemMetrics gives the 100% size.
         var size = IconSize(_hwnd, SM_CXSMICON);
-        _icon = LoadAppIcon(size);
+        _icon = LoadTrayIcon(size, out var framePx);
         if (_icon == 0)
-            Log.Write("[ui] the tray icon image is missing from the build; using the default");
+        {
+            Log.Write("[ui] the tray icon image is missing from the build; using the app icon");
+            _icon = LoadAppIcon(size);
+        }
         else
-            Log.Write($"[ui] tray icon {size} px");
+            Log.Write($"[ui] tray icon {size} px, from its {framePx} px frame");
 
         try
         {

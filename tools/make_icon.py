@@ -1,21 +1,35 @@
 """Issun's icon: two waves arriving at a speech bubble. It is the second half of
 Ammy's icon, where the same two waves leave an album cover: what's playing,
-sent, then said. The wave nearer the bubble is the darker one, so the signal
-grows as it arrives, the way Ammy's fades as it leaves. Drawn the way Albums'
-and Ammy's iPhone icons are: Albums' squircle, black, greys, gradient and
-shadow. (In Okami, Issun is the one who does the talking for Ammy.)
+sent, then said. (In Okami, Issun is the one who does the talking for Ammy.)
 
-Windows masks nothing, so the tile is drawn here, with transparent corners.
-Since 12 Nov 2026 it fills the whole frame, edge to edge, with no shadow under
-it: the owner saw it on the taskbar at 150% 32 px tall beside Apple Music's 36
-and asked for it "as big as possible". (It had a 60/1024 margin each side and
-a drop shadow inside that.) The frames from 32 px down are laid out by hand on
-the pixel grid, with fewer and heavier shapes, because a picture shrunk to 16 px
-turns to grey mush.
+Since 14 Nov 2026 it is drawn the way Discord draws its own icons on Windows,
+because Issun is the Discord end of things (the owner: "issun is more of a
+discord-adjacent tool than it is an apple music-adjacent one"). Measured from
+Discord's desktop app, app-1.0.9268, on the owner's PC:
+- the app icon (`app.ico`: .exe, taskbar, Start, title bar) is a flat blurple
+  disc filling the frame edge to edge, the logomark white on it, no gradient
+  and no shadow, the logomark's farthest point 0.68 of the radius from the
+  centre (0.64 to 0.68 across its 16 to 256 px frames);
+- the tray icon (`systemtray/win32/tray*.png`) is the logomark alone in white,
+  no disc, spanning the frame less 1 px each side, with a soft black halo
+  around it (one pixel at 16 px, two at 20 to 32, three at 40), so it shows on
+  a light taskbar too.
+The design library has the captures and numbers
+(`design-research/discord/windows-icons/`).
 
-    python tools/make_icon.py src/Issun/Assets/issun.ico
+Until 14 Nov 2026 the icon was black and greys on a white squircle with a
+gradient and a drop shadow, in the style of the owner's iPhone apps. Discord's
+icons are one white on one blurple, so both waves are white now: the darker
+nearer wave ("the signal grows as it arrives") had no colour left to be.
 
-writes the .ico, 16 to 256 px. Needs Pillow and numpy."""
+    python tools/make_icon.py src/Issun/Assets/issun.ico          the app icon
+    python tools/make_icon.py src/Issun/Assets/tray.ico --tray    the tray's
+    python tools/make_icon.py issun-1024.png --square             for Discord
+
+The last is a 1024 px PNG for the Discord application's icon in the Developer
+Portal: the disc's blurple to the corners (the owner, 14 Nov 2026: "no
+transparent corners"), since Discord rounds it itself. Needs Pillow and
+numpy."""
 import io
 import math
 import struct
@@ -25,11 +39,15 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-TOP, BOTTOM = (255, 255, 255), (238, 238, 242)
-BLACK, MID, PALE = (20, 20, 22), (88, 88, 92), (160, 160, 166)
+# Discord's blurple as its Windows app icon draws it, measured from app.ico's
+# 256 px frame (every opaque pixel of the disc). Discord's brand page gives
+# #5865F2; the icon's own pixels are a shade off that, and this sits beside it.
+BLURPLE = (86, 98, 246)
+WHITE = (255, 255, 255)
 
-def lerp(a, b, t):
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+# The logomark's farthest point from the disc's centre, as a fraction of the
+# radius: Clyde's in Discord's 256 px frame.
+REACH = 0.68
 
 def bezier(p0, p1, p2, p3, n=48):
     pts = []
@@ -66,14 +84,6 @@ def squircle_corner(R, smoothing, budget):
     pts += bezier(q0, (q0[0] + d, q0[1] + c), (q0[0] + d, q0[1] + b + c), (q0[0] + d, q0[1] + a + b + c))
     return pts
 
-def squircle(x0, y0, x1, y1, R, smoothing=0.6):
-    corner = squircle_corner(R, smoothing, min(x1 - x0, y1 - y0) / 2)
-    pts = [(x1 + u, y0 + v) for u, v in corner]          # top right
-    pts += [(x1 - v, y1 + u) for u, v in corner]         # bottom right
-    pts += [(x0 - u, y1 - v) for u, v in corner]         # bottom left
-    pts += [(x0 + v, y0 - u) for u, v in corner]         # top left
-    return pts
-
 def wave(cx, cy, r, w, phi, n=160):
     """A thick arc about (cx, cy), phi degrees either side of pointing right,
     with round ends, as SF Symbols draws its waves."""
@@ -105,99 +115,95 @@ def bubble(x0, y0, x1, y1, R, tw, th, out):
     pts += [(x0 + v, y0 - u) for u, v in corner]         # top left
     return [(x0 + x1 - x, y) for x, y in pts]
 
-# The picture, in Albums' 1024 space: Ammy's two waves, exactly (radii 279 and
-# 403, 74 thick, 38 degrees either side), then the bubble one gap (50) beyond
-# them, about the cover's weight, its middle on the waves' axis. Centred on its
-# box, the solid bubble pulls the picture right; it sits 30 px left of that.
+# The picture, in a 1024 space: Ammy's two waves, exactly (radii 279 and 403,
+# 74 thick, 38 degrees either side), then the bubble one gap (50) beyond them,
+# about the cover's weight, its middle on the waves' axis.
 R1, R2, WAVE, GAP, SPREAD = 279, 403, 74, 50, 38
 BUBBLE_W, BUBBLE_H = 330, 268
 
-def picture():
-    left = R1 * math.cos(math.radians(SPREAD)) - WAVE / 2
-    right = R2 + WAVE / 2 + GAP + BUBBLE_W
-    cx = 512 - (left + right) / 2 - 30
-    bx = cx + R2 + WAVE / 2 + GAP
-    return dict(waves=[(cx, 512, R1, WAVE, SPREAD, PALE), (cx, 512, R2, WAVE, SPREAD, MID)],
-                body=(bx, 512 - BUBBLE_H / 2, bx + BUBBLE_W, 512 + BUBBLE_H / 2, 0.34 * BUBBLE_H),
-                tail=(0.30 * BUBBLE_W, 0.30 * BUBBLE_H, 0.05 * BUBBLE_W), shadow=(12, 18, 40))
+def picture(waves=2):
+    """The shapes as point lists, unscaled, with the waves' centre at x=0."""
+    bx = R2 + WAVE / 2 + GAP
+    body = (bx, -BUBBLE_H / 2, bx + BUBBLE_W, BUBBLE_H / 2, 0.34 * BUBBLE_H)
+    tail = (0.30 * BUBBLE_W, 0.30 * BUBBLE_H, 0.05 * BUBBLE_W)
+    radii = (R1, R2) if waves == 2 else (R2,)
+    return [wave(0, 0, r, WAVE, SPREAD) for r in radii] + [bubble(*body, *tail)]
 
-def on_tile(px, tile=(0, 0, 1024, 1024), tshadow=None):
-    """The picture scaled onto a tile with Albums' 214 px margin in proportion,
-    for a frame px square."""
-    k = px / 1024
-    tx0, ty0, tx1, ty1 = (v * k for v in tile)
-    f = (tx1 - tx0) / 1024
-    ox, oy = tx0, ty0
-    P = picture()
-    move = lambda x, y: (ox + x * f, oy + y * f)
-    waves = [(*move(cx, cy), r * f, w * f, phi, fill) for cx, cy, r, w, phi, fill in P["waves"]]
-    bx0, by0 = move(*P["body"][:2])
-    bx1, by1 = move(*P["body"][2:4])
-    return dict(tile=(tx0, ty0, tx1, ty1, 0.2237 * (tx1 - tx0)),
-                tshadow=tuple(v * k for v in tshadow[:2]) + (tshadow[2],) if tshadow else None,
-                waves=waves, body=(bx0, by0, bx1, by1, P["body"][4] * f),
-                tail=tuple(v * f for v in P["tail"]), shadow=(P["shadow"][0] * f, P["shadow"][1] * f, P["shadow"][2]))
+def placed(shapes, px, fit):
+    """The shapes scaled and moved into a px frame. "disc": the farthest point
+    REACH of the radius from the centre, as Clyde is. "tray": scaled up from
+    that as Clyde is in Discord's tray. Centred on the bounding box, then nudged left by 30/637 of the
+    picture's width: the solid bubble outweighs the open waves, and centred
+    on its box the picture looks pulled right (the old icon's own correction).
+    In the tray the margin is Discord's (TRAY_MARGIN)."""
+    pts = np.concatenate([np.asarray(s) for s in shapes])
+    (x0, y0), (x1, y1) = pts.min(0), pts.max(0)
+    w, h = x1 - x0, y1 - y0
+    nudge = 30 / 637 * w
+    mid = np.array([(x0 + x1) / 2 + nudge, (y0 + y1) / 2])
+    s = REACH * px / 2 / np.sqrt(((pts - mid) ** 2).sum(1)).max()
+    if fit == "tray":
+        # As much bigger than in the disc as Clyde is: 0.625 of the frame wide
+        # in the disc (160 of 256), the frame less the margin in the tray. So
+        # the picture keeps its size against Clyde's in both places; filling
+        # the width as Clyde does would make it taller than Clyde, being
+        # nearly square where Clyde is wide.
+        s *= (px - 2 * TRAY_MARGIN[px]) / (0.625 * px)
+        s = min(s, (px - 2 * TRAY_MARGIN[px]) / max(w, h))
+    c = px / 2
+    return [[(c + (x - mid[0]) * s, c + (y - mid[1]) * s) for x, y in sh] for sh in shapes]
 
-# From 32 px down, by hand: (cx, cy, radius, thickness, spread, fill) per wave,
-# and the bubble's body (x0, y0, x1, y1, corner) and tail (width, height,
-# reach past the body's side).
-# At 16 px only the nearer wave fits. Edges sit on whole pixels where they can.
-SMALL = {
-    16: dict(tile=(0, 0, 16, 16, 3.6), tshadow=None, waves=[(-0.5, 8, 5.2, 2, 40, MID)],
-             body=(7, 4, 15, 10, 2.2), tail=(3.2, 3, 0.8), shadow=None),
-    20: dict(tile=(0, 0, 20, 20, 4.5), tshadow=None, waves=[(0, 9.5, 3.4, 2, 40, PALE), (0, 9.5, 6.6, 2, 40, MID)],
-             body=(9, 5, 19, 12, 2.6), tail=(3.8, 3.4, 0.9), shadow=None),
-    24: dict(tile=(0, 0, 24, 24, 5.4), tshadow=None, waves=[(0.5, 11.5, 4.3, 2.4, 40, PALE), (0.5, 11.5, 8, 2.4, 40, MID)],
-             body=(11, 6, 23, 15, 3.1), tail=(4.4, 3.8, 1), shadow=None),
-    32: dict(tile=(0, 0, 32, 32, 7.2), tshadow=None,
-             waves=[(1, 15, 5.6, 3, 39, PALE), (1, 15, 10.1, 3, 39, MID)],
-             body=(14, 9, 28, 19, 3.7), tail=(5.2, 4.6, 1.2), shadow=None),
-}
+# Discord's tray halo: black, its opacity in each ring of pixels out from the
+# glyph (rings by 8-neighbour steps from the pixels over half white), measured
+# from its tray*.png at the nearest size it ships (28 from its 29, 36 between
+# its 32 and 40). It doesn't grow with the frame: one soft pixel at 16, two at
+# 20 to 32, three at 40. Under the glyph's own edge pixels it is about 0.95.
+HALO = {16: (0.38,), 20: (0.61, 0.11), 24: (0.66, 0.13), 28: (0.63, 0.13),
+        32: (0.63, 0.11), 36: (0.69, 0.20, 0.03), 40: (0.74, 0.30, 0.06)}
+UNDER = 0.95
+# The space each side of the tray glyph's widest edge, left for the halo:
+# Discord's is 1 px at 16 to 24 and 2 at 29 to 40.
+TRAY_MARGIN = {16: 1, 20: 1, 24: 1, 28: 2, 32: 2, 36: 2, 40: 2}
 
-def frame(px):
-    L = SMALL.get(px) or on_tile(px)
+def tray_frame(cover):
+    """The white glyph over its halo, from the glyph's coverage at its final size."""
+    px = cover.shape[0]
+    inside = cover > 0.5
+    h = np.where(inside, UNDER, 0.0)
+    g, prev = Image.fromarray((inside * 255).astype(np.uint8)), inside
+    for a in HALO[px]:
+        g = g.filter(ImageFilter.MaxFilter(3))
+        cur = np.asarray(g) > 0
+        h[cur & ~prev] = a
+        prev = cur
+    alpha = cover + h * (1 - cover)
+    level = np.divide(cover, alpha, out=np.zeros_like(alpha), where=alpha > 0)
+    rgba = np.dstack([level * 255] * 3 + [alpha * 255]).round().astype(np.uint8)
+    return Image.fromarray(rgba)
+
+def frame(px, kind="disc"):
+    """kind: "disc" (the app icon), "square" (the same picture on a full
+    blurple square) or "tray" (the white picture alone, with its halo)."""
     SS = 4 if px >= 512 else 16
     W = px * SS
-    sc = lambda pts, dy=0: [(x * SS, (y + dy) * SS) for x, y in pts]
+    # Only the nearer wave below 20 px: two waves and a bubble in 10 px of disc
+    # is grey mush, and so is the tray's at 16 (which used to drop it too).
+    shapes = placed(picture(waves=2 if px >= 20 else 1), px, "tray" if kind == "tray" else "disc")
     img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
-
-    tx0, ty0, tx1, ty1, tr = L["tile"]
-    tile = squircle(tx0, ty0, tx1, ty1, tr)
-    if L["tshadow"]:
-        drop, blur, a = L["tshadow"]
-        sh = Image.new("RGBA", (W, W), (0, 0, 0, 0))
-        ImageDraw.Draw(sh).polygon(sc(tile, drop), fill=(0, 0, 0, a))
-        img = Image.alpha_composite(img, sh.filter(ImageFilter.GaussianBlur(blur * SS)))
-    tmask = Image.new("L", (W, W), 0)
-    ImageDraw.Draw(tmask).polygon(sc(tile), fill=255)
-    grad = Image.new("RGB", (W, W))
-    gd = ImageDraw.Draw(grad)
-    for y in range(W):
-        gd.line([(0, y), (W, y)], fill=lerp(TOP, BOTTOM, min(max((y / SS - ty0) / (ty1 - ty0), 0), 1)))
-    grad = grad.convert("RGBA")
-    grad.putalpha(tmask)
-    img = Image.alpha_composite(img, grad)
-
-    shapes = [(wave(cx, cy, r, w, phi), fill) for cx, cy, r, w, phi, fill in L["waves"]]
-    bx0, by0, bx1, by1, br = L["body"]
-    shapes.append((bubble(bx0, by0, bx1, by1, br, *L["tail"]), BLACK))
-    if L["shadow"]:
-        drop, blur, a = L["shadow"]
-        sh = Image.new("RGBA", (W, W), (0, 0, 0, 0))
-        sd = ImageDraw.Draw(sh)
-        for pts, _ in shapes:
-            sd.polygon(sc(pts, drop), fill=(0, 0, 0, a))
-        sh = sh.filter(ImageFilter.GaussianBlur(blur * SS))
-        # It falls on the tile, so it stops at the tile's edge.
-        sh.putalpha(Image.fromarray(np.minimum(np.asarray(sh.getchannel("A")), np.asarray(tmask))))
-        img = Image.alpha_composite(img, sh)
-    layer = Image.new("RGBA", (W, W), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    for pts, fill in shapes:
-        d.polygon(sc(pts), fill=fill + (255,))
-    # The waves near the tile's edge must not spill past its rounded corner.
-    layer.putalpha(Image.fromarray(np.minimum(np.asarray(layer.getchannel("A")), np.asarray(tmask))))
-    img = Image.alpha_composite(img, layer)
+    d = ImageDraw.Draw(img)
+    if kind == "disc":
+        d.ellipse((0, 0, W - 1, W - 1), fill=BLURPLE + (255,))
+    elif kind == "square":
+        d.rectangle((0, 0, W, W), fill=BLURPLE + (255,))
+    mask = Image.new("L", (W, W), 0)
+    md = ImageDraw.Draw(mask)
+    for pts in shapes:
+        md.polygon([(x * SS, y * SS) for x, y in pts], fill=255)
+    if kind == "tray":
+        return tray_frame(np.asarray(mask.resize((px, px), Image.BOX), dtype=np.float64) / 255)
+    glyph = Image.new("RGBA", (W, W), WHITE + (0,))
+    glyph.putalpha(mask)
+    img = Image.alpha_composite(img, glyph)
     return img.resize((px, px), Image.LANCZOS if px >= 512 else Image.BOX)
 
 def bmp(im):
@@ -215,21 +221,31 @@ def png(im):
     im.save(buf, "PNG")
     return buf.getvalue()
 
+def ico(frames):
+    # PNG for 128 and 256 (a 256 px BMP would be 256 KB), BMP below, which
+    # everything that reads .ico files understands.
+    blobs = [(px, png(im) if px >= 128 else bmp(im)) for px, im in frames]
+    offset = 6 + 16 * len(blobs)
+    head = struct.pack("<HHH", 0, 1, len(blobs))
+    for px, blob in blobs:
+        head += struct.pack("<BBBBHHII", px % 256, px % 256, 0, 0, 1, 32, len(blob), offset)  # 0 means 256
+        offset += len(blob)
+    return head + b"".join(blob for _, blob in blobs)
+
 out = Path(sys.argv[1])
-big = frame(1024)
-# Every scaling step's size, not only 100%'s: at 150% the taskbar wants 36,
-# and with no 36 frame it drew the 32 one as it was, 4 px smaller each way
-# than Apple Music's beside it (12 Nov 2026). 30, 36 and 42 are 20 at 150%,
-# 24 at 150% and 24 at 175%; 60, 72, 80 and 96 are the larger steps of 48.
-frames = [(px, frame(px)) for px in (16, 20, 24, 30, 32, 36, 40, 42, 48, 60, 64, 72, 80, 96)]
-frames += [(px, big.resize((px, px), Image.LANCZOS)) for px in (128, 256)]
-# PNG for 128 and 256 (a 256 px BMP would be 256 KB of mostly tile), BMP below,
-# which everything that reads .ico files understands.
-blobs = [(px, png(im) if px >= 128 else bmp(im)) for px, im in frames]
-offset = 6 + 16 * len(blobs)
-head = struct.pack("<HHH", 0, 1, len(blobs))
-for px, blob in blobs:
-    head += struct.pack("<BBBBHHII", px % 256, px % 256, 0, 0, 1, 32, len(blob), offset)  # 0 means 256
-    offset += len(blob)
-out.write_bytes(head + b"".join(blob for _, blob in blobs))
-print(f"wrote {out} ({len(blobs)} sizes)")
+if "--square" in sys.argv:
+    frame(1024, "square").convert("RGB").save(out)
+elif "--tray" in sys.argv:
+    # The small-icon size at every scaling step from 100% to 250%: the tray
+    # asks for SM_CXSMICON at its DPI and loads the nearest frame (TrayIcon.cs).
+    out.write_bytes(ico([(px, frame(px, "tray")) for px in (16, 20, 24, 28, 32, 36, 40)]))
+else:
+    # Every scaling step's size, not only 100%'s: at 150% the taskbar wants 36,
+    # and with no 36 frame it drew the 32 one as it was, 4 px smaller each way
+    # than Apple Music's beside it (12 Nov 2026). 30, 36 and 42 are 20 at 150%,
+    # 24 at 150% and 24 at 175%; 60, 72, 80 and 96 are the larger steps of 48.
+    big = frame(1024)
+    frames = [(px, frame(px)) for px in (16, 20, 24, 30, 32, 36, 40, 42, 48, 60, 64, 72, 80, 96)]
+    frames += [(px, big.resize((px, px), Image.LANCZOS)) for px in (128, 256)]
+    out.write_bytes(ico(frames))
+print(f"wrote {out}")

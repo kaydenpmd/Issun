@@ -100,6 +100,37 @@ internal static class Native
     public static nint LoadAppIcon(int size) =>
         LoadImageW(GetModuleHandleW(null), AppIconResource, 1 /* IMAGE_ICON */, size, size, 0);
 
+    [DllImport("user32")] private static extern unsafe nint CreateIconFromResourceEx(byte* data, uint size, bool icon, uint version, int cx, int cy, uint flags);
+
+    /// <summary>
+    /// The tray's own icon at a size, or 0: the frame of Assets\tray.ico that
+    /// matches, else the smallest larger one, else the largest. Discord's tray
+    /// icon is its logomark alone, not its app icon, and Issun's follows it.
+    /// </summary>
+    public static unsafe nint LoadTrayIcon(int size, out int framePx)
+    {
+        framePx = 0;
+        using var s = typeof(Native).Assembly.GetManifestResourceStream("Issun.tray.ico");
+        if (s is null)
+            return 0;
+        var b = new byte[s.Length];
+        s.ReadExactly(b);
+        int count = BitConverter.ToUInt16(b, 4), best = -1, bestRank = int.MaxValue;
+        for (var i = 0; i < count; i++)
+        {
+            var px = b[6 + 16 * i] == 0 ? 256 : b[6 + 16 * i];
+            var rank = px >= size ? px - size : 1000 + size - px;
+            if (rank < bestRank)
+                (best, bestRank, framePx) = (i, rank, px);
+        }
+        if (best < 0)
+            return 0;
+        var length = BitConverter.ToInt32(b, 6 + 16 * best + 8);
+        var offset = BitConverter.ToInt32(b, 6 + 16 * best + 12);
+        fixed (byte* p = b)
+            return CreateIconFromResourceEx(p + offset, (uint)length, true, 0x00030000, size, size, 0);
+    }
+
     /// <summary>
     /// SM_CXICON or SM_CXSMICON at the window's own DPI. Plain GetSystemMetrics
     /// gave Issun 32 at 150%, the 100% size, and the taskbar then drew the 32 px

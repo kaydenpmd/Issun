@@ -60,6 +60,13 @@
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
   </ItemGroup>
 
+  <!-- The tray's icon, which differs from the .exe's as Discord's does: the
+       white picture alone, no disc (tools/make_icon.py, 14 Nov 2026). The .exe
+       carries one icon resource, so this one rides as a managed resource. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\tray.ico" LogicalName="Issun.tray.ico" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Issun.Core\Issun.Core.csproj" />
   </ItemGroup>

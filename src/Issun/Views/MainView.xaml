@@ -89,16 +89,30 @@
                              No hairline on it: PersonPicture has one, but the owner
                              asked for none (13 Nov 2026), as Ammy's square has none;
                              the hairline below edges covers only. -->
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource ControlAltFillColorQuarternaryBrush}" />
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource ControlAltFillColorQuarternaryBrush}"
+                                Visibility="{x:Bind v:Bind.Hidden(ViewModel.HasCover)}" />
+                        <!-- The cover, fitted, not cropped: one that isn't square
+                             shows all of itself, centred in the square, rounded and
+                             stroked at its own edges, with nothing behind it, as
+                             Ammy and the iOS Lock Screen draw it (the owner, 14 Nov
+                             2026: "i will not publish something that crops album
+                             art"). Windows' Quick Settings crops; this departs from
+                             it on purpose. Its size is its decoded pixels at the
+                             screen's scale (MainViewModel.CoverWidth), so it is
+                             drawn one to one. -->
                         <Border CornerRadius="{ThemeResource ControlCornerRadius}"
+                                Width="{x:Bind ViewModel.CoverWidth}" Height="{x:Bind ViewModel.CoverHeight}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Visibility="{x:Bind v:Bind.Visible(ViewModel.HasCover)}">
                             <Border.Background>
-                                <ImageBrush ImageSource="{x:Bind ViewModel.Cover}" Stretch="UniformToFill" />
+                                <ImageBrush ImageSource="{x:Bind ViewModel.Cover}" Stretch="Fill" />
                             </Border.Background>
                         </Border>
                         <!-- One physical pixel, whatever the scale: MainView.xaml.cs sets
                              the thickness to 1 / RasterizationScale. -->
                         <Border x:Name="CoverHairline" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" IsHitTestVisible="False"
+                                Width="{x:Bind ViewModel.CoverWidth}" Height="{x:Bind ViewModel.CoverHeight}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                 BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                                 Visibility="{x:Bind v:Bind.Visible(ViewModel.HasCover)}" />
                     </Grid>

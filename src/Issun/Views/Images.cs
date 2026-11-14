@@ -22,8 +22,10 @@ public static class Images
     }
 
     /// <summary>
-    /// A JPEG, PNG or BMP, shrunk to <paramref name="pixelWidth"/> wide (its
-    /// height in proportion) with WIC's Fant interpolation, an area average:
+    /// A JPEG, PNG or BMP, shrunk to fit a <paramref name="box"/> pixels
+    /// square, its longer side the box's, the other in proportion (a cover is
+    /// fitted, never cropped: the owner, 14 Nov 2026), with WIC's Fant
+    /// interpolation, an area average:
     /// what Quick Settings' media card does with a cover (measured 14 Nov
     /// 2026 against the exact thumbnail Spotify gave Windows; the box filter
     /// fit at 1.4 of 255, GPU bilinear at 8.6, design library
@@ -31,7 +33,7 @@ public static class Images
     /// used before, fit a softer triangle filter. Null, logged, when it isn't
     /// an image.
     /// </summary>
-    public static async Task<ImageSource?> DecodeAsync(byte[] bytes, int pixelWidth, string what)
+    public static async Task<WriteableBitmap?> DecodeAsync(byte[] bytes, int box, string what)
     {
         try
         {
@@ -39,15 +41,16 @@ public static class Images
             await stream.WriteAsync(bytes.AsBuffer());
             stream.Seek(0);
             var decoder = await BitmapDecoder.CreateAsync(stream);
-            int w = (int)decoder.OrientedPixelWidth, h = (int)decoder.OrientedPixelHeight;
-            var height = Math.Max(1, (int)Math.Round((double)pixelWidth * h / Math.Max(1, w)));
+            double w = Math.Max(1, decoder.OrientedPixelWidth), h = Math.Max(1, decoder.OrientedPixelHeight);
+            var k = box / Math.Max(w, h);
+            int width = Math.Max(1, (int)Math.Round(w * k)), height = Math.Max(1, (int)Math.Round(h * k));
             // ScaledWidth/Height apply before orientation, so swap them for a
             // picture its EXIF turns sideways.
             var turned = decoder.OrientedPixelWidth != decoder.PixelWidth;
             var transform = new BitmapTransform
             {
-                ScaledWidth = (uint)(turned ? height : pixelWidth),
-                ScaledHeight = (uint)(turned ? pixelWidth : height),
+                ScaledWidth = (uint)(turned ? height : width),
+                ScaledHeight = (uint)(turned ? width : height),
                 InterpolationMode = BitmapInterpolationMode.Fant,
             };
             using var bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied,

@@ -281,7 +281,17 @@ triangle filter, but only for JPEGs: with a 4000 px PNG the two drew
 identical pixels, while with a 600 px JPEG 2,569 of 3,364 pixels differed (by
 up to 70). Most likely the JPEG decoder shrinks while it decompresses
 when given a target size, and WIC's own scaler does the rest for PNGs. Apple's
-covers are JPEGs, so Fant matters here. `--screenshot` above 1x can't judge
+covers are JPEGs, so Fant matters here.
+
+**A cover that isn't square is fitted, never cropped**, since 14 Nov 2026:
+its longer side fills the 58 epx square, centred, rounded and stroked at its
+own edges, with nothing behind it, as Ammy and the iOS Lock Screen draw
+theirs. Windows' Quick Settings crops (UniformToFill); Issun departs from it
+on purpose, the owner's call: "windows doesn't do this but eh i have
+principles to uphold i will not publish something that crops album art".
+The decode fits the longer side (`Images.DecodeAsync`), and the cover's
+border and hairline take its size (`MainViewModel.CoverWidth`/`CoverHeight`).
+Rendered with a 400 x 600 and a 600 x 360 crop of a cover, at 1x and 1.25x. `--screenshot` above 1x can't judge
 this: it redraws the whole page at the larger scale, which resamples the
 cover again.
 

@@ -177,6 +177,19 @@ public sealed partial class MainViewModel : Observable, IDisposable
     }
     private ImageSource? _cover;
 
+    /// <summary>
+    /// The cover's drawn size in effective pixels: its own pixels at the
+    /// cover's scale, so it is drawn one to one. A cover that isn't square
+    /// is fitted in the square, its longer side the square's, as Ammy and
+    /// iOS draw theirs (the owner, 14 Nov 2026: "i will not publish
+    /// something that crops album art"). Windows' Quick Settings crops.
+    /// </summary>
+    public double CoverWidth { get => _coverWidth; private set => Set(ref _coverWidth, value); }
+    private double _coverWidth = CoverSize;
+
+    public double CoverHeight { get => _coverHeight; private set => Set(ref _coverHeight, value); }
+    private double _coverHeight = CoverSize;
+
     public bool HasCover => _cover is not null;
 
     private string? _coverUrl;
@@ -224,12 +237,20 @@ public sealed partial class MainViewModel : Observable, IDisposable
         // drawn at 87 px at 150%, and the owner saw "it looks blocky" (14 Nov
         // 2026). The WPF build decoded 256 for a 112 epx cover (168 px), too
         // little a shrink to show. The shrink is Quick Settings' own, an area
-        // average (Images.DecodeAsync). By width: a cover that isn't square
-        // is drawn UniformToFill, and nearly every cover is square.
-        var px = CoverPixels;
-        var image = bytes is null ? null : await Images.DecodeAsync(bytes, px, "cover art");
+        // average (Images.DecodeAsync), its longer side the square's.
+        var scale = _coverScale;
+        var image = bytes is null ? null : await Images.DecodeAsync(bytes, CoverPixels, "cover art");
         if (_coverUrl == url && !_disposed)
+        {
+            if (image is not null)
+            {
+                CoverWidth = image.PixelWidth / scale;
+                CoverHeight = image.PixelHeight / scale;
+                if (image.PixelWidth != image.PixelHeight)
+                    Log.Write($"[ui] cover isn't square ({image.PixelWidth}x{image.PixelHeight} px): fitted, {CoverWidth:0.#}x{CoverHeight:0.#} epx");
+            }
             Cover = image;
+        }
     }
 
     /// <summary>The cover's side in the card, in effective pixels: MainView.xaml's 58.</summary>

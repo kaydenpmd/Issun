@@ -20,7 +20,13 @@ internal static class DemoSongs
 {
     public sealed record Song(string Title, string Artist, string Album, double Duration, string? StoreId, bool Explicit, string? Cover);
 
+    /// <summary>
+    /// The list's folder. ISSUN_DEMO_SONGS names another, for a render of
+    /// chosen songs (a one-song list shows that song every time), without
+    /// touching the owner's list.
+    /// </summary>
     public static string Folder =>
+        Environment.GetEnvironmentVariable("ISSUN_DEMO_SONGS") is { Length: > 0 } folder ? folder :
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Issun demo songs");
 
     /// <summary>The list, shuffled; empty when there is none or it can't be read. Never throws.</summary>

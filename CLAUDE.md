@@ -271,7 +271,14 @@ current scale and redone when it changes (`XamlRoot.Changed`), and a log line's
 dpi says which display that moment was on. The cover is decoded to exactly the
 pixels it is drawn at since 14 Nov 2026 (`MainViewModel.CoverScale`): a fixed
 256 px decode, shrunk on the fly by the compositor's bilinear filter, was
-blocky at 100%, where the 58 epx cover is 58 px.
+blocky at 100%, where the 58 epx cover is 58 px. The shrink is WIC's Fant, an
+area average, because that is what Quick Settings' media card does, measured
+the same day against the exact thumbnail Spotify gave Windows (design
+library, `microsoft/windows11-media-controls/cover-scaling-2026-11-14/`; the
+owner: "Yes, match Windows"). Issun's Fant cover fits that box filter at 1.08
+of 255 at 100%. `BitmapImage.DecodePixelWidth`, tried first, fits a softer
+triangle filter. `--screenshot` above 1x can't judge this: it redraws the
+whole page at the larger scale, which resamples the cover again.
 
 ## Rules every module follows
 
@@ -347,6 +354,10 @@ builds are; a local build lands in `src/Issun/bin/x64/Debug/net9.0-windows10.0.2
   Programs and Features doesn't, so from there it simply uninstalls.
 - `ISSUN_HOME`: puts both the config and data folders under one directory
   (see `Paths.cs`).
+- `ISSUN_DEMO_SONGS` (with `--demo`): a folder to read `songs.json` and its
+  covers from instead of `%LOCALAPPDATA%\Issun demo songs`, so a render can
+  show a chosen song (a one-song list shows it every time) without touching
+  the owner's list.
 
 relay.py's `--version` and `--summary` have no command-line equivalent: a WinExe
 has no console to print to. Use `GET /version`, the `.exe`'s file properties, or

@@ -223,10 +223,9 @@ public sealed partial class MainViewModel : Observable, IDisposable
         // blocky past about 2x: the fixed 256 px this used to decode to was
         // drawn at 87 px at 150%, and the owner saw "it looks blocky" (14 Nov
         // 2026). The WPF build decoded 256 for a 112 epx cover (168 px), too
-        // little a shrink to show. Decoding to size is Microsoft's own advice
-        // for BitmapImage (DecodePixelWidth), and it scales in the decoder.
-        // By width: a cover that isn't square is drawn UniformToFill, and
-        // nearly every cover is square.
+        // little a shrink to show. The shrink is Quick Settings' own, an area
+        // average (Images.DecodeAsync). By width: a cover that isn't square
+        // is drawn UniformToFill, and nearly every cover is square.
         var px = CoverPixels;
         var image = bytes is null ? null : await Images.DecodeAsync(bytes, px, "cover art");
         if (_coverUrl == url && !_disposed)

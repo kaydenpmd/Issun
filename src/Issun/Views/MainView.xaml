@@ -19,6 +19,15 @@
              design-research\microsoft\windows11-settings-content-width). No
              theme resource gives a page's width, so it is typed. It was 820,
              from Issun's first window, with no source. -->
+        <!-- The Grid is only there to centre the column. Placed straight in
+             the ScrollViewer, a column held to MaxWidth was centred by its
+             content's natural width rather than the 1000 it's drawn at, so
+             in a wide window it sat right of centre, the more so the narrower
+             its content (the owner, 14 Nov 2026: "menu is off-center"; 665
+             epx left and 257 right, maximized at 1920). Measured in a layout
+             dump at 1908 wide: 551.5 from the left without the Grid, 454 with
+             it, which is centred. -->
+        <Grid>
         <StackPanel Margin="24,12,24,24" MaxWidth="1000">
 
             <!-- ───────────── Couldn't start ───────────── -->
@@ -357,5 +366,6 @@
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                        HorizontalAlignment="Center" Margin="0,16,0,0" />
         </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

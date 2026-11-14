@@ -1074,8 +1074,8 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    af291a7 at 06:20, the last page included; the other steps (again, update,
    uninstall, winget, tailscale, address, qrrules) passed on earlier commits
    that day. The same steps pass on the WinUI build (see "Testing on a clean
-   PC" above). **Still none pushed: 75 commits on `main` ahead of GitHub as of
-   13 Nov 2026** (the WinUI move was merged into `main` locally on 12 Nov, at
+   PC" above). **Still none pushed: 92 commits on `main` ahead of GitHub as of
+   14 Nov 2026** (the WinUI move was merged into `main` locally on 12 Nov, at
    the owner's "can we merge this all to main"), because a push releases and
    the window still has 13 `[text]` placeholders: the install link's title
    and progress line, the new-key button, and the errors (no winget, install
@@ -1121,8 +1121,33 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
      (music.apple.com/us/search) still mark explicit items
      (`showExplicitBadge` in their server-rendered data).
    - **A flaky test** in Issun.Core failed once in eight runs on 13 Nov 2026
-     (not in anything changed that day); its name wasn't caught.
+     (not in anything changed that day); its name wasn't caught. It struck
+     again at 15:33 that day, in `tools/install-local.ps1`'s own test run,
+     which stops the install (nothing was changed); the next two runs passed.
+     The script prints only the summary line, so the name is still unknown:
+     run `dotnet test` with normal verbosity when it next fails.
    - The `cloudflared` service is still the owner's to remove.
+   **Where it stood at the handoff of 14 Nov 2026.** Since the 03:00 handoff
+   of 13 Nov, all on `main`, committed, not pushed, and each recorded in its
+   own place above (the setup window section and the Blur line under the
+   WinUI move): the setup pages slide (WinUI's horizontal slide in a Frame);
+   Skip, labelled Skip, on every page; the Discord page's three numbered
+   cards in the owner's words, the third with Open Discord; Next there asking
+   Discord about the ID once per click, with a spinner in Next and the reason
+   in an error InfoBar; and the QR code blurred by MetaMask's numbers on the
+   compositor (Win2D), the blur itself animated. The research behind the blur
+   is in the design library's `cross-platform/secret-blur-values/`, and the
+   words the owner gave in chat are on the wording page (`footer.skip`,
+   `discord.id.title`, `discord.id.desc`, `discord.open.*`). Build 142
+   (1f9e7a5) is installed; the notes commits after it change no code. The
+   sandbox's default run (42 checks) and `address` passed on the day's code;
+   `tailscale` and `qrrules` weren't rerun, though their first click changed
+   from Next to Skip. **Not yet seen on the owner's PC**: Next going through
+   with a real ID and Discord open, Open Discord, the slide, and the blur
+   animating on real hardware (the sandbox draws in software, a few frames).
+   **Next**: the owner's words for the 13 remaining `[text]` placeholders and
+   the Tailscale page, then a push, only once they say it can go out. Queued
+   item 3 (several PCs backing each other up) waits until asked.
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
    - a type slip in `settings.json` discards the key;
    - `Autostart.RepairIfMoved` repoints the Run key at local builds;

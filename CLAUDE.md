@@ -16,11 +16,31 @@ iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel)
 
 **History:** the modules were built in parallel against `Contracts.cs` on
 21–22 Sept 2026. **Issun took over from relay.py on 22 Sept 2026** (build 23).
-The installed copy is build 46, updated from build 43 on 3 Nov 2026 at the
-owner's yes. Build 43 brought the new icon, and a tray hint and new-key notice
-that no longer name Ammy; build 46 took the old description off the Start menu
-entry. Check `/version` against `gh release list -R kaydenpmd/Issun`
-before assuming the installed copy runs this code. The live test is still partway
+The installed copy was build 46 from 3 Nov 2026 (build 43 brought the new
+icon, and a tray hint and new-key notice that no longer name Ammy; build 46
+took the old description off the Start menu entry), and since 12 Nov 2026 has
+been replaced many times by local publishes of `main` ("Updating the installed
+copy" lists them); it was build 162 at the end of 14 Nov 2026. Check
+`/version` against `gh release list -R kaydenpmd/Issun` before assuming the
+installed copy runs this code.
+
+**Handoff, 14 Nov 2026 (evening).** Everything is pushed and released (CI
+green through d29637b, build 162) and build 162 is installed and connected.
+That day brought: the icon in Discord's colours (a blurple disc, white alone
+in the tray, `tray.ico`); covers decoded to their drawn pixels with Fant, as
+Quick Settings does; non-square covers fitted, never cropped; both windows'
+columns centred when wide; one-line title and artist with "…", each in full
+on hover; and `ISSUN_DEMO_SONGS` for renders of chosen songs. **Not yet seen
+in a real window:** the centred column maximized (the owner felt the
+off-centre column was new in 155; renders of 149 and 155 matched), a real
+non-square cover, the one-line title, and covers at 150% (only 100% was
+measured; `--screenshot` above 1x can't judge it). The scripts that rendered
+and measured all of it are in the Ammy repo's private
+`local/issun-dev-2026-11-14/` (its `NOTES.md` says which does what); the
+Quick Settings capture and filter fit are in the design library. Per-artist
+links on the card, as Spotify's have, can't be done over RPC: a separate
+session tested it on 14 Nov 2026 and saved why in the library,
+`discord/rich-presence-card/`. The live test is still partway
 through — see "The owner's live test" at the end of this file for what has and
 hasn't been checked, and on which build. The switch was made permanent the same
 evening: Issun lives at `%LOCALAPPDATA%\Programs\Issun\Issun.exe` and starts in

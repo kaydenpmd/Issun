@@ -100,7 +100,11 @@
         <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsTabStop="False">
             <!-- MaxWidth 1000, as the main window: Windows Settings' content
                  column (and PowerToys' PageMaxWidth). The footer below keeps
-                 to the same column. -->
+                 to the same column. The outer Grid only centres it: a
+                 MaxWidth column placed straight in a ScrollViewer is centred
+                 by its content's natural width and sits right of centre in a
+                 wide window (MainView.xaml says more). -->
+            <Grid>
             <Grid Margin="24,20,24,12" MaxWidth="1000">
                 <!-- The pages slide in a Frame, with WinUI's own navigation
                      transition (SetupView.xaml.cs says which). The four pages
@@ -239,6 +243,7 @@
                     <ContentControl x:Name="PairingHost" HorizontalContentAlignment="Stretch" IsTabStop="False" />
                 </StackPanel>
                 </Grid>
+            </Grid>
             </Grid>
         </ScrollViewer>
 

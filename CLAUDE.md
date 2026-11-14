@@ -172,11 +172,13 @@ from 1.6), and pypresence puts `name` after `details_url`, where
 `DiscordWire.Activity` puts it. **Installed on the owner's PC as build 146
 (a3b1276) on 14 Nov 2026, started 03:32:16, at their "do 1 and 2"** (6.6 s down, build
 142 kept as `Issun.exe.b142.bak`); Ammy build 184 (821f54b), which sends
-`activity_name`, was pushed to release minutes later. Not yet seen: Issun's own push
-with a name on the owner's card (it needs Ammy 184 on the phone; until then
-the phone sends no name and the card shows the application's), Next on the
-Discord page going through with Discord open, and the application renamed and
-given its icon in the Developer Portal, which is the owner's to do.
+`activity_name`, was pushed to release minutes later. **Seen on the owner's
+card on 14 Nov 2026**, under Issun 149: "Listening to Issun" while the phone
+ran Ammy 181 and sent no name (the application, renamed Issun, after Discord
+was restarted; see the cache note below), then "Listening to Apple Music" at
+04:02 once the phone ran Ammy 184. The application has its icon too, the
+blurple square, checked through Discord's public API. Not yet seen: Next on
+the Discord page going through with Discord open.
 
 **The Discord app caches the application's name.** On 14 Nov 2026 the
 application was already named "Issun" (its public

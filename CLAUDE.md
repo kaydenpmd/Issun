@@ -1513,6 +1513,11 @@ issun"); renders of 149 and 155 at 1908 wide put it at the same x = 551.5,
 and the shift is half of (1048 minus the content's natural width), so what
 was open or how long its text was can hide it. Not settled in a real window.
 
+**Same day, build 158 to 160 (6.2 s down), for covers fitted rather than
+cropped, at the owner's "Push and install".** `main` (6c5c3df), SHA-256
+B41CAF81…A5DE56, build 158 kept as `Issun.exe.b158.bak`, Discord reconnected
+within a second.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

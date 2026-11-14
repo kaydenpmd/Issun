@@ -127,10 +127,17 @@
 
                         <!-- A track -->
                         <StackPanel Visibility="{x:Bind v:Bind.Visible(ViewModel.HasTrack)}">
-                            <!-- Two lines at most: some titles carry every remix credit.
-                                 A RichTextBlock (Body Strong's size and weight) rather
-                                 than a TextBlock, so the explicit badge can sit in the
-                                 line after the title, where iOS's Lock Screen puts it.
+                            <!-- One line, cut short with an ellipsis, never a second line
+                                 (the owner, 14 Nov 2026: "truncate text instead of adding
+                                 more lines"; it was two lines at most). The full title is
+                                 the tooltip. The explicit badge sits beside the title
+                                 rather than in it, so a long title's ellipsis comes before
+                                 the badge and the badge stays: the Grid is left-aligned and
+                                 sized to what it holds, so the badge follows a short title
+                                 and ends the line after a long one's ellipsis. Its own
+                                 RichTextBlock (Body Strong's size and weight) holds the
+                                 space before it, in the title's font, and keeps it on the
+                                 title's baseline, where iOS's Lock Screen puts the badge.
 
                                  The badge is Apple's: SF Pro's 🅴 (U+1F174), which is
                                  the SF Symbol e.square.fill at small scale. SF Pro
@@ -149,12 +156,20 @@
                                  1434/2048 of that. No theme resource gives a cap
                                  height. Preceded by a space, as the Lock Screen
                                  appends " %@"; in the title's colour, as there. -->
-                            <RichTextBlock Style="{StaticResource BodyRichTextBlockStyle}" FontWeight="SemiBold"
-                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
+                            <Grid HorizontalAlignment="Left" ToolTipService.ToolTip="{x:Bind ViewModel.Title}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind ViewModel.Title}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                            <RichTextBlock Grid.Column="1" Style="{StaticResource BodyRichTextBlockStyle}" FontWeight="SemiBold"
+                                           TextWrapping="NoWrap" IsTextSelectionEnabled="False"
                                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                                           ToolTipService.ToolTip="{x:Bind ViewModel.Title}">
+                                           Visibility="{x:Bind v:Bind.Visible(ViewModel.IsExplicit)}">
                                 <Paragraph>
-                                    <Run Text="{x:Bind ViewModel.Title}" /><Run Text="{x:Bind ViewModel.ExplicitSpace}" /><InlineUIContainer>
+                                    <Run Text="{x:Bind ViewModel.ExplicitSpace}" /><InlineUIContainer>
                                         <Path Width="9.8" Height="9.8" Stretch="Fill"
                                               Visibility="{x:Bind v:Bind.Visible(ViewModel.IsExplicit)}"
                                               Fill="{ThemeResource TextFillColorPrimaryBrush}"
@@ -164,6 +179,7 @@
                                     </InlineUIContainer>
                                 </Paragraph>
                             </RichTextBlock>
+                            </Grid>
                             <TextBlock Text="{x:Bind ViewModel.Artist}" Style="{StaticResource CaptionTextBlockStyle}"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}" />

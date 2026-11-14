@@ -169,7 +169,14 @@ Parade" with "test details" and "test state", and the owner's profile card read
 "Listening to Wobbly Toaster Parade", as did the member-list line with display
 type 0. Discord's Social SDK documents the same override (`Activity::SetName`,
 from 1.6), and pypresence puts `name` after `details_url`, where
-`DiscordWire.Activity` puts it. Not yet seen from Issun itself.
+`DiscordWire.Activity` puts it. **Installed on the owner's PC as build 146
+(a3b1276) on 14 Nov 2026 at 03:3x, at their "do 1 and 2"** (6.6 s down, build
+142 kept as `Issun.exe.b142.bak`); Ammy build 184 (821f54b), which sends
+`activity_name`, was released the same minute. Not yet seen: Issun's own push
+with a name on the owner's card (it needs Ammy 184 on the phone; until then
+the phone sends no name and the card shows the application's), Next on the
+Discord page going through with Discord open, and the application renamed and
+given its icon in the Developer Portal, which is the owner's to do.
 
 **The application's icon** is what Discord shows in the cover's place when an
 activity has no image; the test above, with no cover, showed a question-mark
@@ -1177,6 +1184,11 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    from Next to Skip. **Not yet seen on the owner's PC**: Next going through
    with Discord open, Open Discord, the slide, and the blur
    animating on real hardware (the sandbox draws in software, a few frames).
+   **Where it stood at the second handoff of 14 Nov 2026.** The Discord
+   application ID is built in and the source names the activity (a3b1276; see
+   "The Discord application and "Listening to""), installed as build 146; 94
+   commits on `main` ahead of GitHub. The owner will write the 14 placeholders
+   "in another session".
    **Next**: the owner's words for the 14 remaining `[text]` placeholders and
    the Tailscale page, then a push, only once they say it can go out. Queued
    item 3 (several PCs backing each other up) waits until asked.

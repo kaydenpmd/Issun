@@ -178,6 +178,15 @@ the phone sends no name and the card shows the application's), Next on the
 Discord page going through with Discord open, and the application renamed and
 given its icon in the Developer Portal, which is the owner's to do.
 
+**The Discord app caches the application's name.** On 14 Nov 2026 the
+application was already named "Issun" (its public
+`discord.com/api/v10/applications/<id>/rpc` said so), and Ammy 181 sent no
+`activity_name`, yet the owner's card still read "Listening to Apple Music",
+the old name, even after Issun reconnected. Quitting Discord from its tray
+and opening it again showed "Listening to Issun". After a rename, check that
+endpoint first, then restart Discord, before suspecting Issun. Other people's
+Discord apps keep their own copies.
+
 **The application's icon** is what Discord shows in the cover's place when an
 activity has no image; the test above, with no cover, showed a question-mark
 placeholder there because the application has no icon. A 1024 px square of

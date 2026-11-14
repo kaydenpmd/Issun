@@ -182,6 +182,7 @@
                             </Grid>
                             <TextBlock Text="{x:Bind ViewModel.Artist}" Style="{StaticResource CaptionTextBlockStyle}"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                       ToolTipService.ToolTip="{x:Bind ViewModel.Artist}"
                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                         </StackPanel>
 

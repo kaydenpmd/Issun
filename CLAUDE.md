@@ -1131,6 +1131,30 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
      (see "Where Issun deliberately differs from relay.py"), so check whether
      any of the review's are left;
    - CI builds with the .NET 10 SDK, which needs pinning.
+3. **Later: several of the owner's PCs backing each other up.** A future
+   feature, not to start until asked (the owner, 14 Nov 2026: "i want to make
+   it so that if you install issun on a new device it can start to create a
+   network of devices that back each other up for this", "future feature").
+   The goal is both: no single point of failure for receiving pushes, and
+   presence that carries on when the main PC sleeps ("i think both?"). Only
+   the owner's own devices: Issun sets presence through the Discord app on its
+   own PC, so another person's PC could only ever set *their* presence (the
+   owner's point, the same day), and relaying through it would mean handing it
+   the key for nothing. What a design has to settle, as talked through that
+   day, nothing decided:
+   - a backup sets presence only where Discord desktop is open and logged in;
+     an always-on box without Discord could only relay;
+   - one Issun talks to Discord at a time (else they fight over the
+     activity): a leader by priority, found over the tailnet;
+   - the phone reaches whichever is up: Ammy holding several endpoints (the
+     QR code carrying a list) and failing over, or any Issun forwarding to the
+     active one; each PC has its own Funnel name, and whether Tailscale can
+     put one name in front of several machines for Funnel is unverified;
+   - a new PC joins with the key and Discord application ID from an existing
+     one, by a join code, rather than set up from scratch.
+   Prior art named in conversation: Tailscale's high-availability subnet
+   routers, and a floating address (keepalived/VRRP). Design-heavy and big:
+   its own session.
 
 ## Working with the owner
 

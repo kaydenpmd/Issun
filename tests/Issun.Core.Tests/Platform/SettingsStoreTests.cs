@@ -45,7 +45,6 @@ public class SettingsStoreTests : IDisposable
         var store = new SettingsStore(SettingsPath);
         var updated = new Settings
         {
-            DiscordClientId = "123456789012345678",
             Key = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             Port = 9123,
             StatusLine = "details",
@@ -129,7 +128,6 @@ public class SettingsStoreTests : IDisposable
 
         Assert.True(store.CreatedOnThisRun);
         Assert.Equal(32, store.Current.Key.Length);
-        Assert.Equal("123456789012345678", store.Current.DiscordClientId);
         Assert.Equal(9000, store.Current.Port);
         Assert.Equal(store.Current.Key, new SettingsStore(SettingsPath).Current.Key);
         Assert.Contains(log.Lines, l => l.StartsWith("[config] ", StringComparison.Ordinal) && l.Contains("had no key", StringComparison.Ordinal)
@@ -195,10 +193,21 @@ public class SettingsStoreTests : IDisposable
 
         Assert.False(store.CreatedOnThisRun);
         Assert.Equal("abcdefghijklmnopqrstuvwxyz012345", store.Current.Key);
-        Assert.Equal("123456789012345678", store.Current.DiscordClientId);
         Assert.Equal(9005, store.Current.Port);
         Assert.Equal("details", store.Current.StatusLine);
-        // publicBase, the removed override, is ignored like any unknown field.
+        // publicBase and discordClientId, both removed settings, are ignored
+        // like any unknown field.
+    }
+
+    [Fact]
+    public void A_saved_application_id_is_dropped_from_the_file_on_the_next_save()
+    {
+        File.WriteAllText(SettingsPath, """{ "discordClientId": "123456789012345678", "key": "k" }""");
+
+        var store = new SettingsStore(SettingsPath);
+        store.Save(store.Current with { Port = 9002 });
+
+        Assert.DoesNotContain("discordClientId", File.ReadAllText(SettingsPath), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

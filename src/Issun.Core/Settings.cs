@@ -6,12 +6,10 @@ namespace Issun.Core;
 /// </summary>
 public sealed record Settings
 {
-    /// <summary>
-    /// DISCORD_CLIENT_ID. The Discord application's *name* is the text after
-    /// "Listening to", which is why the owner's application is called
-    /// "Apple Music" — it describes the source, not the bridge.
-    /// </summary>
-    public string DiscordClientId { get; init; } = "";
+    // relay.py's DISCORD_CLIENT_ID was a setting until 14 Nov 2026. The
+    // application ID is built in since (Discord.DiscordApplication), with no
+    // field anywhere to change it, and a settings.json that still holds
+    // discordClientId is read as if it didn't.
 
     /// <summary>
     /// RELAY_KEY: must match Ammy's Key field. Generated on first run. An empty

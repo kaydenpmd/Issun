@@ -212,7 +212,7 @@ public sealed class SettingsStore : ISettingsStore
 
     /// <summary>
     /// A hand-edited file gets the same forgiveness relay.py gave .env: nulls
-    /// become defaults, the key and client ID lose surrounding whitespace (as
+    /// become defaults, the key loses surrounding whitespace (as
     /// relay.py's .strip() did), the member-list choice is lowercased as
     /// STATUS_LINE was, and an impossible port becomes the default port. Nothing inside the key is
     /// touched — it has to match Ammy's character for character.
@@ -222,7 +222,6 @@ public sealed class SettingsStore : ISettingsStore
         var defaults = new Settings();
         var fixedUp = s with
         {
-            DiscordClientId = PyText.Strip(s.DiscordClientId ?? defaults.DiscordClientId),
             Key = PyText.Strip(s.Key ?? defaults.Key),
             StatusLine = s.StatusLine is null ? defaults.StatusLine : PyText.Lower(PyText.Strip(s.StatusLine)),
         };

@@ -142,6 +142,7 @@ public sealed class ActivityBuilder : IActivityBuilder
             Details = details,
             State = state,
             Type = Listening,
+            Name = TrackText.ActivityName(track),
             StatusDisplayType = StatusDisplayFor(settings.StatusLine),
             Start = start,
             End = end,

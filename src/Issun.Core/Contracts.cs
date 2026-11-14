@@ -145,8 +145,19 @@ public sealed record DiscordActivity
     public required string Details { get; init; }
     public required string State { get; init; }
 
-    /// <summary>2 = Listening, which renders "Listening to &lt;application name&gt;".</summary>
+    /// <summary>2 = Listening, which renders "Listening to &lt;name&gt;".</summary>
     public int? Type { get; init; }
+
+    /// <summary>
+    /// The text after "Listening to", on the card and, with status display
+    /// type 0, in the member list. Null leaves Discord to show the application's
+    /// own name. The source chooses it, as <c>activity_name</c> (the owner,
+    /// 14 Nov 2026: "i actually want to have the source decide what comes after
+    /// 'listening to.'"); nothing in Issun sets it. Seen working on 14 Nov 2026:
+    /// a name sent over the IPC pipe replaced the application's on the card
+    /// header and in the member list.
+    /// </summary>
+    public string? Name { get; init; }
 
     /// <summary>0 = name, 1 = state, 2 = details: the line the compact member list shows.</summary>
     public int? StatusDisplayType { get; init; }
@@ -398,10 +409,11 @@ public interface IIssunHost : IAsyncDisposable
     Task<TailscaleInstallResult> InstallTailscaleAsync();
 
     /// <summary>
-    /// Asks Discord once, on a connection of its own, whether it accepts this
-    /// application ID. Saves nothing and leaves the presence connection alone.
+    /// Asks Discord once, on a connection of its own, whether Issun can connect
+    /// as its built-in application: Discord open, and the application accepted.
+    /// Leaves the presence connection alone.
     /// </summary>
-    Task<Discord.DiscordIdCheckResult> CheckDiscordIdAsync(string clientId);
+    Task<Discord.DiscordIdCheckResult> CheckDiscordAsync();
 
     bool StartWithWindows { get; set; }
 

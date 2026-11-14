@@ -96,7 +96,7 @@ public sealed class IssunHost : IIssunHost
 
         _art = new ArtworkResolver(_config, Paths.ArtCache);
         _builder = new ActivityBuilder(_config);
-        _worker = new PresenceWorker(_config, () => new DiscordIpcClient(), _state, _builder, _art, _uptime, _clock);
+        _worker = new PresenceWorker(() => new DiscordIpcClient(), _state, _builder, _art, _uptime, _clock);
         _server = new RelayServer(_config, _checkins, _state, _diag, _art, _clock);
 
         _tailscale = new TailscaleCli();
@@ -152,8 +152,6 @@ public sealed class IssunHost : IIssunHost
         // of every run says which build wrote the lines after it.
         Log.Write($"[init] issun {IssunInfo.Display} ({IssunInfo.Commit})");
         Log.Write($"[init] data in {Paths.DataDir}, settings in {Paths.ConfigDir}");
-        if (string.IsNullOrEmpty(_config.Settings.DiscordClientId))
-            Log.Write("[init] no Discord application ID yet; presence stays off until one is set");
 
         _uptime.Line("issun started");
 
@@ -186,8 +184,6 @@ public sealed class IssunHost : IIssunHost
 
         if (updated.Key != previous.Key)
             Log.Write($"[config] key changed ({updated.Key.Length} characters) — your source needs the new one");
-        if (updated.DiscordClientId != previous.DiscordClientId)
-            Log.Write("[config] Discord application ID changed");
 
         if (updated.Port != previous.Port && _cts is not null)
         {
@@ -262,12 +258,12 @@ public sealed class IssunHost : IIssunHost
         return result;
     }
 
-    public async Task<DiscordIdCheckResult> CheckDiscordIdAsync(string clientId)
+    public async Task<DiscordIdCheckResult> CheckDiscordAsync()
     {
         // The client's own limits come first (1 s a pipe, 10 s for Discord's
         // answer); this only stops a check that somehow outlives them.
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        return await DiscordIdCheck.RunAsync(() => new DiscordIpcClient(), clientId, timeout.Token);
+        return await DiscordIdCheck.RunAsync(() => new DiscordIpcClient(), DiscordApplication.Id, timeout.Token);
     }
 
     public bool StartWithWindows
@@ -424,8 +420,6 @@ public sealed class IssunHost : IIssunHost
             return "Port must be between 1 and 65535.";
         if (s.Key.Length == 0)
             return "The key can't be empty — nothing could authenticate.";
-        if (s.DiscordClientId.Length > 0 && !s.DiscordClientId.All(char.IsAsciiDigit))
-            return "A Discord application ID is all digits.";
         if (s.StatusLine is not ("name" or "state" or "details"))
             return "Status line must be name, state or details.";
         if (s.ArtMinScore is < 0 or > 1 || double.IsNaN(s.ArtMinScore))

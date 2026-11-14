@@ -28,19 +28,18 @@ public class PresenceWorkerTests
         /// <param name="factory">The real IPC client against a fake server, say; <see cref="Discord"/> otherwise.</param>
         public Rig(string clientId = "111", PresenceWorkerOptions? options = null, Func<IDiscordClient>? factory = null)
         {
-            Config = new MutableConfig(new Settings { DiscordClientId = clientId });
-            Worker = new PresenceWorker(Config, factory ?? Discord.Factory, Phone, Builder, Resolver, Uptime, Clock,
+            Worker = new PresenceWorker(factory ?? Discord.Factory, Phone, Builder, Resolver, Uptime, Clock,
                 options ?? new PresenceWorkerOptions
                 {
                     TickInterval = TimeSpan.FromMilliseconds(10),
                     ReconnectDelay = TimeSpan.FromMilliseconds(50),
                     LostDelay = TimeSpan.FromMilliseconds(50),
-                });
+                },
+                clientId);
             Worker.Changed += () => Statuses.Enqueue(Worker.Status);
         }
 
         public ManualClock Clock { get; } = new();
-        public MutableConfig Config { get; }
         public FakeDiscord Discord { get; } = new();
         public FakePhoneState Phone { get; } = new();
         public FakeBuilder Builder { get; } = new();
@@ -341,24 +340,11 @@ public class PresenceWorkerTests
     }
 
     [Fact]
-    public async Task Correcting_a_rejected_client_id_is_tried_at_once_not_after_the_retry_wait()
+    public void Issun_connects_as_its_built_in_application_unless_told_otherwise()
     {
-        // Default ten-second retry: only the change itself can explain a
-        // second attempt inside this test.
-        await using var rig = new Rig("1234567890", new PresenceWorkerOptions { TickInterval = TimeSpan.FromMilliseconds(10) });
-        rig.Discord.OnConnect = id => id == "1234567890"
-            ? throw new DiscordHandshakeException(4000, DiscordIpcClient.InvalidIdMessage)
-            : new DiscordUser("1", "example", null);
-        rig.PlayNow(NotLikeUs);
-        rig.Start();
-        await Until(() => rig.Worker.Status.Detail == PresenceWorker.InvalidIdDetail, "the invalid-ID detail");
-
-        rig.Config.Settings = rig.Config.Settings with { DiscordClientId = "1234567891" };
-        await Until(() => rig.Discord.Sets.Count == 1, "the push under the corrected ID");
-
-        Assert.Equal(new[] { "1234567890", "1234567891" }, rig.Discord.Connects.Select(c => c.ClientId));
-        Assert.Equal(1, rig.Count("[rpc] Discord application ID changed; trying the new one"));
-        Assert.Equal(new DiscordStatus(DiscordLinkState.Connected, "example", null), rig.Worker.Status);
+        Assert.Matches(@"^\d{17,20}$", DiscordApplication.Id);
+        var ctor = typeof(PresenceWorker).GetConstructors().Single();
+        Assert.Equal(DiscordApplication.Id, ctor.GetParameters().Single(p => p.Name == "clientId").DefaultValue);
     }
 
     [Fact]
@@ -410,48 +396,6 @@ public class PresenceWorkerTests
     }
 
     [Fact]
-    public async Task Changing_the_client_id_reconnects_with_the_new_one()
-    {
-        await using var rig = new Rig("111");
-        rig.PlayNow(NotLikeUs);
-        rig.Start();
-        await Until(() => rig.Discord.Sets.Count == 1, "the first push");
-
-        rig.Config.Settings = rig.Config.Settings with { DiscordClientId = " 222 " };
-        await Until(() => rig.Discord.Connects.Count == 2, "the reconnect");
-
-        Assert.Equal("222", rig.Discord.Connects[1].ClientId);
-        Assert.True(rig.Discord.Clients[0].Disposed);
-        Assert.Equal(1, rig.Count("[rpc] Discord application ID changed; reconnecting"));
-
-        // A fresh connection shows nothing, so the track goes out again once
-        // the push gap allows.
-        rig.Clock.Advance(Timing.MinPushGap);
-        await Until(() => rig.Discord.Sets.Count == 2, "the re-push");
-        Assert.Equal("Not Like Us", rig.Discord.Sets[1]!.Details);
-    }
-
-    [Fact]
-    public async Task No_client_id_means_no_connection_a_clear_detail_and_one_log_line()
-    {
-        await using var rig = new Rig("");
-        rig.PlayNow(NotLikeUs);
-        rig.Start();
-        await rig.Ticks(10);
-
-        Assert.Empty(rig.Discord.Clients);
-        Assert.Equal(new DiscordStatus(DiscordLinkState.Disconnected, null, PresenceWorker.MissingIdDetail), rig.Worker.Status);
-        Assert.Contains("Settings", rig.Worker.Status.Detail);
-        Assert.Equal(1, rig.Count("[rpc] no Discord application ID set"));
-        // The window still gets the cover.
-        Assert.Equal("https://art.example/Not Like Us.jpg", rig.Worker.CurrentArtworkUrl);
-
-        rig.Config.Settings = rig.Config.Settings with { DiscordClientId = "333" };
-        await Until(() => rig.Discord.Sets.Count == 1, "the push once an ID exists");
-        Assert.Equal("333", rig.Discord.Connects[0].ClientId);
-    }
-
-    [Fact]
     public async Task An_invalid_client_id_gets_its_own_detail_and_the_log_is_not_flooded()
     {
         await using var rig = new Rig();
@@ -461,7 +405,6 @@ public class PresenceWorkerTests
         await Until(() => rig.Discord.Connects.Count >= 5, "several attempts");
 
         Assert.Equal(new DiscordStatus(DiscordLinkState.Disconnected, null, PresenceWorker.InvalidIdDetail), rig.Worker.Status);
-        Assert.Contains("misread digit", rig.Worker.Status.Detail);
         Assert.Equal(1, rig.Count("[rpc] Discord not reachable"));
         Assert.Contains("[rpc] Discord not reachable (Error Code: 4000 Message: Client ID is Invalid); retrying in 0.05s", rig.Lines);
         Assert.All(rig.Discord.Clients.SkipLast(1), c => Assert.True(c.Disposed));

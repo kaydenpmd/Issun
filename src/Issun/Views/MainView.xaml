@@ -258,12 +258,6 @@
                 </tk:SettingsCard.ActionIcon>
             </tk:SettingsCard>
 
-            <tk:SettingsCard Header="Discord application ID" Style="{StaticResource Row}"
-                             Description="From your application in the Discord Developer Portal. Its name is what Discord shows after &quot;Listening to&quot;, so name it after where the music comes from, like Apple Music.">
-                <TextBox Width="200" Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         AutomationProperties.Name="Discord application ID" />
-            </tk:SettingsCard>
-
             <tk:SettingsCard Header="Public now playing" Style="{StaticResource Row}">
                 <tk:SettingsCard.Description>
                     <StackPanel>

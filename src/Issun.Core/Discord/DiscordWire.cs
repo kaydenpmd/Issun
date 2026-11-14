@@ -87,6 +87,8 @@ internal static class DiscordWire
         AddIfPresent(activity, "state_url", a.StateUrl);
         AddIfPresent(activity, "details", a.Details);
         AddIfPresent(activity, "details_url", a.DetailsUrl);
+        // Where pypresence 4.6.2 puts it (payloads.py, set_activity).
+        AddIfPresent(activity, "name", a.Name);
 
         var timestamps = new JsonObject();
         AddIfPresent(timestamps, "start", a.Start);

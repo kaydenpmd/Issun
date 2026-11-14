@@ -76,7 +76,6 @@ public sealed partial class MainViewModel
 
     private SettingsFields Fields() => new()
     {
-        DiscordClientId = _clientId,
         PublicRead = _publicRead,
         Port = _port,
     };
@@ -87,7 +86,6 @@ public sealed partial class MainViewModel
         _loading = true;
         try
         {
-            ClientId = f.DiscordClientId;
             PublicRead = f.PublicRead;
             Port = f.Port;
         }
@@ -126,9 +124,6 @@ public sealed partial class MainViewModel
 
     public string? SettingsErrors { get => _settingsErrors; private set => Set(ref _settingsErrors, value); }
     private string? _settingsErrors;
-
-    public string ClientId { get => _clientId; set { if (Set(ref _clientId, value ?? "")) Edited(); } }
-    private string _clientId = "";
 
     public bool PublicRead { get => _publicRead; set { if (Set(ref _publicRead, value)) Edited(); } }
     private bool _publicRead;

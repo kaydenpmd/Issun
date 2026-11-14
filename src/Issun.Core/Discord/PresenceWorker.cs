@@ -38,22 +38,18 @@ public sealed record PresenceWorkerOptions
 /// </summary>
 public sealed class PresenceWorker : IPresenceWorker
 {
-    internal const string MissingIdDetail =
-        "Set the Discord application ID in Settings. Presence stays off until there is one.";
-
-    // The 4000 message reads like a deleted application. It has been a single
-    // misread digit, copied from a screenshot (Ammy's CLAUDE.md, "Don't
-    // transcribe config from screenshots").
-    public const string InvalidIdDetail =
-        "Discord says the application ID is invalid. Check it for a misread digit: "
-        + "copy it from the Discord Developer Portal rather than retyping it.";
+    // 4000, "Invalid Client ID". With the ID built in since 14 Nov 2026 it
+    // means the application itself is gone, which nobody running Issun can
+    // fix, so the old advice (check the ID for a misread digit) went with the
+    // setting. The words are the owner's to write.
+    public const string InvalidIdDetail = "[text]";
 
     internal const string NotRunningDetail =
         "Discord isn't running. Open the Discord desktop app and Issun will connect by itself.";
 
     internal const string LostDetail = "Lost the connection to Discord. Reconnecting.";
 
-    private readonly IConfig _config;
+    private readonly string _clientId;
     private readonly Func<IDiscordClient> _clientFactory;
     private readonly IPhoneState _state;
     private readonly IActivityBuilder _builder;
@@ -75,26 +71,25 @@ public sealed class PresenceWorker : IPresenceWorker
     // Owned by the loop.
     private IDiscordClient? _client;
     private string? _user;
-    private string? _seenClientId;
     private bool _failing;
-    private bool _missingIdLogged;
     // Stopwatch timestamps. The waits between attempts are real time, like
     // relay.py's sleeps; the push gap is IClock time, like its time.time().
     private long _nextAttemptAt;
     private DiscordActivity? _lastIntended;
     private double _lastPush;
 
+    /// <param name="clientId">The application to connect as: <see cref="DiscordApplication.Id"/> unless a test says otherwise.</param>
     public PresenceWorker(
-        IConfig config,
         Func<IDiscordClient> clientFactory,
         IPhoneState state,
         IActivityBuilder builder,
         IArtworkResolver resolver,
         IUptimeLog uptime,
         IClock clock,
-        PresenceWorkerOptions? options = null)
+        PresenceWorkerOptions? options = null,
+        string clientId = DiscordApplication.Id)
     {
-        _config = config;
+        _clientId = clientId;
         _clientFactory = clientFactory;
         _state = state;
         _builder = builder;
@@ -169,8 +164,7 @@ public sealed class PresenceWorker : IPresenceWorker
 
     private async Task StepAsync(CancellationToken ct)
     {
-        var clientId = (_config.Settings.DiscordClientId ?? "").Trim();
-        await KeepConnectedAsync(clientId, ct).ConfigureAwait(false);
+        await KeepConnectedAsync(ct).ConfigureAwait(false);
 
         var payload = await ObserveAsync(ct).ConfigureAwait(false);
 
@@ -184,27 +178,8 @@ public sealed class PresenceWorker : IPresenceWorker
 
     // ─────────────────────────────── connection ───────────────────────────────
 
-    private async Task KeepConnectedAsync(string clientId, CancellationToken ct)
+    private async Task KeepConnectedAsync(CancellationToken ct)
     {
-        // An ID edited in Settings applies now. relay.py read DISCORD_CLIENT_ID
-        // once at import and needed a restart; the window has to do better.
-        if (clientId != _seenClientId)
-        {
-            if (_seenClientId is { Length: > 0 })
-                Log.Write((clientId.Length > 0, _client is not null) switch
-                {
-                    (true, true) => "[rpc] Discord application ID changed; reconnecting",
-                    (true, false) => "[rpc] Discord application ID changed; trying the new one",
-                    (false, true) => "[rpc] Discord application ID removed; disconnecting",
-                    (false, false) => "[rpc] Discord application ID removed",
-                });
-            if (_client is not null)
-                await DropClientAsync().ConfigureAwait(false);
-            _seenClientId = clientId;
-            _nextAttemptAt = 0;          // a deliberate change skips the retry wait
-            _failing = false;
-        }
-
         // Discord quitting while nothing was being sent. relay.py only found
         // out on its next push, which for a paused phone could be hours; until
         // then it believed it was connected. The client can tell sooner.
@@ -212,25 +187,11 @@ public sealed class PresenceWorker : IPresenceWorker
             await LoseConnectionAsync("Discord closed the pipe").ConfigureAwait(false);
 
         if (_client is null)
-            await TryConnectAsync(clientId, ct).ConfigureAwait(false);
+            await TryConnectAsync(ct).ConfigureAwait(false);
     }
 
-    private async Task TryConnectAsync(string clientId, CancellationToken ct)
+    private async Task TryConnectAsync(CancellationToken ct)
     {
-        if (clientId.Length == 0)
-        {
-            // relay.py refused to start without one ("Set DISCORD_CLIENT_ID").
-            // Issun has a window to say it in instead, and keeps looking.
-            if (!_missingIdLogged)
-            {
-                Log.Write("[rpc] no Discord application ID set; presence is off until one is entered in Settings");
-                _missingIdLogged = true;
-            }
-            SetStatus(new DiscordStatus(DiscordLinkState.Disconnected, null, MissingIdDetail));
-            return;
-        }
-        _missingIdLogged = false;
-
         if (Stopwatch.GetTimestamp() < _nextAttemptAt)
             return;
 
@@ -242,7 +203,7 @@ public sealed class PresenceWorker : IPresenceWorker
         var client = _clientFactory();
         try
         {
-            var user = await client.ConnectAsync(clientId, ct).ConfigureAwait(false);
+            var user = await client.ConnectAsync(_clientId, ct).ConfigureAwait(false);
             _client = client;
             _user = user is null ? null : user.GlobalName is { Length: > 0 } g ? g : user.Username;
             _failing = false;
@@ -264,9 +225,7 @@ public sealed class PresenceWorker : IPresenceWorker
             _failing = true;
             _nextAttemptAt = Deadline(_options.ReconnectDelay);
 
-            // Keyed on the ID as well as the reason, so an ID corrected in
-            // Settings that fails the same way still gets its own line.
-            if (_connectFailures.ShouldLog(clientId + "\n" + ex.Message, _clock.Now, out var held, out var since))
+            if (_connectFailures.ShouldLog(ex.Message, _clock.Now, out var held, out var since))
                 Log.Write(string.Create(CultureInfo.InvariantCulture,
                     $"[rpc] Discord not reachable ({ex.Message}); retrying in {_options.ReconnectDelay.TotalSeconds:0.###}s")
                     + HeldSuffix(held, since));
@@ -410,8 +369,8 @@ public sealed class PresenceWorker : IPresenceWorker
     /// a time, which only ever happens on a library version mismatch. The IPC
     /// client has no keywords to mismatch; what it can meet is Discord refusing
     /// a field, so the retry hangs off the refusal instead. Title, artist,
-    /// cover and progress bar survive it: the links, the album line and the
-    /// member-list choice are what go.
+    /// cover and progress bar survive it: the source's name for the activity,
+    /// the links, the album line and the member-list choice are what go.
     /// </summary>
     private static async Task<DiscordActivity?> SendWithFallbackAsync(IDiscordClient client, DiscordActivity? payload, CancellationToken ct)
     {
@@ -433,6 +392,8 @@ public sealed class PresenceWorker : IPresenceWorker
 
     internal static DiscordActivity Degraded(DiscordActivity a) => a with
     {
+        // Without its name the card says the application's instead.
+        Name = null,
         DetailsUrl = null,
         StateUrl = null,
         LargeUrl = null,
@@ -443,6 +404,7 @@ public sealed class PresenceWorker : IPresenceWorker
     private static string DroppedFields(DiscordActivity a)
     {
         var names = new List<string>();
+        if (a.Name is not null) names.Add("'name'");
         if (a.DetailsUrl is not null) names.Add("'details_url'");
         if (a.StateUrl is not null) names.Add("'state_url'");
         if (a.LargeUrl is not null) names.Add("'large_url'");

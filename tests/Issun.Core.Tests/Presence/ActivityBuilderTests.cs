@@ -127,6 +127,17 @@ public class ActivityBuilderTests
     }
 
     [Fact]
+    public void The_name_after_listening_to_is_the_sources_and_nobody_elses()
+    {
+        var builder = new ActivityBuilder(new MutableConfig());
+
+        Assert.Equal("Apple Music", builder.Build(Track() with { ActivityName = " Apple Music " }, T0, Cover, null).Name);
+        // None sent: Discord shows the application's own name.
+        Assert.Null(builder.Build(Track(), T0, Cover, null).Name);
+        Assert.Null(builder.Build(Track() with { ActivityName = "" }, T0, Cover, null).Name);
+    }
+
+    [Fact]
     public void Reset_forgets_the_anchor()
     {
         var builder = new ActivityBuilder(new MutableConfig());
@@ -233,6 +244,7 @@ public class ActivityBuilderTests
             Details = "Song",
             State = "Artist",
             Type = 2,
+            Name = "Apple Music",
             StatusDisplayType = 1,
             Start = 1_758_400_000,
             End = 1_758_400_200,

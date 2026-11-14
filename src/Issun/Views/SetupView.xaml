@@ -114,45 +114,15 @@
                 <StackPanel x:Name="DiscordStep">
                     <TextBlock Text="Connect to Discord" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
 
-                    <tk:SettingsCard Header="Make an application" Style="{StaticResource Row}"
-                                     Description="In the Discord Developer Portal, select New Application and give it a name.">
-                        <tk:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="1" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Width="{ThemeResource SettingsCardHeaderIconMaxSize}"
-                                      AutomationProperties.AccessibilityView="Content" AutomationProperties.Name="1" />
-                        </tk:SettingsCard.HeaderIcon>
-                        <Button Content="Open Developer Portal" Command="{x:Bind ViewModel.OpenPortalCommand}" />
-                    </tk:SettingsCard>
-
-                    <tk:SettingsCard Header="Enter your application ID" Style="{StaticResource Row}">
-                        <tk:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="2" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Width="{ThemeResource SettingsCardHeaderIconMaxSize}"
-                                      AutomationProperties.AccessibilityView="Content" AutomationProperties.Name="2" />
-                        </tk:SettingsCard.HeaderIcon>
-                        <tk:SettingsCard.Description>
-                            <TextBlock Text="Copy it from the application's General Information page and paste it here." TextWrapping="Wrap" />
-                        </tk:SettingsCard.Description>
-                        <TextBox x:Name="ClientIdBox" Width="200"
-                                 Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 AutomationProperties.Name="Discord application ID" />
-                    </tk:SettingsCard>
-
-                    <!-- Numbered, in the cards' icon space on the left (the
-                         owner: "can't you put numbers in their own space on the
-                         left yk more fancy"): a FontIcon holding the digit in
-                         the text font, at the size and colour SettingsCard
-                         gives its icon, and as wide as the card lets an icon be
-                         (SettingsCardHeaderIconMaxSize), so every title starts in
-                         the same place. This third card at the owner's ask of
-                         13 Nov 2026 ("number the cards on the discord page and
-                         add a third one that says "Make sure Discord is open"
-                         with a button that says "Open""), their words. Next's
-                         check needs Discord running; Open starts it. -->
+                    <!-- The third of three numbered cards until 14 Nov 2026, when the
+                         application ID was built in and the first two (make an
+                         application, enter its ID) went; alone, it has no number.
+                         The owner's words and button, 13 Nov 2026 ("add a third one
+                         that says "Make sure Discord is open" with a button that
+                         says "Open""). Next checks that Issun can connect, which
+                         needs Discord running; Open starts it. -->
                     <tk:SettingsCard Header="Make sure Discord is open" Style="{StaticResource Row}"
                                      Description="Discord needs to be open on this PC for Issun to connect to.">
-                        <tk:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="3" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Width="{ThemeResource SettingsCardHeaderIconMaxSize}"
-                                      AutomationProperties.AccessibilityView="Content" AutomationProperties.Name="3" />
-                        </tk:SettingsCard.HeaderIcon>
                         <Button Content="Open Discord" Command="{x:Bind ViewModel.OpenDiscordCommand}" AutomationProperties.AutomationId="OpenDiscord" />
                     </tk:SettingsCard>
 
@@ -162,11 +132,10 @@
                          own card with a red ! or something"): WinUI's InfoBar at
                          Error severity, Windows' own bar for an error, with its
                          red icon and tinted fill, in the cards' column. No
-                         title and no close button: the next Next or an edit to
-                         the ID clears it. -->
+                         title and no close button: the next Next clears it. -->
                     <InfoBar Severity="Error" IsClosable="False"
-                             IsOpen="{x:Bind v:Bind.Has(ViewModel.ClientIdProblem)}"
-                             Message="{x:Bind ViewModel.ClientIdProblem}" />
+                             IsOpen="{x:Bind v:Bind.Has(ViewModel.DiscordProblem)}"
+                             Message="{x:Bind ViewModel.DiscordProblem}" />
                 </StackPanel>
 
                 <!-- ───────────── 2. Tailscale ───────────── -->

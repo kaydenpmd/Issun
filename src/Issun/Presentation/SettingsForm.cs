@@ -13,13 +13,11 @@ namespace Issun.Presentation;
 /// </summary>
 public sealed record SettingsFields
 {
-    public string DiscordClientId { get; init; } = "";
     public bool PublicRead { get; init; }
     public string Port { get; init; } = "8787";
 
     public static SettingsFields From(Settings s) => new()
     {
-        DiscordClientId = s.DiscordClientId,
         PublicRead = s.PublicRead,
         Port = s.Port.ToString(CultureInfo.InvariantCulture),
     };
@@ -42,15 +40,6 @@ public static class SettingsForm
     {
         var errors = new List<string>();
 
-        // A Discord application ID is a snowflake: a 17–20 digit number. Empty is
-        // allowed — the Discord row then says it needs one — but a typo is
-        // caught here, because Discord's answer to one ("Error Code: 4000,
-        // Client ID is Invalid") reads like a deleted application, and that
-        // misreading has already cost the owner time once.
-        var clientId = f.DiscordClientId.Trim();
-        if (clientId.Length > 0 && (clientId.Length is < 17 or > 20 || !clientId.All(char.IsAsciiDigit)))
-            errors.Add("The Discord application ID is the 17–20 digit number on the application's General Information page.");
-
         if (!int.TryParse(f.Port.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var port) || port is < 1 or > 65535)
             errors.Add("The port must be a whole number from 1 to 65535.");
 
@@ -59,7 +48,6 @@ public static class SettingsForm
 
         return new(current with
         {
-            DiscordClientId = clientId,
             PublicRead = f.PublicRead,
             Port = port,
         }, errors);

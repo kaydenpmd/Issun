@@ -113,4 +113,34 @@ public class PushTests
         Assert.False(TrackText.Explicit(new TrackInfo { StoreId = storeId }, artwork));
         Assert.True(TrackText.Explicit(new TrackInfo { StoreId = storeId, Explicit = true }, artwork));
     }
+
+    // ── activity_name ───────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("\"Apple Music\"", "Apple Music")]
+    [InlineData("\"  Apple Music \"", "Apple Music")]   // trimmed
+    [InlineData("\"\"", null)]                        // nothing to show: the application's own name
+    [InlineData("\"   \"", null)]
+    [InlineData("null", null)]
+    [InlineData("42", null)]                          // only a JSON string counts
+    [InlineData("true", null)]
+    public void Activity_name_is_the_sources_string_or_nothing(string value, string? expected)
+    {
+        var push = Parse($$"""{"playing": true, "title": "T", "activity_name": {{value}}}""");
+        Assert.Equal(expected, TrackText.ActivityName(push.Track!));
+    }
+
+    [Fact]
+    public void A_push_without_an_activity_name_leaves_it_to_discord()
+    {
+        Assert.Null(TrackText.ActivityName(Parse("""{"playing": true, "title": "T"}""").Track!));
+    }
+
+    [Fact]
+    public void A_long_activity_name_is_clipped_like_the_other_text()
+    {
+        var name = new string('a', 200);
+        var push = Parse($$"""{"playing": true, "activity_name": "{{name}}"}""");
+        Assert.Equal(TrackText.MaxField, TrackText.ActivityName(push.Track!)!.Length);
+    }
 }

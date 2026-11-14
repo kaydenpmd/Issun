@@ -130,9 +130,52 @@ Discord receiver, so its window and release notes name Discord plainly. The
 README is only the name since 3 Nov 2026: public text is the owner's to write.
 
 The rule runs one way. **Don't let Issun's framing leak back into Ammy's**
-listing, landing page, permission strings or UI. And the Discord application
-stays named `Apple Music`, not Issun: its name is the text after "Listening to",
-and that should describe the source, not the bridge.
+listing, landing page, permission strings or UI.
+
+## The Discord application and "Listening to"
+
+**One application ID, built into Issun, since 14 Nov 2026.** The owner:
+"embed application id and distribute it to everybody", and "don't expose a
+field anywhere to change the application id just have it in wherever it's
+supposed to be in the code". It's `DiscordApplication.Id`
+(`src/Issun.Core/Discord/DiscordApplication.cs`), the owner's own application,
+the one relay.py used. Nobody makes a Discord application any more, and there
+is no field for an ID in setup, Settings or settings.json (an old
+`discordClientId` there is ignored and dropped on the next save). This is how
+other Rich Presence apps ship, checked that day in their code: Dolphin
+(`DEFAULT_CLIENT_ID` in `Source/Core/UICommon/DiscordPresence.cpp`), PreMiD
+(a `clientId` per site, e.g. `websites/Y/YouTube Music/presence.ts`) and Music
+Presence (several built into its .exe, named Music, TIDAL, a Podcast,
+Custom). The ID isn't secret: Discord gives it to anyone who looks at the
+activity.
+
+**The source decides what follows "Listening to".** The owner, the same day:
+"i actually want to have the source decide what comes after "listening to." so
+let issun receive an application name to put there", and "issun will not have
+a place in its ui for the user to decide what goes there". A push's
+`activity_name` (a JSON string, trimmed, clipped to 128) goes out as the
+activity's `name`, which Discord shows after "Listening to" on the card, in
+place of the application's name. Ammy sends "Apple Music". With no
+`activity_name`, Discord shows the application's own name; the owner meant to
+rename it from `Apple Music` to `Issun` in the Developer Portal. If Discord
+refuses an activity, the fallback sheds `name` with the other optional fields,
+so the card falls back to the application's name rather than going blank. The
+member list's line is still the artist (status display type 1, locked since
+23 Sept 2026); with type 0 it would show the name too.
+
+**Seen working on 14 Nov 2026, before any of this was built:** a test script
+(pypresence 4.6.2, the owner's application) set `name` to "Wobbly Toaster
+Parade" with "test details" and "test state", and the owner's profile card read
+"Listening to Wobbly Toaster Parade", as did the member-list line with display
+type 0. Discord's Social SDK documents the same override (`Activity::SetName`,
+from 1.6), and pypresence puts `name` after `details_url`, where
+`DiscordWire.Activity` puts it. Not yet seen from Issun itself.
+
+**The application's icon** is what Discord shows in the cover's place when an
+activity has no image; the test above, with no cover, showed a question-mark
+placeholder there because the application has no icon. A 1024 px square of
+Issun's icon, drawn by `tools/make_icon.py` with a square tile (the owner, 14
+Nov 2026: "no transparent corners"), was handed over for the Developer Portal.
 
 ## Layout
 
@@ -315,8 +358,10 @@ The owner's receiver is live on this machine. These are hard limits:
   throwaway `HKCU\Software\IssunTests\<guid>` key, never the real Uninstall key
   or `%LOCALAPPDATA%\Programs\Issun`.
 - **No secrets anywhere.** Never read or print `C:\Users\links\Python Scripts\.env`.
-  No key, Discord client ID or tailnet name (the part between the machine name
-  and `.ts.net`) in code, tests, fixtures, logs or commit messages. Fixtures say
+  No key or tailnet name (the part between the machine name and `.ts.net`) in
+  code, tests, fixtures, logs or commit messages. The one Discord application
+  ID in the code is Issun's own, built in on purpose (see "The Discord
+  application"); no other ID goes in. Fixtures say
   `example-tailnet`. When a secret has to be checked, print its `.Length`, never
   the value.
 - **Never enable or start the `Ammy Relay` task.** It was still registered,
@@ -423,50 +468,30 @@ run of a build that has this.
 **The setup window** opens by itself on a first run (no settings.json), once
 ever, and from **Set up again** in Settings after that. Four pages, in the
 owner's order of 12 Nov 2026:
-1. **Discord**: three numbered cards (the owner, 13 Nov 2026: "number the
-   cards on the discord page and add a third one that says "Make sure Discord
-   is open" with a button that says "Open""): 1. the Developer Portal, 2. "Enter
-   your application ID" ("Copy it from the application's General Information
-   page and paste it here."), 3. "Make sure Discord is open" ("Discord needs to
-   be open on this PC for Issun to connect to."), all the owner's words of the
-   same day; its button, first "Open", is "Open Discord" (the owner, the
-   same day). The numbers sit in the
-   cards' icon space on the left ("can't you put numbers in their own space
-   on the left yk more fancy"): a FontIcon holding the digit in the text font,
-   as wide as the card lets an icon be (the Toolkit's
-   `SettingsCardHeaderIconMaxSize`, not a typed 20; the owner: "use semantic
-   spacing") so every header starts at the same place, and exposed to UI
-   Automation (icons otherwise aren't), so screen readers read them. Open Discord starts Discord
-   through the discord:// link Discord registers for itself, or opens
-   discord.com/download where none is registered (`DesktopShell.OpenDiscord`).
-   **Next
-   checks the ID with Discord, once per click** (the owner, 13 Nov 2026:
-   "remove the third card from the discord page. make click send the request
-   and pop an error somewhere if the request returns wrong. it will only check
-   when next is pressed. once per click. if the connection is valid, proceed
-   to the next page. while waiting for a response back, replace the "next"
-   text with a spinner"). `DiscordIdCheck` opens a connection of its own,
-   handshakes with the typed ID and closes; the presence connection is left
-   alone. READY: the ID is saved and setup moves on. Anything else: the
-   reason goes below the ID's card, where the status card was ("i want the
-   error to be where the status card is rn"), in WinUI's InfoBar at Error
-   severity ("put the error text in its own card with a red ! or something"):
-   Windows' error bar, red-tinted, its icon a red circle with an ✕ (the ! in
-   a circle is Windows' warning bar, yellow), no title, no close button. The
-   words are the main window's
-   Discord status wording (`PresenceWorker.DetailFor`: 4000 is "the
-   application ID is invalid", no pipe is "Discord isn't running", and so on),
-   and a box that isn't 17–20 digits gets "An application ID is 17–20 digits
-   long." without asking Discord. Those words were all in the app before; none
-   is new. While Next waits, its label gives way to WinUI's 16 px
-   ProgressRing and the button is disabled (on the Tailscale page too, whose
-   Next also waits on a check). Nothing is applied while typing any more, and
-   the live status card under the ID is gone. Skip, or closing the window,
-   still saves an ID that looks like one, unchecked. The sandbox has no
-   Discord, so it sees both errors; Next going through with a real ID is for
-   the owner's PC to show. `--press-next` (with `--setup-page`) renders Next
-   mid-check from the demo, whose check takes a second and accepts only its
-   own ID.
+1. **Discord**: since 14 Nov 2026, one card, "Make sure Discord is open"
+   ("Discord needs to be open on this PC for Issun to connect to.") with Open
+   Discord, unnumbered. Until then it was three numbered cards (the owner, 13
+   Nov 2026), the first two to make a Discord application and paste its ID;
+   both went when the ID was built in, and the owner chose "Keep it, Next
+   checks" for what was left. Open Discord starts Discord through the
+   discord:// link Discord registers for itself, or opens discord.com/download
+   where none is registered (`DesktopShell.OpenDiscord`). **Next checks that
+   Issun can connect, once per click** (the owner, 13 Nov 2026: "make click
+   send the request and pop an error somewhere if the request returns wrong.
+   it will only check when next is pressed. once per click. if the connection
+   is valid, proceed to the next page. while waiting for a response back,
+   replace the "next" text with a spinner"). `DiscordIdCheck` opens a
+   connection of its own as the built-in application, handshakes and closes;
+   the presence connection is left alone. READY: setup moves on. Anything
+   else: the reason goes below the card in WinUI's InfoBar at Error severity
+   ("put the error text in its own card with a red ! or something"), no
+   title, no close button, in the main window's Discord status wording
+   (`PresenceWorker.DetailFor`: no pipe is "Discord isn't running", and so
+   on). While Next waits, its label gives way to WinUI's 16 px ProgressRing
+   and the button is disabled (on the Tailscale page too). The sandbox has no
+   Discord, so it sees the error; Next going through is for the owner's PC to
+   show. `--press-next` (with `--setup-page`) renders Next mid-check from the
+   demo, whose first check finds Discord closed and later ones connect.
 2. **Tailscale** ("Make this PC reachable with a Tailscale Funnel", the owner's
    title): the install button runs `winget install --id Tailscale.Tailscale
    --exact` (by id: the name matches four packages and winget stops to ask),
@@ -853,8 +878,10 @@ Issun still reads.
 
 **Don't transcribe config from screenshots.** A Discord client ID copied with
 one misread digit gets handshake close code 4000, "Client ID is Invalid", which
-reads like a deleted application. The Discord status detail says to check for
-a misread digit.
+reads like a deleted application. With the ID built in since 14 Nov 2026, a
+4000 means the application really is gone, and the status detail for it
+(`PresenceWorker.InvalidIdDetail`) is a `[text]` placeholder for the owner to
+write: the old one said to check the ID for a misread digit.
 
 The timing constants are in `Timing.cs`: gap threshold 90 s, idle timeout 90 s,
 minimum push gap 3 s, seek tolerance 10 s, settle window 6 s. `ArtMinScore`
@@ -899,10 +926,10 @@ this file.
 - **Artwork resolves while Discord is disconnected**, so the window can show the
   cover. Concurrent resolves for one track share a single request.
 - **Nothing exits over missing config.** relay.py quit with "Set RELAY_KEY" or
-  "Set DISCORD_CLIENT_ID". Issun generates the key and runs without a client
-  ID, saying in the Discord row what to set.
-- **Settings apply live.** The key is read per request, a new client ID
-  reconnects Discord, and a new port restarts the receiver.
+  "Set DISCORD_CLIENT_ID". Issun generates the key, and the client ID is built
+  in (14 Nov 2026).
+- **Settings apply live.** The key is read per request, and a new port restarts
+  the receiver.
 - **A taken port is a status, not a traceback.** `PortInUseException` asks
   whether relay.py is still running, the likely culprit for anyone moving over
   from it, and the window shows it.
@@ -1048,8 +1075,10 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ; its `texts` collection, one
    document per text, keyed like `discord.title`). That covers the setup window,
    the Setup row, the install and uninstall messages, and Ammy's scan screens and
-   camera prompt. The Discord application ID stays a text box (the owner, the
-   same day).
+   camera prompt. The Discord application ID was a text box until 14 Nov
+   2026, when it was built in (see "The Discord application"); the wording
+   page's `discord.id.*` and `discord.portal.*` fields no longer have a place
+   in the window.
    **Still waiting on the owner (12 Nov 2026):** the Tailscale page's two
    cards. They asked to see the whole page first and to go over Tailscale's own
    setup again; the page now shows it in all four states (`--demo-tailscale
@@ -1080,9 +1109,12 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    the window still has 13 `[text]` placeholders: the install link's title
    and progress line, the new-key button, and the errors (no winget, install
    failed, no address, Funnel off, endpoint invalid, save failed, new key
-   failed), besides the Tailscale cards above. Before asking the owner, check
-   that the wording page has a field for every `[text]` in `SetupView.xaml` and
-   `SetupViewModel.cs`, and add any that's missing. Push only after their
+   failed), besides the Tailscale cards above. Since 14 Nov 2026 a 14th, the
+   Discord status for a deleted application (`PresenceWorker.InvalidIdDetail`,
+   shown in the main window and on setup's Discord page). Before asking the
+   owner, check that the wording page has a field for every `[text]` in
+   `SetupView.xaml`, `SetupViewModel.cs` and `PresenceWorker.cs`, and add any
+   that's missing. Push only after their
    words are in and they've said it can go out.
    **WinUI 3: decided and done on the `winui3` branch (12 Nov 2026).** The
    owner chose it ("let's move to winui 3 actually") after the
@@ -1143,9 +1175,9 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
    sandbox's default run (42 checks) and `address` passed on the day's code;
    `tailscale` and `qrrules` weren't rerun, though their first click changed
    from Next to Skip. **Not yet seen on the owner's PC**: Next going through
-   with a real ID and Discord open, Open Discord, the slide, and the blur
+   with Discord open, Open Discord, the slide, and the blur
    animating on real hardware (the sandbox draws in software, a few frames).
-   **Next**: the owner's words for the 13 remaining `[text]` placeholders and
+   **Next**: the owner's words for the 14 remaining `[text]` placeholders and
    the Tailscale page, then a push, only once they say it can go out. Queued
    item 3 (several PCs backing each other up) waits until asked.
 2. **Review findings still open**, from the 23 Sept review that stopped partway:
@@ -1175,7 +1207,7 @@ Asked for by the owner and not yet done. Take the top item unless told otherwise
      QR code carrying a list) and failing over, or any Issun forwarding to the
      active one; each PC has its own Funnel name, and whether Tailscale can
      put one name in front of several machines for Funnel is unverified;
-   - a new PC joins with the key and Discord application ID from an existing
+   - a new PC joins with the key from an existing
      one, by a join code, rather than set up from scratch.
    Prior art named in conversation: Tailscale's high-availability subnet
    routers, and a floating address (keepalived/VRRP). Design-heavy and big:

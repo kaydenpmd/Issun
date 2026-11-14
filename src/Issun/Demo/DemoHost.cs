@@ -25,8 +25,6 @@ namespace Issun.Demo;
 /// </summary>
 public sealed class DemoHost : IIssunHost
 {
-    private const string DemoClientId = "123456789012345678";
-
     private const double CheckinEvery = 5;
     private const string DemoDnsName = "issun-pc.example-tailnet.ts.net";
     private const string DemoUser = "demo-user";
@@ -81,7 +79,7 @@ public sealed class DemoHost : IIssunHost
         _clock = clock ?? SystemClock.Instance;
         _createdAt = _clock.Now;
         _startPhase = ((startPhase % Script.Length) + Script.Length) % Script.Length;
-        _settings = new Settings { DiscordClientId = DemoClientId, Key = NewKey() };
+        _settings = new Settings { Key = NewKey() };
         _tailscale = new TailscaleStatus(true, true, DemoDnsName, FunnelOn: false, FunnelTargetsPort: false,
             "Funnel is off, so nothing outside your tailnet can reach Issun. Turn it on from Issun, " +
             "or run: tailscale funnel --bg --https=443 localhost:8787", Unattended: false);
@@ -214,16 +212,21 @@ public sealed class DemoHost : IIssunHost
         return new TailscaleInstallResult(true, false, "");
     }
 
+    private int _discordChecks;
+
     /// <summary>
-    /// Pretend: after a second, so the spinner in Next shows, the demo's own ID
-    /// is accepted and any other is refused, so both outcomes can be seen.
+    /// Pretend: after a second, so the spinner in Next shows, the first check
+    /// finds Discord closed and every later one connects, so both outcomes can
+    /// be seen.
     /// </summary>
-    public async Task<Core.Discord.DiscordIdCheckResult> CheckDiscordIdAsync(string clientId)
+    public async Task<Core.Discord.DiscordIdCheckResult> CheckDiscordAsync()
     {
         await Task.Delay(1000);
-        var ok = clientId == DemoClientId;
-        Log.Write($"[demo] Discord application ID check: {(ok ? "accepted" : "refused")} (pretend)");
-        return new Core.Discord.DiscordIdCheckResult(ok, ok ? null : Core.Discord.PresenceWorker.InvalidIdDetail);
+        var ok = Interlocked.Increment(ref _discordChecks) > 1;
+        Log.Write($"[demo] Discord check: {(ok ? "connected" : "Discord isn't running")} (pretend)");
+        // Worded as the presence worker words it.
+        return new Core.Discord.DiscordIdCheckResult(ok, ok ? null
+            : "Discord isn't running. Open the Discord desktop app and Issun will connect by itself.");
     }
 
     public async Task<(bool Ok, string Output)> EnableFunnelAsync()
@@ -360,9 +363,7 @@ public sealed class DemoHost : IIssunHost
 
         DiscordStatus discord;
         // Details worded as the presence worker words them.
-        if (_settings.DiscordClientId.Length == 0)
-            discord = new(DiscordLinkState.Disconnected, null, "Set the Discord application ID in Settings. Presence stays off until there is one.");
-        else if (phase.DiscordDrops && t is >= 6 and < 16)
+        if (phase.DiscordDrops && t is >= 6 and < 16)
             discord = new(DiscordLinkState.Disconnected, null, "Discord isn't running. Open the Discord desktop app and Issun will connect by itself.");
         else if (phase.DiscordDrops && t is >= 16 and < 18)
             discord = new(DiscordLinkState.Connecting, null, null);

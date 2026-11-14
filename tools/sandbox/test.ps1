@@ -209,18 +209,13 @@ if ($Step -in @("all","first")) {
     Dump $w "page 0"; Shot "setup-page-0" $w
     function SkipShown { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "Skip"))); return [bool]($r -and $r.Current.Name -eq "Skip" -and -not $r.Current.IsOffscreen) }
     Expect "Skip on the Discord page" (SkipShown)
-    # Next asks Discord about the ID, once per click. No Discord here, so the
-    # page stays with the reason under the ID, and Skip moves on.
+    # Next checks that Issun can connect to Discord, once per click. No
+    # Discord here, so the page stays with the reason, and Skip moves on. The
+    # application ID is built in since 14 Nov 2026: one card, no ID box.
     function NameShown($name) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))); return [bool]($r -and -not $r.Current.IsOffscreen) }
-    Expect "no Discord status card" (-not (NameShown "Set the Discord application ID in Settings. Presence stays off until there is one."))
-    Expect "the cards are numbered, with Make sure Discord is open third" ((NameShown "Make an application") -and (NameShown "Enter your application ID") -and (NameShown "Make sure Discord is open") -and (NameShown "1") -and (NameShown "2") -and (NameShown "3"))
+    Expect "only Make sure Discord is open, and no application ID" ((NameShown "Make sure Discord is open") -and -not (NameShown "Make an application") -and -not (NameShown "Enter your application ID") -and -not (NameShown "Discord application ID"))
     $openDiscord = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "OpenDiscord")))
-    Expect "the third card has Open Discord" ($openDiscord -and $openDiscord.Current.Name -eq "Open Discord")
-    Click $w "Next" | Out-Null; Start-Sleep 2
-    Expect "Next with no ID stays and says why" ((OnPage $w "Connect to Discord") -and (NameShown "An application ID is 17$([char]0x2013)20 digits long."))
-    $idBox = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Discord application ID")))
-    $idBox.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue("123456789012345678"); Start-Sleep 1
-    Expect "editing the ID clears the error" (-not (NameShown "An application ID is 17$([char]0x2013)20 digits long."))
+    Expect "the card has Open Discord" ($openDiscord -and $openDiscord.Current.Name -eq "Open Discord")
     Click $w "Next" | Out-Null; Start-Sleep 3
     Dump $w "page 0 after Next without Discord"; Shot "setup-page-0-no-discord" $w
     Expect "Next without Discord stays and says Discord isn't running" ((OnPage $w "Connect to Discord") -and (NameShown "Discord isn't running. Open the Discord desktop app and Issun will connect by itself."))

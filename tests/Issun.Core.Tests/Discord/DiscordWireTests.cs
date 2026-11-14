@@ -70,6 +70,12 @@ public class DiscordWireTests
             """{"cmd": "SET_ACTIVITY", "args": {"pid": 4242, "activity": {"type": 0, "status_display_type": 0, "state": "cd", "details": "ab", "details_url": "https://x/s", "assets": {"large_url": "https://x/a"}, "instance": true}}, "nonce": "<nonce>"}"""
         },
         {
+            // The source's activity_name, as Ammy sends it (14 Nov 2026):
+            // pypresence 4.6.2's own name= keyword, after details_url.
+            "named", new DiscordActivity { Details = "Not Like Us", State = "Kendrick Lamar", Type = 2, StatusDisplayType = 1, DetailsUrl = "https://x/s", Name = "Apple Music", Start = 1750000000 },
+            """{"cmd": "SET_ACTIVITY", "args": {"pid": 4242, "activity": {"type": 2, "status_display_type": 1, "state": "Kendrick Lamar", "details": "Not Like Us", "details_url": "https://x/s", "name": "Apple Music", "timestamps": {"start": 1750000000}, "instance": true}}, "nonce": "<nonce>"}"""
+        },
+        {
             // clear(): "activity": None, then remove_none() deletes the key.
             "clear", null,
             """{"cmd": "SET_ACTIVITY", "args": {"pid": 4242}, "nonce": "<nonce>"}"""

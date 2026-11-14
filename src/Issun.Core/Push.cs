@@ -33,6 +33,14 @@ public sealed record TrackInfo
     /// clean one. Read it through <see cref="TrackText.Explicit"/>.
     /// </summary>
     public bool? Explicit { get; init; }
+
+    /// <summary>
+    /// <c>activity_name</c>: what the source wants after "Listening to" on
+    /// Discord, as a JSON string, or null when it sent none (Ammy sends "Apple
+    /// Music"). Not the same as <c>app_name</c>, which is what the source calls
+    /// itself. Read it through <see cref="TrackText.ActivityName"/>.
+    /// </summary>
+    public string? ActivityName { get; init; }
 }
 
 /// <summary>One POST /now-playing body, parsed defensively.</summary>
@@ -80,6 +88,7 @@ public sealed class NowPlayingPush
                 StoreId = Str(body["store_id"])?.Trim(),
                 ArtworkB64 = Str(body["artwork_b64"]),
                 Explicit = Bool(body["explicit"]),
+                ActivityName = JsonString(body["activity_name"]),
             } : null,
         };
     }
@@ -97,6 +106,10 @@ public sealed class NowPlayingPush
             _ => null,
         }
         : null;
+
+    /// <summary>A JSON string; null for anything else. Strict like <see cref="Bool"/>: relay.py never read these fields.</summary>
+    public static string? JsonString(JsonNode? node) =>
+        node is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : null;
 
     /// <summary>Python's bool() over a JSON value.</summary>
     public static bool Truthy(JsonNode? node) => node switch
@@ -170,6 +183,14 @@ public static class TrackText
     /// </summary>
     public static bool Explicit(TrackInfo t, IArtworkResolver artwork) =>
         t.Explicit ?? (StoreId(t) is { } id ? artwork.CachedExplicit(id) : null) ?? false;
+
+    /// <summary>
+    /// The source's <c>activity_name</c>, trimmed and clipped to 128 code
+    /// points like the other text, or null when it sent none or only spaces,
+    /// which leaves Discord showing the application's own name.
+    /// </summary>
+    public static string? ActivityName(TrackInfo t) =>
+        t.ActivityName?.Trim() is { Length: > 0 } name ? Clip(name) : null;
 
     /// <summary>Python's <c>s[:max]</c>, which counts code points rather than UTF-16 units.</summary>
     public static string Clip(string s, int max = MaxField)

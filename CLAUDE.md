@@ -277,8 +277,13 @@ the same day against the exact thumbnail Spotify gave Windows (design
 library, `microsoft/windows11-media-controls/cover-scaling-2026-11-14/`; the
 owner: "Yes, match Windows"). Issun's Fant cover fits that box filter at 1.08
 of 255 at 100%. `BitmapImage.DecodePixelWidth`, tried first, fits a softer
-triangle filter. `--screenshot` above 1x can't judge this: it redraws the
-whole page at the larger scale, which resamples the cover again.
+triangle filter, but only for JPEGs: with a 4000 px PNG the two drew
+identical pixels, while with a 600 px JPEG 2,569 of 3,364 pixels differed (by
+up to 70). Most likely the JPEG decoder shrinks while it decompresses
+when given a target size, and WIC's own scaler does the rest for PNGs. Apple's
+covers are JPEGs, so Fant matters here. `--screenshot` above 1x can't judge
+this: it redraws the whole page at the larger scale, which resamples the
+cover again.
 
 ## Rules every module follows
 
@@ -1482,6 +1487,12 @@ first, so CI's release carries the same build number, and
 px, from its 16 px frame` (the new tray.ico) and `[rpc] connected to Discord`
 within a second. The tray icon sits in the taskbar's overflow (^) on the
 owner's PC, as Discord's does, so a capture of the taskbar doesn't show it.
+
+**14 Nov 2026, build 149 to 155 (6.6 s down), for covers shrunk the way
+Quick Settings shrinks them, at the owner's "Push and install".** `main`
+(7d6c26f) pushed first, then `tools/install-local.ps1` (SHA-256
+F9DE6F10…7B2AC1), build 149 kept as `Issun.exe.b149.bak`. Discord reconnected
+within a second.
 
 **Two things the handover taught, for anyone repeating it:**
 

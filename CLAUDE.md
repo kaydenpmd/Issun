@@ -1441,6 +1441,15 @@ value from settings.json while Issun was stopped (a backup is beside it as
 `settings.json.before-publicbase.bak`). Each time, Discord reconnected within
 2 s and the phone checked in within 30 s.
 
+**14 Nov 2026, build 146 to 149 (6.6 s down), for the icon in Discord's
+colours, at the owner's "Push and install".** `main` (ce75d02) was pushed
+first, so CI's release carries the same build number, and
+`tools/install-local.ps1` published it here (SHA-256 B4F3819E…FC093E1), build
+146 kept as `Issun.exe.b146.bak`. It logged the shell refresh, `tray icon 16
+px, from its 16 px frame` (the new tray.ico) and `[rpc] connected to Discord`
+within a second. The tray icon sits in the taskbar's overflow (^) on the
+owner's PC, as Discord's does, so a capture of the taskbar doesn't show it.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

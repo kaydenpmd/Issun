@@ -170,9 +170,9 @@ Parade" with "test details" and "test state", and the owner's profile card read
 type 0. Discord's Social SDK documents the same override (`Activity::SetName`,
 from 1.6), and pypresence puts `name` after `details_url`, where
 `DiscordWire.Activity` puts it. **Installed on the owner's PC as build 146
-(a3b1276) on 14 Nov 2026 at 03:3x, at their "do 1 and 2"** (6.6 s down, build
+(a3b1276) on 14 Nov 2026, started 03:32:16, at their "do 1 and 2"** (6.6 s down, build
 142 kept as `Issun.exe.b142.bak`); Ammy build 184 (821f54b), which sends
-`activity_name`, was released the same minute. Not yet seen: Issun's own push
+`activity_name`, was pushed to release minutes later. Not yet seen: Issun's own push
 with a name on the owner's card (it needs Ammy 184 on the phone; until then
 the phone sends no name and the card shows the application's), Next on the
 Discord page going through with Discord open, and the application renamed and

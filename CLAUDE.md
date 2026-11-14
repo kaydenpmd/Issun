@@ -1494,6 +1494,15 @@ Quick Settings shrinks them, at the owner's "Push and install".** `main`
 F9DE6F10…7B2AC1), build 149 kept as `Issun.exe.b149.bak`. Discord reconnected
 within a second.
 
+**Same day, build 155 to 158 (6.1 s down), for the main and setup windows'
+columns centred in a wide window, at the owner's "Push and install".** `main`
+(84cbbe8) pushed first, SHA-256 FCC96813…5D91E4, build 155 kept as
+`Issun.exe.b155.bak`, Discord reconnected within a second. The owner felt the
+off-centre column was new in 155 ("not the first time i've fullscreened
+issun"); renders of 149 and 155 at 1908 wide put it at the same x = 551.5,
+and the shift is half of (1048 minus the content's natural width), so what
+was open or how long its text was can hide it. Not settled in a real window.
+
 **Two things the handover taught, for anyone repeating it:**
 
 - **Do anything that touches live state from PowerShell, not from Claude Code's Bash

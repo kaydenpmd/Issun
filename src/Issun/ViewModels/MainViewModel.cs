@@ -217,12 +217,45 @@ public sealed partial class MainViewModel : Observable, IDisposable
         var bytes = await load;         // never throws; failures are logged by CoverLoader
         if (_coverUrl != url || _disposed)
             return;
-        // Decoded at the card's size times the screen's scale, not the
-        // source's 600+ px; 256 covers the 58 px cover up to 400%.
-        var image = bytes is null ? null : await Images.DecodeAsync(bytes, 256, "cover art");
+        // Decoded to exactly the pixels it's drawn at, the card's size times
+        // the screen's scale, so it is drawn one to one. WinUI's compositor
+        // shrinks a bigger bitmap with a plain bilinear filter, which turns
+        // blocky past about 2x: the fixed 256 px this used to decode to was
+        // drawn at 87 px at 150%, and the owner saw "it looks blocky" (14 Nov
+        // 2026). The WPF build decoded 256 for a 112 epx cover (168 px), too
+        // little a shrink to show. Decoding to size is Microsoft's own advice
+        // for BitmapImage (DecodePixelWidth), and it scales in the decoder.
+        // By width: a cover that isn't square is drawn UniformToFill, and
+        // nearly every cover is square.
+        var px = CoverPixels;
+        var image = bytes is null ? null : await Images.DecodeAsync(bytes, px, "cover art");
         if (_coverUrl == url && !_disposed)
             Cover = image;
     }
+
+    /// <summary>The cover's side in the card, in effective pixels: MainView.xaml's 58.</summary>
+    public const int CoverSize = 58;
+
+    private int CoverPixels => Math.Max(1, (int)Math.Round(CoverSize * _coverScale));
+
+    /// <summary>
+    /// The scale the cover is drawn at (the screen's, or --screenshot's).
+    /// Setting a new one decodes the current cover again at that size.
+    /// </summary>
+    public double CoverScale
+    {
+        get => _coverScale;
+        set
+        {
+            if (value <= 0 || value == _coverScale)
+                return;
+            _coverScale = value;
+            Log.Write($"[ui] covers decoded at {CoverPixels} px for scale {value:0.##}");
+            if (_coverUrl is { } url && !_disposed)
+                _coverSettled = ApplyCoverAsync(url, _covers.LoadAsync(url));
+        }
+    }
+    private double _coverScale = 1;
 
     // ─────────────────────────────── Status ───────────────────────────────
 

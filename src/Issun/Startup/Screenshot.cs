@@ -131,6 +131,10 @@ public static class Screenshot
             var root = page.XamlRoot?.RasterizationScale is > 0 and var r ? r : 1;
             page.RasterizationScale = Scale / root;
             page.UpdateLayout();
+            // The cover is decoded to the pixels it's drawn at, so decode it
+            // again at the render's scale.
+            vm.CoverScale = Scale;
+            await Task.WhenAny(vm.CoverSettled, Task.Delay(TimeSpan.FromSeconds(5)));
             await Task.Delay(TimeSpan.FromMilliseconds(400));
 
             // --press-next presses the setup page's Next just before the

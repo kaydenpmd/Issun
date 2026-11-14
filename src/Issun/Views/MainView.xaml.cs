@@ -54,6 +54,9 @@ public sealed partial class MainView : UserControl
         _hairlineScale = scale;
         CoverHairline.BorderThickness = new Thickness(1 / scale);
         Core.Log.Write($"[ui] cover hairline: 1 px at scale {scale:0.##} ({1 / scale:0.###} epx)");
+        // And the cover itself is decoded to the pixels it's drawn at.
+        // (--screenshot sets its own scale after this, on the view model.)
+        ViewModel.CoverScale = scale;
     }
 
     public MainViewModel ViewModel { get; }

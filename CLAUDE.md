@@ -1,222 +1,148 @@
 # Context for Claude Code
 
-**Issun** is the Windows receiver for **Ammy**. Ammy (iOS, `C:\Users\links\Repos\Ammy`)
-reads Apple Music's now-playing state and POSTs it as JSON to an HTTPS endpoint;
-Issun receives it on `127.0.0.1:8787` behind Tailscale Funnel and sets Discord
-Rich Presence through the Discord desktop app's local IPC pipe. It replaced
-relay.py, the Python relay that lived in the Ammy repo's `bridge/` folder, and
-keeps every behaviour relay.py had, including the fixes that cost days to find.
+**This file holds the current state and the rules. The story of how they came
+about is in `HISTORY.md`**: every measurement, test, install, correction and
+rejected approach up to 15 Nov 2026, under the section names used here. Read
+the matching section there before redoing anything this file calls settled,
+and before reopening a decision.
 
-The name is from Ōkami: Issun is the tiny Poncle who travels with Amaterasu,
-"Ammy", and does the talking she can't. That is this app's whole job.
+**Keeping it that way.** When something changes, edit this file to say what is
+true now, in as few lines as it takes, and write the story (what was tried,
+measured, seen or rejected, with dates and evidence) at the end of
+`HISTORY.md` under a dated heading. Rules and current facts here; narrative
+there. Each install of a new build is a line in `HISTORY.md`, not here. Code
+comments that cite "CLAUDE.md" and a section name mean `HISTORY.md` when the
+section is only a pointer here.
+
+**Check `git log`, `gh release list -R kaydenpmd/Issun` and `/version`, not
+this file, for what has shipped and what is installed.**
+
+## What it is
+
+**Issun** receives now-playing JSON on `127.0.0.1:8787` behind Tailscale Funnel
+and sets Discord Rich Presence through the Discord desktop app's local IPC
+pipe. Its first source is **Ammy** (iOS, `C:\Users\links\Repos\Ammy`), which
+reads Apple Music. It replaced relay.py on 22 Sept 2026 and keeps every
+behaviour relay.py had, including the fixes that cost days to find. The name
+is from Ōkami: Issun does the talking Amaterasu, "Ammy", can't.
 
 ```
 iPhone (Ammy) ──https──▶ <machine>.<tailnet>.ts.net (Tailscale Funnel) ──▶ Issun, 127.0.0.1:8787 ──named pipe──▶ Discord desktop
 ```
 
-**History:** the modules were built in parallel against `Contracts.cs` on
-21–22 Sept 2026. **Issun took over from relay.py on 22 Sept 2026** (build 23).
-The installed copy was build 46 from 3 Nov 2026 (build 43 brought the new
-icon, and a tray hint and new-key notice that no longer name Ammy; build 46
-took the old description off the Start menu entry), and since 12 Nov 2026 has
-been replaced many times by local publishes of `main` ("Updating the installed
-copy" lists them); it was build 162 at the end of 14 Nov 2026. Check
-`/version` against `gh release list -R kaydenpmd/Issun` before assuming the
-installed copy runs this code.
+**There is no rollback** (the owner, 25 Sept 2026: "kill relay.py it's
+obsolete"). The last relay.py is
+`git -C C:\Users\links\Repos\Ammy show 3b7875c:bridge/relay.py`. Tailscale
+Funnel is the only way in; Issun's address is always Tailscale's (the Public
+address override was removed on 13 Nov 2026, and a `publicBase` in
+settings.json is ignored). The `cloudflared` service is still the owner's to
+remove (Ammy's CLAUDE.md).
 
-**Handoff, 14 Nov 2026 (evening).** Everything is pushed and released (CI
-green through d29637b, build 162) and build 162 is installed and connected.
-That day brought: the icon in Discord's colours (a blurple disc, white alone
-in the tray, `tray.ico`); covers decoded to their drawn pixels with Fant, as
-Quick Settings does; non-square covers fitted, never cropped; both windows'
-columns centred when wide; one-line title and artist with "…", each in full
-on hover; and `ISSUN_DEMO_SONGS` for renders of chosen songs. **Not yet seen
-in a real window:** the centred column maximized (the owner felt the
-off-centre column was new in 155; renders of 149 and 155 matched), a real
-non-square cover, the one-line title, and covers at 150% (only 100% was
-measured; `--screenshot` above 1x can't judge it). The scripts that rendered
-and measured all of it are in the Ammy repo's private
-`local/issun-dev-2026-11-14/` (its `NOTES.md` says which does what); the
-Quick Settings capture and filter fit are in the design library. Per-artist
-links on the card, as Spotify's have, can't be done over RPC: a separate
-session tested it on 14 Nov 2026 and saved why in the library,
-`discord/rich-presence-card/`. The live test is still partway
-through — see "The owner's live test" at the end of this file for what has and
-hasn't been checked, and on which build. The switch was made permanent the same
-evening: Issun lives at `%LOCALAPPDATA%\Programs\Issun\Issun.exe` and starts in
-the tray from the HKCU Run key.
+**Why the shape stays.** Discord has no Rich Presence SDK on iOS, and setting
+presence from a phone means a user-token Gateway connection: self-botting,
+against ToS. The phone never talks to Discord. **Any change that moves Discord
+communication onto the phone is wrong.** The accepted cost: presence needs the
+PC awake with Discord desktop open.
 
-**There is no rollback, since 25 Sept 2026.** The owner: "kill relay.py it's
-obsolete". The Ammy repo's `bridge/` folder was deleted (committed 9 Oct 2026),
-and the last relay.py stays in its history: `git -C C:\Users\links\Repos\Ammy
-show 3b7875c:bridge/relay.py`. The same day the owner decided to move off the
-old Cloudflare tunnel address "in favor of tailscale. need to live among the
-people", so Tailscale Funnel is to be the only way in. On 9 Oct 2026, and
-still on 27 Oct, that was not yet true: the `cloudflared` service still ran, and Issun's Public address
-setting still held the old address, imported from relay.py's `.env`, which
-overrode the Tailscale name for the window's endpoint and for uploaded-cover
-URLs. On 13 Nov 2026 the owner saw setup fill in ammy.kaydenpmd.net and had the
-whole override removed ("clear that publicbase mechanic"): Issun's address is
-always Tailscale's now, and a settings.json that still holds `publicBase` is
-read as if it didn't. Ammy's CLAUDE.md ("Funnel is the only endpoint") has the
-cloudflared steps left, which are the owner's to take.
+## Where things stand
 
-Ammy's CLAUDE.md learned this the hard way, twice: documented state decays in
-whichever direction you are not looking. **Check `git log`, not this file.**
+As of 15 Nov 2026: `main` is pushed and released through build 162 (d29637b),
+and build 162 is installed on the owner's PC. The window still has `[text]`
+placeholders for the owner to write (the setup window's install link and
+progress line, the new-key button, its errors, the Tailscale page's cards, and
+`PresenceWorker.InvalidIdDetail`), the owner said they'd write them "in
+another session". Before asking, check the wording page
+(claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ, its `texts` collection) has a
+field for every `[text]` in `SetupView.xaml`, `SetupViewModel.cs` and
+`PresenceWorker.cs`, and add any missing.
+
+**Not yet seen on the owner's PC or in a real window:**
+- Next on the setup's Discord page going through with Discord open; Open
+  Discord; the pages' slide; the QR blur animating on real hardware
+- the centred column in a maximized window; a real non-square cover; the
+  one-line title; covers at 150% (`--screenshot` above 1x can't judge them)
+- the update over an old build 48, and scanning the white-on-black QR code
+  with Ammy
+- explicitness by lookup: Apple's public Lookup returned only clean editions
+  on 13 Nov 2026, so `trackExplicitness` may never say explicit
+- the live test's skip, pause and days of `uptime.log` (items 5, 6, 8 below)
 
 ## What Issun is, in anything a user reads
 
-**A Discord receiver for any source, never "Ammy's receiver".** The owner, 23 Sept
-2026: "remove all references to ammy STOP. but don't remove references to
-discord. this is meant for discord." The window, the tray and log notices say
-**source**, not Ammy or phone. The Source row was the Phone row until then. It
-is the mirror of Ammy's own rule, where user-facing text never names Discord.
+**A Discord receiver for any source, never "Ammy's receiver".** The owner,
+23 Sept 2026: "remove all references to ammy STOP. but don't remove references
+to discord. this is meant for discord." The window, tray and notices say
+**source**, not Ammy or phone. The rule runs one way: Issun names Discord,
+Ammy never does, and **Issun's framing must not leak into Ammy's** listing,
+landing page, permission strings or UI.
 
-Since 3 Nov 2026 Issun gives the Start menu entry no description (public text
-is the owner's to write). Earlier builds gave it one, and an entry was then
-only rewritten when the .exe moved, so the owner's own still had the first,
-"Shows what Ammy is playing on Discord". A run now takes the old ones off
-(`StartMenuShortcut.OldDescriptions`), changing nothing else in the entry, and
-leaves any other description alone. The owner's entry lost its old one on
-3 Nov 2026, the first time build 46 started.
-
-Three things still carry the name on purpose, and they stay:
-- the `X-Ammy-Relay` response header, which Ammy checks for by exact name;
-- log lines kept word for word from relay.py, such as `[init] phone reports Ammy …`,
-  which hundreds of parity tests pin;
-- this file and code comments, which explain how the two fit together.
-
-The same day the owner removed three settings from the window and **locked** them:
-the member list always shows the artist, the card never gets an album line, and
-cover matching uses relay.py's 0.35 floor. `IssunHost.Locked()` applies that
-wherever settings enter the app, load and Apply both. The
-`Settings` record keeps the fields so the relay.py parity tests can still
-exercise the builder's other modes. Don't put them back in the window without
-asking. The check-in history file was renamed `uptime.log` at the same time.
-
-On 24 Sept 2026 the owner had the window's **progress bar removed**, along with
-the plumbing that existed only to feed it (`HostSnapshot.Intended` and
-`TrackObservedAt`, `IPresenceWorker.Intended`, the window's `Playhead`).
-Discord's card keeps its bar; that comes from `ActivityBuilder`'s timestamps
-and is untouched. The same day the card's "Nothing playing" became "Not
-playing". Don't bring the window's bar back without asking.
-
-Since 12 Nov 2026 the card is laid out as Windows' own media card in Quick
-Settings, without its app-name row and its playback buttons, as Ammy's row
-copies the Lock Screen's player: title (Body Strong) over artist (Caption) on
-the left, the cover on the right at that card's 58, text centred against it,
-24 of padding. The measurements are in the design library,
-`microsoft\windows11-media-controls`. The owner's words: "i just want title
-and artist", so the card's source line (`Source: Ammy 1.0 (97)`) and its
-Discord line ("Showing on Discord") went. `NowPlayingText.SourceVersion` stays
-for the setup log, and its no-"version" wording with it: the owner, 23 Sept
-2026, "NO 'VERSION' JUST NAME AND NUMBER".
-
-## Why it exists
-
-Ammy's CLAUDE.md, open work item 1, counted what a stranger needs to run the
-relay end to end (Python, `relay.py`, a hand-made key in a `.env`, a Scheduled
-Task, Tailscale, a Discord application). The single biggest lever it named was
-"packaging the relay as one self-provisioning executable that registers its own
-autostart", and it said outright that this is Issun, not a second thing to
-build. Fixing relay.py's own first-run experience was discarded on 18 Sept 2026
-as throwaway work for exactly that reason.
-
-So Issun generates its own key on first run, registers its own autostart, reads
-Tailscale's state instead of asking for a URL, offers to turn Funnel on, and
-imported a relay-era `.env` so the owner's phone kept working without
-re-pairing. The import went on 12 Nov 2026, the owner: "i'm the only person
-on the planet who ever used that", and then "remove" for the code behind it:
-`EnvImporter`, `UptimeHistory` (which merged relay.py's `ammy-uptime.log`
-in), `IIssunHost.ImportEnvAsync` and their tests are gone. The last of them
-is in git history before that commit; the history it imported stays in
-`uptime.log`.
-
-**The shape is unchanged, deliberately.** Discord has no Rich Presence SDK on
-iOS. Setting presence from a phone directly would mean a Gateway WebSocket with
-a user token, which is self-botting, against ToS, and gets accounts terminated.
-The phone never talks to Discord; the desktop app's local IPC pipe is the
-sanctioned path. **Any change that moves Discord communication onto the phone is
-wrong.** The accepted cost: presence needs the PC awake with Discord desktop
-open. That is not a bug to fix.
-
-## Issun names Discord. Ammy doesn't.
-
-Ammy's user-facing copy is receiver-agnostic on purpose. It is a sender that
-POSTs to whatever endpoint the user chooses, built to pair with Issun and usable
-with anything, and naming Discord there has had to be undone once already (see
-Ammy's CLAUDE.md, "What Ammy is"). Issun is the opposite case: it *is* the
-Discord receiver, so its window and release notes name Discord plainly. The
-README is only the name since 3 Nov 2026: public text is the owner's to write.
-
-The rule runs one way. **Don't let Issun's framing leak back into Ammy's**
-listing, landing page, permission strings or UI.
+- The README is only the name; the Start menu entry and the Apps entry have no
+  description or Publisher. Public text and all interface text are the
+  owner's to write (global CLAUDE.md, the wording page).
+- Three things carry Ammy's name on purpose and stay: the `X-Ammy-Relay`
+  header (Ammy checks for it), log lines kept word for word from relay.py
+  (`[init] phone reports Ammy …`), and this file and code comments.
+- **Locked by the owner (23 Sept 2026)**, enforced in `IssunHost.Locked()` on
+  load and Apply: the member list shows the artist (status display type 1),
+  the card never gets an album line, cover matching uses the 0.35 floor. The
+  `Settings` fields stay for the parity tests. Don't put them back in the
+  window without asking.
+- No progress bar in the window (removed 24 Sept 2026); Discord's card keeps
+  its own. Don't bring it back without asking.
+- **The Now playing card is Windows' Quick Settings media card** without its
+  app-name row and buttons: title (Body Strong) over artist (Caption), one
+  line each with "…" and the full text on hover, cover on the right at 58 epx,
+  text centred against it, 24 of padding (design library,
+  `microsoft\windows11-media-controls`). "i just want title and artist": no
+  source line, no Discord line. "Not playing" stands alone. No cover: an empty
+  square in `ControlAltFillColorQuarternary`, no note, no hairline.
+- Covers are decoded to exactly the pixels drawn, at the window's current
+  scale, redone when it changes (`MainViewModel.CoverScale`), shrunk with
+  WIC's Fant as Quick Settings does. **A non-square cover is fitted, never
+  cropped** ("i will not publish something that crops album art"). Covers get
+  a one-physical-pixel hairline in `ControlStrokeColorDefault`.
+- **Never assume the display's scale**: anything sized in pixels reads the
+  window's current scale (`XamlRoot.Changed`); a log line's dpi says which
+  display it was.
+- **The explicit badge** is drawn: a `Path` built from SF Pro's 🅴 proportions
+  at the title's cap height (the owner chose "Draw Apple's design"; numbers in
+  `MainView.xaml`), screen-reader name "Explicit". `TrackText.Explicit` takes
+  the push's JSON `true`/`false` first (`false` beats the catalog), else the
+  store-ID lookup's `trackExplicitness`, never fuzzy search. Discord has no
+  field for it; it's the window's and `GET /now-playing`'s only.
 
 ## The Discord application and "Listening to"
 
-**One application ID, built into Issun, since 14 Nov 2026.** The owner:
-"embed application id and distribute it to everybody", and "don't expose a
-field anywhere to change the application id just have it in wherever it's
-supposed to be in the code". It's `DiscordApplication.Id`
-(`src/Issun.Core/Discord/DiscordApplication.cs`), the owner's own application,
-the one relay.py used. Nobody makes a Discord application any more, and there
-is no field for an ID in setup, Settings or settings.json (an old
-`discordClientId` there is ignored and dropped on the next save). This is how
-other Rich Presence apps ship, checked that day in their code: Dolphin
-(`DEFAULT_CLIENT_ID` in `Source/Core/UICommon/DiscordPresence.cpp`), PreMiD
-(a `clientId` per site, e.g. `websites/Y/YouTube Music/presence.ts`) and Music
-Presence (several built into its .exe, named Music, TIDAL, a Podcast,
-Custom). The ID isn't secret: Discord gives it to anyone who looks at the
-activity.
+- **One application ID, built in** (`DiscordApplication.Id` in
+  `src/Issun.Core/Discord/DiscordApplication.cs`, the owner's own, named
+  Issun). No field anywhere to change it ("just have it in wherever it's
+  supposed to be in the code"); an old `discordClientId` in settings.json is
+  ignored and dropped. The ID isn't secret.
+- **The source decides what follows "Listening to".** A push's
+  `activity_name` (trimmed, clipped to 128) goes out as the activity's `name`.
+  Ammy sends "Apple Music". With none, Discord shows the application's name.
+  No UI for it. If Discord refuses an activity, the fallback sheds `name` with
+  the other optional fields.
+- **Discord caches the application's name.** After a rename, check
+  `discord.com/api/v10/applications/<id>/rpc`, then restart Discord, before
+  suspecting Issun.
+- The application's icon is the 1024 px blurple square from
+  `tools/make_icon.py <out> --square`. The black-and-white one is the old icon.
+- A handshake close 4000 now means the application really is gone; its status
+  text (`PresenceWorker.InvalidIdDetail`) is a `[text]` placeholder.
 
-**The source decides what follows "Listening to".** The owner, the same day:
-"i actually want to have the source decide what comes after "listening to." so
-let issun receive an application name to put there", and "issun will not have
-a place in its ui for the user to decide what goes there". A push's
-`activity_name` (a JSON string, trimmed, clipped to 128) goes out as the
-activity's `name`, which Discord shows after "Listening to" on the card, in
-place of the application's name. Ammy sends "Apple Music". With no
-`activity_name`, Discord shows the application's own name; the owner meant to
-rename it from `Apple Music` to `Issun` in the Developer Portal. If Discord
-refuses an activity, the fallback sheds `name` with the other optional fields,
-so the card falls back to the application's name rather than going blank. The
-member list's line is still the artist (status display type 1, locked since
-23 Sept 2026); with type 0 it would show the name too.
+## The icon
 
-**Seen working on 14 Nov 2026, before any of this was built:** a test script
-(pypresence 4.6.2, the owner's application) set `name` to "Wobbly Toaster
-Parade" with "test details" and "test state", and the owner's profile card read
-"Listening to Wobbly Toaster Parade", as did the member-list line with display
-type 0. Discord's Social SDK documents the same override (`Activity::SetName`,
-from 1.6), and pypresence puts `name` after `details_url`, where
-`DiscordWire.Activity` puts it. **Installed on the owner's PC as build 146
-(a3b1276) on 14 Nov 2026, started 03:32:16, at their "do 1 and 2"** (6.6 s down, build
-142 kept as `Issun.exe.b142.bak`); Ammy build 184 (821f54b), which sends
-`activity_name`, was pushed to release minutes later. **Seen on the owner's
-card on 14 Nov 2026**, under Issun 149: "Listening to Issun" while the phone
-ran Ammy 181 and sent no name (the application, renamed Issun, after Discord
-was restarted; see the cache note below), then "Listening to Apple Music" at
-04:02 once the phone ran Ammy 184. The application has its icon too, the
-blurple square, checked through Discord's public API. Not yet seen: Next on
-the Discord page going through with Discord open.
-
-**The Discord app caches the application's name.** On 14 Nov 2026 the
-application was already named "Issun" (its public
-`discord.com/api/v10/applications/<id>/rpc` said so), and Ammy 181 sent no
-`activity_name`, yet the owner's card still read "Listening to Apple Music",
-the old name, even after Issun reconnected. Quitting Discord from its tray
-and opening it again showed "Listening to Issun". After a rename, check that
-endpoint first, then restart Discord, before suspecting Issun. Other people's
-Discord apps keep their own copies.
-
-**The application's icon** is what Discord shows in the cover's place when an
-activity has no image; the test above, with no cover, showed a question-mark
-placeholder there because the application has no icon. A 1024 px square of
-Issun's icon, drawn by `tools/make_icon.py` with a square tile (the owner, 14
-Nov 2026: "no transparent corners"), was handed over for the Developer Portal.
-The icon went to Discord's colours later that day, so that square was redrawn
-(`tools/make_icon.py issun-1024.png --square`): the black-and-white one is the
-old icon and shouldn't be uploaded.
+Two waves arriving at a speech bubble, the other half of Ammy's icon, drawn as
+Discord draws its own on Windows since 14 Nov 2026 ("issun is more of a
+discord-adjacent tool"). `tools/make_icon.py` makes `Assets\issun.ico` (a flat
+blurple disc, #5662F6, the picture white, no gradient or shadow), `Assets\tray.ico`
+(the white picture alone with Discord's soft halo, carried in the .exe as the
+managed resource `Issun.tray.ico`) and, with `--square`, the Discord
+application's icon. Measurements in the design library, `discord/windows-icons/`.
+**After an icon change, the shell must be told**, or the taskbar keeps the
+cached picture: `ShellIcons.Refresh` does it after an install or a new build
+at the installed path.
 
 ## Layout
 
@@ -236,112 +162,37 @@ src/Issun.Core/                 everything that isn't UI, testable without a win
   <Module>/                     one folder per module, namespace Issun.Core.<Folder>
 src/Issun/                      WinUI 3 window and tray; talks only to IIssunHost
 tests/Issun.Core.Tests/         xUnit, one folder per module, namespace Issun.Core.Tests.<Folder>
-tools/                          make_icon.py, which draws the icon
+tools/                          make_icon.py, install-local.ps1, sandbox/
+HISTORY.md                      How everything got this way
 ```
-
-The modules, by contract. Each replaces a named piece of relay.py, and the doc
-comments in `Contracts.cs` say which function each member replaces.
 
 | Module | Types | Was, in relay.py |
 |---|---|---|
 | state (`State/`) | `PhoneState`, `PhoneDiagnostics`, `UptimeLog`, `CheckinProcessor` | `State`, `record_phone_version/diag`, `_diag_summary`, `_log_line`, `note_checkin`, `note_silence`, `_gap_verdict`, `print_summary`, the middle of `do_POST` |
 | activity | `ActivityBuilder`, `Playhead`, `DiscordText` | `build_payload` minus artwork, `Playhead`, `pad_for_discord`, `_materially_different` |
-| artwork | `ArtworkResolver` | the store-ID lookup, `_album_url`, uploaded JPEGs, the cache pruning, `_normalize` / `_similarity` / `_score` (an exact port of `difflib.SequenceMatcher`), fuzzy search |
+| artwork | `ArtworkResolver` | the store-ID lookup, `_album_url`, uploaded JPEGs, cache pruning, `_normalize` / `_similarity` / `_score` (an exact port of `difflib.SequenceMatcher`), fuzzy search |
 | discord | `DiscordIpcClient`, `PresenceWorker` | pypresence itself, `rpc_worker`, `push_with_fallback` |
 | server | `RelayServer` (Kestrel) | `Handler`, `QuietHTTPServer`, `public_state` |
-| platform | `SettingsStore`, `KeyGenerator`, `Autostart`, `TailscaleCli`, `SelfInstall`, `StartMenuShortcut` | `.env` and `_load_env_file`, `install-task.ps1`, the hand-typed `tailscale funnel` command |
+| platform | `SettingsStore`, `KeyGenerator`, `Autostart`, `TailscaleCli`, `SelfInstall`, `StartMenuShortcut` | `.env`, `install-task.ps1`, the hand-typed `tailscale funnel` command |
 | host | `IssunHost` | `main()`: builds every module, wires them, gives the window one object |
 | ui | `App`, `MainWindow`, `SetupWindow`, the tray, `DemoHost`, `HostFactory` | a PowerShell window and `relay.log` |
 
-**The icon, since 28 Oct 2026, is two waves arriving at a speech bubble**, the
-owner's pick. It is the second half of Ammy's icon, where the same two waves
-leave an album cover. **Since 14 Nov 2026 it is drawn the way Discord draws
-its own on Windows**, the owner's call: "i just realized issun is more of a
-discord-adjacent tool than it is an apple music-adjacent one and i want to sell
-that". `tools/make_icon.py` makes three things:
-- `Assets\issun.ico`, the app icon (.exe, taskbar, Start, title bar): a flat
-  blurple disc edge to edge (#5662F6, the pixels of Discord's own `app.ico`),
-  the picture white on it, as far out as Clyde (0.68 of the radius). No
-  gradient, no shadow: Discord's has neither ("if you're using any gradients
-  or shadows in the icon then remove them").
-- `Assets\tray.ico`, the tray's: the white picture alone with no disc, as
-  Discord's tray icon is its logomark alone ("it's just discord's logomark in
-  white with no bg. copy this for issun"), with Discord's soft black halo
-  copied size by size so it shows on a light taskbar. It rides in the .exe as
-  a managed resource (`Issun.tray.ico`), since a .NET .exe carries one icon
-  resource, and `Native.LoadTrayIcon` picks its frame; the log says which
-  (`tray icon 24 px, from its 24 px frame`).
-- with `--square`, a 1024 px PNG for the Discord application's icon in the
-  Developer Portal: the same picture on a blurple square to the corners.
-Both waves are white now; the old icon's darker nearer wave had no second
-colour to use. Below 20 px only the nearer wave is drawn. The measurements of
-Discord's icons are in the design library, `discord/windows-icons/`.
-
-Before that it was black and greys on Albums' white squircle, with a gradient
-and a drop shadow (28 Oct to 14 Nov 2026), and the frames from 32 px down laid
-out by hand; before that, an ink-circle placeholder drawn by
-`tools/make-icon.ps1`. Both are in git history.
-
-**Never assume the display's scale.** The owner, 14 Nov 2026: "i'm often away
-from my home setup which is 3840*2160 150%, at my laptop which is 1920*1080
-100% / i also often remote desktop from a phone or tablet / so don't assume my
-current display resolution". So anything sized in pixels (the window's and
-tray's icons, the cover's decode, its hairline) is read from the window's
-current scale and redone when it changes (`XamlRoot.Changed`), and a log line's
-dpi says which display that moment was on. The cover is decoded to exactly the
-pixels it is drawn at since 14 Nov 2026 (`MainViewModel.CoverScale`): a fixed
-256 px decode, shrunk on the fly by the compositor's bilinear filter, was
-blocky at 100%, where the 58 epx cover is 58 px. The shrink is WIC's Fant, an
-area average, because that is what Quick Settings' media card does, measured
-the same day against the exact thumbnail Spotify gave Windows (design
-library, `microsoft/windows11-media-controls/cover-scaling-2026-11-14/`; the
-owner: "Yes, match Windows"). Issun's Fant cover fits that box filter at 1.08
-of 255 at 100%. `BitmapImage.DecodePixelWidth`, tried first, fits a softer
-triangle filter, but only for JPEGs: with a 4000 px PNG the two drew
-identical pixels, while with a 600 px JPEG 2,569 of 3,364 pixels differed (by
-up to 70). Most likely the JPEG decoder shrinks while it decompresses
-when given a target size, and WIC's own scaler does the rest for PNGs. Apple's
-covers are JPEGs, so Fant matters here.
-
-**A cover that isn't square is fitted, never cropped**, since 14 Nov 2026:
-its longer side fills the 58 epx square, centred, rounded and stroked at its
-own edges, with nothing behind it, as Ammy and the iOS Lock Screen draw
-theirs. Windows' Quick Settings crops (UniformToFill); Issun departs from it
-on purpose, the owner's call: "windows doesn't do this but eh i have
-principles to uphold i will not publish something that crops album art".
-The decode fits the longer side (`Images.DecodeAsync`), and the cover's
-border and hairline take its size (`MainViewModel.CoverWidth`/`CoverHeight`).
-Rendered with a 400 x 600 and a 600 x 360 crop of a cover, at 1x and 1.25x. `--screenshot` above 1x can't judge
-this: it redraws the whole page at the larger scale, which resamples the
-cover again.
-
 ## Rules every module follows
 
-- **Thread-safe.** HTTP requests arrive on Kestrel's threads, the presence
-  worker runs its own loop, and the window reads snapshots on the UI thread.
-- **Invariant culture** for anything parsed, logged or put on the wire. The
-  machine's culture is not guaranteed; a comma decimal separator in `0.35`, a
-  log line or a JSON number breaks parity silently.
-- **Log lines keep relay.py's exact text.** Every `[tag] message` that relay.py
-  printed is written the same way through `Log.Write`, em dashes included. The
-  owner reads these logs, and `relay.log` history has to stay greppable across
-  the switch. Don't tidy the wording.
-- **Every failure path logs.** See the gotchas below; this is the project's
-  recurring bug.
-- **Time is injected.** `IClock` returns unix seconds as a double, the same unit
-  as Python's `time.time()`, so ported arithmetic keeps its shape. Tests use
+- **Thread-safe.** Kestrel's threads, the presence worker's loop and the UI
+  thread all touch state.
+- **Invariant culture** for anything parsed, logged or put on the wire.
+- **Log lines keep relay.py's exact text**, em dashes included. The owner reads
+  them and history must stay greppable. Don't tidy the wording.
+- **Every failure path logs.** Silent failure is this project's recurring bug.
+- **Time is injected**: `IClock` returns unix seconds as a double. Tests use
   `ManualClock`.
-- **Parity is checked against Python and frozen into C#.** Expected values come
-  from running relay.py's own functions and are committed into the tests as
-  literals, so the tests have no Python dependency. To generate more, work from a
-  scratch folder, since importing relay.py creates `./art_cache` in the current
-  directory. relay.py is only in the Ammy repo's history now: both
-  `generate_parity.py` scripts extract it from commit `3b7875c` by default, and
-  for anything else, `git -C C:\Users\links\Repos\Ammy show
-  3b7875c:bridge/relay.py > relay.py` in the scratch folder. Load it with
-  `importlib.util.spec_from_file_location`, and stub `artwork_by_store_id`, `store_uploaded_artwork`,
-  `existing_uploaded_artwork`, `artwork_url` and `catalog_links` on the module
-  so nothing touches the network. pypresence 4.6.2 is installed for Python 3.14.
+- **Parity is checked against Python and frozen into C#** as literals. To
+  generate more, work in a scratch folder (importing relay.py creates
+  `./art_cache`); both `generate_parity.py` scripts extract relay.py from
+  commit `3b7875c`; stub `artwork_by_store_id`, `store_uploaded_artwork`,
+  `existing_uploaded_artwork`, `artwork_url` and `catalog_links` so nothing
+  touches the network. pypresence 4.6.2 is installed for Python 3.14.
 - **`Contracts.cs` is shared by every module.** Change it deliberately and
   update every implementation in the same commit.
 
@@ -353,1208 +204,353 @@ dotnet test
 dotnet run --project src/Issun -- --demo
 ```
 
-.NET 9 SDK, Windows only: WinUI 3, named pipes and the registry are all Windows.
-The window project is x64 only (`win-x64`), as Windows App SDK's self-contained
-builds are; a local build lands in `src/Issun/bin/x64/Debug/net9.0-windows10.0.22621.0/win-x64/`.
+.NET 9 SDK, Windows only, x64 only (`win-x64`); a local build lands in
+`src/Issun/bin/x64/Debug/net9.0-windows10.0.22621.0/win-x64/`.
 
-- `--background`: start in the tray with no window. The autostart entry passes
-  it.
-- `--demo`: `HostFactory` returns `DemoHost`, a fake whose track and
-  statuses change over time. It must not write into the real data folder.
-  On the owner's PC its plain songs are real ones, picked at random each run
-  from `%LOCALAPPDATA%\Issun demo songs\songs.json`, with their covers in
-  `covers\` beside it (`DemoSongs`). That list is the owner's listening, so it
-  stays on that PC and out of this public repository (the owner, 12 Nov 2026:
-  "On this PC only"); anywhere else the demo keeps its made-up songs. It was
-  picked from the most-played titles in issun.log and relay.log, matched with
-  iTunes Search, and the scripts that made it are in that folder. Search
-  returned only clean editions, so no song there is explicit and the made-up
-  explicit song stays.
-- `--screenshot <png>` (with `--demo`): renders the window offscreen to a PNG
-  after layout, then exits. **This is how a session looks at the UI**: render,
-  then Read the PNG. It never puts a window on the owner's desktop.
-  `--setup-page 0..3` renders a page of the setup window instead, and
-  `--expanded` there draws the QR code (of the demo's made-up key), and
-  `--demo-tailscale 0..3` sets the demo's Tailscale state. WinUI can't render
-  a control with no window, as WPF could, so the page goes in a window that
-  is a tool window, never activated, and cloaked (`DWMWA_CLOAK`), which keeps
-  it off the screen; the render is at 1.25x through `RasterizationScale`.
-  Each PNG gets a `.text.json` beside it: every visible piece of text and
-  where it sits, for wording pages.
-- `--uninstall`: what Settings › Apps runs. Quits a running Issun, then
-  removes the Run entry, the Start menu entry, the Apps entry and the install
-  folder. Settings, key, logs and history stay. It asks nothing since 12 Nov
-  2026 (the owner: "drop it", of the light Win32 "Uninstall Issun?" box):
-  Windows 11's Settings asks first in its own flyout. Control Panel's
-  Programs and Features doesn't, so from there it simply uninstalls.
-- `ISSUN_HOME`: puts both the config and data folders under one directory
-  (see `Paths.cs`).
-- `ISSUN_DEMO_SONGS` (with `--demo`): a folder to read `songs.json` and its
-  covers from instead of `%LOCALAPPDATA%\Issun demo songs`, so a render can
-  show a chosen song (a one-song list shows it every time) without touching
-  the owner's list.
+- `--background`: start in the tray (the autostart entry passes it).
+- `--demo`: `DemoHost`, a fake that never writes into the real data folder. On
+  the owner's PC its songs come from `%LOCALAPPDATA%\Issun demo songs\`
+  (`songs.json` and `covers\`), the owner's listening, which stays off this
+  public repository. `ISSUN_DEMO_SONGS` points it at another folder.
+- `--screenshot <png>` (with `--demo`): renders the window offscreen and exits.
+  **This is how a session looks at the UI**: render, then Read the PNG. Never
+  put a window on the owner's desktop. `--setup-page 0..3`, `--expanded` (the
+  QR code), `--demo-tailscale 0..3`, `--press-next`, `--theme dark`. Each PNG
+  gets a `.text.json` of every visible text and its position, for wording
+  pages. Refuses from a disconnected Remote Desktop session; use the
+  sandbox's `shots` step then.
+- `--uninstall`: what Settings › Apps runs. Removes the Run entry, Start menu
+  entry, Apps entry and install folder; settings, key, logs and history stay.
+  Asks nothing (Windows asks first).
+- `ISSUN_HOME`: puts the config and data folders under one directory.
+- No `--version` or `--summary` (a WinExe has no console): use `GET /version`,
+  the .exe's properties, or the window's Diagnostics section.
+- A single-file .exe unpacks about 180 MB into `%TEMP%\.net\Issun\<hash>`;
+  `StaleUnpacks` deletes earlier builds' folders on start.
 
-relay.py's `--version` and `--summary` have no command-line equivalent: a WinExe
-has no console to print to. Use `GET /version`, the `.exe`'s file properties, or
-the window's Diagnostics section, which shows `IUptimeLog.Summarize()`.
-
-A single-file `.exe` unpacks everything, about 180 MB, into
-`%TEMP%\.net\Issun\<hash>` on first launch: Windows App SDK requires it
-(`IncludeAllContentForSelfExtract`), and the hash changes with every build. So
-the installed copy deletes the folders earlier builds left there when it
-starts (`StaleUnpacks`), leaving any a running copy still uses: it renames each
-folder first, which Windows refuses while a file in it is open. The WPF build
-unpacked 8 MB.
-
-### Testing on a clean PC: Windows Sandbox
-
-`pwsh tools/sandbox/run.ps1` (from PowerShell, not Claude Code's Bash) builds a
-release-numbered `.exe`, opens Windows Sandbox, and runs `tools/sandbox/test.ps1`
-inside it through `wsb exec`: first run, the setup window page by page, the
-self-install's Apps, Start menu and Run entries, a second launch, the tray
-icon (found by its tooltip, a click opens the window, closing the window
-leaves Issun running, the menu's Quit ends it), an update over the running
-copy, and uninstall as Settings › Apps runs it. Every check prints
-`ok` or `FAIL`; the report, screenshots and Issun's logs land in
-`%LOCALAPPDATA%\IssunSandbox\<time>\out`. `-Keep` leaves the sandbox open,
-`-Steps first,update` runs some steps; `address` and `qrrules`, not in the
-default run, each need a fresh sandbox of their own. About two minutes a run. The sandbox has its
-own network and registry, so it is the one place a self-installing build can
-run on this PC; never open its `.exe` outside it. Enabled on 12 Nov 2026
-(`dism /online /enable-feature /featurename:Containers-DisposableClientVM
-/all`, from an elevated shell; `Enable-WindowsOptionalFeature` failed in
-PowerShell 7 with "Class not registered"). Computer use can't see the Sandbox
-window (its owner, `WindowsSandboxRemoteSession`, can't be granted), which is
-why the test drives itself: UI Automation for the WinUI windows, BM_CLICK sent
-to message boxes' own buttons (keystrokes stopped reaching them once the tray
-step's real mouse clicks had moved Windows' foreground), real mouse clicks on
-the tray icon, and Up and Enter posted to the tray menu, whose items UI
-Automation doesn't list from there (`tray-menu.png` shows them). WinUI reports
-what's scrolled out of view as off screen, as WPF didn't, so the test scrolls
-before it looks below the fold. It can't test Discord, Tailscale, Funnel or
-the phone.
-
-**On WinUI 3: every step passes** (12 Nov 2026, build 83 at fdc31e2, the
-`winui3` branch): 35 checks in the default run, 7 in `address`, 11 in
-`qrrules`, 0 failed; build 90 (08c4c18) again passed the default run's 35
-and `shots`' 9. The run caught one bug, the tray menu's Start with
-Windows unticked after setup's Yes (the main view model read it once,
-before setup ran; WPF had the same gap), fixed in fdc31e2.
+**Testing on a clean PC: Windows Sandbox.** `pwsh tools/sandbox/run.ps1` (from
+PowerShell, not the Bash tool) builds a release-numbered .exe and runs
+`tools/sandbox/test.ps1` inside the sandbox: first run, setup page by page,
+the self-install's entries, a second launch, the tray, an update over a
+running copy, uninstall. Every check prints `ok` or `FAIL`; output in
+`%LOCALAPPDATA%\IssunSandbox\<time>\out`. `-Keep`, `-Steps first,update`;
+`address` and `qrrules` each need a fresh sandbox; `shots` renders every
+screen. About two minutes. **The sandbox is the only place a self-installing
+build may run on this PC.** Computer use can't see it, so the test drives
+itself with UI Automation. It can't test Discord, Tailscale or the phone.
 
 ### Testing without touching the live setup
 
-The owner's receiver is live on this machine. These are hard limits:
+The owner's receiver is live on this machine. Hard limits:
 
-- **Never bind port 8787.** The live receiver is on it. Tests pick free ports.
-- **Never connect to `\\.\pipe\discord-ipc-N`.** `DiscordIpcClient` takes a pipe
-  prefix; tests serve their own fake Discord on a unique one.
-- **Autostart tests** use a throwaway `HKCU\Software\IssunTests\<guid>` for both
-  registry paths and delete it afterwards.
-- **Tailscale:** only read-only commands (`tailscale status --json`,
-  `tailscale funnel status --json`, `tailscale debug prefs`). `EnableFunnelAsync`
-  and `EnableUnattendedAsync` run for real only when the owner clicks a button;
-  tests go through an injected process runner.
-- **Self-install tests** install into a temp folder and register under a
-  throwaway `HKCU\Software\IssunTests\<guid>` key, never the real Uninstall key
-  or `%LOCALAPPDATA%\Programs\Issun`.
-- **No secrets anywhere.** Never read or print `C:\Users\links\Python Scripts\.env`.
-  No key or tailnet name (the part between the machine name and `.ts.net`) in
-  code, tests, fixtures, logs or commit messages. The one Discord application
-  ID in the code is Issun's own, built in on purpose (see "The Discord
-  application"); no other ID goes in. Fixtures say
-  `example-tailnet`. When a secret has to be checked, print its `.Length`, never
-  the value.
-- **Never enable or start the `Ammy Relay` task.** It was still registered,
-  disabled, on 27 Oct 2026, beside relay.py's loose copy in
-  `C:\Users\links\Python Scripts`, and there is no rollback: starting it would
-  put a second receiver on 8787. Unregistering it or deleting that folder is the
-  owner's call.
+- **Never bind port 8787.** Tests pick free ports.
+- **Never connect to `\\.\pipe\discord-ipc-N`.** Tests serve a fake Discord
+  on their own pipe prefix.
+- **Autostart and self-install tests** use a throwaway
+  `HKCU\Software\IssunTests\<guid>` and a temp folder, never the real Run,
+  Uninstall key or `%LOCALAPPDATA%\Programs\Issun`.
+- **Tailscale: read-only commands only** (`tailscale status --json`,
+  `tailscale funnel status --json`, `tailscale debug prefs`). Funnel and Run
+  unattended change only when the owner clicks; tests inject a process runner.
+- **No secrets anywhere.** Never read `C:\Users\links\Python Scripts\.env`. No
+  key or tailnet name in code, tests, fixtures, logs or commits (fixtures say
+  `example-tailnet`). The built-in Discord ID is the only ID in the code.
+  Check a secret by its `.Length`.
+- **Never enable or start the `Ammy Relay` task**; it would put a second
+  receiver on 8787.
 - **Don't change Tailscale or `cloudflared` state** unless the owner asks.
+- **Anything touching live state runs from PowerShell, not the Bash tool**,
+  whose writes to `%APPDATA%`/`%LOCALAPPDATA%` don't land and whose view of
+  `issun.log` is stale.
 
 ## Telling builds apart
 
 `<VersionPrefix>` in `Directory.Build.props` is the only number a human sets.
-CI supplies the rest as MSBuild properties, which `Directory.Build.props` stamps
-into assembly metadata for `IssunInfo` to read back:
-
-- `IssunBuild` is `git rev-list --count HEAD`: a commit count, so it climbs on
-  its own.
-- `IssunCommit` is the short SHA.
-
-A local build has neither, and reports build 0, shown as `dev`, with commit
-`local`.
+CI passes `IssunBuild` (`git rev-list --count HEAD`, so the checkout uses
+`fetch-depth: 0` and refuses a shallow clone) and `IssunCommit` (short SHA). A
+local build reports `dev` / `local`.
 
 | Where | Looks like |
 |---|---|
-| `IssunInfo.Display`, the window | `0.1.0 (12)`, the same shape as Ammy's Version row `1.0 (80)` |
-| `IssunInfo.Wire`: `GET /version` body and the `X-Ammy-Relay` header | `issun 0.1.0 (12)` |
+| `IssunInfo.Display`, the window | `0.1.0 (12)` |
+| `IssunInfo.Wire`: `GET /version` and the `X-Ammy-Relay` header | `issun 0.1.0 (12)` |
 | Uptime-log stamp | `[issun 0.1.0 (12) / app 1.0 (80)]` |
-| Artifact, release asset | `Issun-0.1.0-b12-a1b2c3d.exe`, tag `v0.1.0-b12` |
-| Explorer → Properties → Details | File version `0.1.0.12` |
+| Release asset | `Issun-0.1.0-b12-a1b2c3d.exe`, tag `v0.1.0-b12` |
+| Explorer → Properties | File version `0.1.0.12` |
 
-**Why a commit count, not `github.run_number`.** Ammy used the run number until
-18 Sept 2026, and it broke the moment another workflow started calling the
-build: in a reusable workflow the `github` context belongs to the caller, so the
-number restarted at 1. A commit count doesn't care which workflow runs. It needs
-the full history, so the checkout uses `fetch-depth: 0`, and the workflow
-refuses a shallow clone outright rather than publishing "build 1" again.
-
-relay.py answered `/version` and `X-Ammy-Relay` with a bare `1.9.0`; Issun
-answers `issun 0.1.0 (12)`, so a reader can tell which receiver answered. Ammy
-only checks that the header is **present**: `PushOutcome.refused(fromRelay:)` in
-`PresenceRelay.swift` tests `value(forHTTPHeaderField:) != nil`, read on
-21 Sept 2026. Anything else that compared `/version` against a relay version
-string needs updating.
-
-This file deliberately does **not** state the current version. Ammy's did, and
-it went stale within the hour, twice. Ask `/version`.
+Ammy checks only that `X-Ammy-Relay` is present. Never write the current
+version in this file; ask `/version`.
 
 ## Where state lives
 
-Never beside the `.exe`. A single-file download lives wherever the browser put
-it, and moving it must not lose anything.
+Never beside the .exe.
 
 | What | Where | Notes |
 |---|---|---|
-| Settings | `%APPDATA%\Issun\settings.json` | Roams with the profile. Holds the key in plain text. |
-| Log | `%LOCALAPPDATA%\Issun\issun.log` | relay.log's successor. Moves to `.old` past 5 MB; relay.log grew forever. |
-| Uptime log | `%LOCALAPPDATA%\Issun\uptime.log` | Named `ammy-uptime.log` until 23 Sept 2026; `IssunHost` renames an old one once, never over an existing file. relay.py's `ammy-uptime.log` was merged in ahead of Issun's own lines by the import, which is gone since 12 Nov 2026. |
+| Settings | `%APPDATA%\Issun\settings.json` | Holds the key in plain text. Written atomically. |
+| Log | `%LOCALAPPDATA%\Issun\issun.log` | Moves to `.old` past 5 MB. |
+| Uptime log | `%LOCALAPPDATA%\Issun\uptime.log` | relay.py's history merged in ahead of Issun's. |
 | Uploaded covers | `%LOCALAPPDATA%\Issun\art_cache\` | 60 newest kept. |
-| Autostart | `HKCU\...\CurrentVersion\Run`, value `Issun` | `"<exe>" --background`. |
-| The program | `%LOCALAPPDATA%\Programs\Issun\Issun.exe` | Self-installed (below); the one before an update is kept as `Issun.exe.previous`. |
-| Settings › Apps entry | `HKCU\...\CurrentVersion\Uninstall\Issun` | No Publisher: public text is the owner's. |
-| Window state | `%LOCALAPPDATA%\Issun\window.json` | Whether the tray hint and the setup window have shown once. |
+| Autostart | `HKCU\...\CurrentVersion\Run`, value `Issun` | `"<exe>" --background`; honours Task Manager's Startup switch. |
+| The program | `%LOCALAPPDATA%\Programs\Issun\Issun.exe` | Self-installed. |
+| Apps entry | `HKCU\...\CurrentVersion\Uninstall\Issun` | No Publisher. |
+| Window state | `%LOCALAPPDATA%\Issun\window.json` | Whether the tray hint and setup have shown. |
 
-`ISSUN_HOME` puts both folders under one directory instead.
+- **Settings**: a missing file is a first run (fresh key, setup window opens).
+  An empty key gets one generated. A corrupt file is moved aside to
+  `settings.json.bad-<timestamp>`, never overwritten, and the log says loudly
+  the source needs the new key.
+- **The key**: 32 characters of `[A-Za-z0-9]`. Logs give its length, never its
+  value. An empty key refuses every authenticated request. The comparison is
+  constant-time.
+- **Autostart** is the HKCU Run key, not a Scheduled Task and **never a
+  Windows service**: Discord's pipe belongs to the interactive session.
+  `RepairIfMoved` repoints the entry when Issun runs from a new path.
+- **Tailscale's state is Tailscale's.** Issun reads the MagicDNS name (which is
+  `PublicBase`), Funnel status and Run unattended; it changes nothing unless the
+  owner clicks **Turn on Funnel** or **Turn on**. While Tailscale is installed
+  but not connected it re-reads every 15 s.
+- **Issun installs itself** (`SelfInstall`): a release build opened from
+  anywhere else asks a running Issun to quit (`Local\Issun-<SID>-quit`),
+  renames the installed .exe to `Issun.exe.previous`, copies itself in,
+  registers the Apps entry, starts the installed copy and exits. Local builds
+  never install.
 
-**Settings.** `SettingsStore` writes atomically (a temp file in the same folder,
-then replace). A missing file means first run: a fresh key, saved, and
-`FirstRun` set, which opens the setup window (the main window's Connect your
-source tip went on 12 Nov 2026, at the owner's word). An existing file with
-an empty key gets one generated. A corrupt file is moved aside to
-`settings.json.bad-<yyyyMMddHHmmss>`, not overwritten, and the log says loudly
-that the source will need the new key ("Your source will need the new key
-before it can connect again.").
+## The setup window
 
-**The key** is 32 characters of `[A-Za-z0-9]`: typeable on a phone keyboard,
-and the same length as the relay-era key. Log lines give its length, never its
-value. An empty key refuses every authenticated request: a receiver with no key
-configured should be unreachable, not reachable by anyone.
+Opens by itself on a first run, once, and from **Set up again** after.
+Microsoft's wizard structure (design library,
+`microsoft/windows-setup-wizards/`): no welcome page, a Title-style main
+instruction per page, Back, Next and Cancel (Close on the last page), and
+**Skip on every page, labelled Skip**, which moves on without the page's check.
+Pages slide with WinUI's horizontal slide in a `Frame` (Next and Skip from the
+right, Back from the left). Every step logs as `[setup]`.
 
-**Autostart** is the HKCU Run key, not a Scheduled Task, and `IsEnabled` also
-honours Task Manager's Startup switch (`StartupApproved\Run`). `RepairIfMoved`
-repoints the entry when Issun runs from a new path, which is what happens on
-every update, because each release has a new filename.
-
-**Tailscale's state is Tailscale's.** Issun reads `tailscale status --json` (the
-MagicDNS name, which becomes `PublicBase`; there is no override since 13 Nov 2026),
-`tailscale funnel status --json`, and, while Tailscale is running, `tailscale
-debug prefs` for Run unattended. It changes nothing unless the owner clicks
-**Turn on Funnel** or the setup window's **Turn on** for Run unattended.
-
-**Issun installs itself** (since 11 Nov 2026, `SelfInstall`). A release build
-opened from anywhere but the install folder asks a running Issun to quit (a
-named event, `Local\Issun-<SID>-quit`), renames the installed `.exe` to
-`Issun.exe.previous`, copies itself in, registers the Apps entry, starts the
-installed copy and exits. That is the by-hand update procedure at the end of
-this file, rename first. Builds 48 and earlier don't listen for the quit
-request, so the first update over one of them says to quit Issun from the tray
-and open the file again. The Run key and Start menu entry repoint themselves as
-before. Local builds never install, and under `ISSUN_HOME` the install folder
-is `<ISSUN_HOME>\Programs\Issun`. The installed copy also writes the Apps entry
-if it's missing, so the owner's copy, installed by hand, gets one on its first
-run of a build that has this.
-
-**The setup window** opens by itself on a first run (no settings.json), once
-ever, and from **Set up again** in Settings after that. Four pages, in the
-owner's order of 12 Nov 2026:
-1. **Discord**: since 14 Nov 2026, one card, "Make sure Discord is open"
-   ("Discord needs to be open on this PC for Issun to connect to.") with Open
-   Discord, unnumbered. Until then it was three numbered cards (the owner, 13
-   Nov 2026), the first two to make a Discord application and paste its ID;
-   both went when the ID was built in, and the owner chose "Keep it, Next
-   checks" for what was left. Open Discord starts Discord through the
-   discord:// link Discord registers for itself, or opens discord.com/download
-   where none is registered (`DesktopShell.OpenDiscord`). **Next checks that
-   Issun can connect, once per click** (the owner, 13 Nov 2026: "make click
-   send the request and pop an error somewhere if the request returns wrong.
-   it will only check when next is pressed. once per click. if the connection
-   is valid, proceed to the next page. while waiting for a response back,
-   replace the "next" text with a spinner"). `DiscordIdCheck` opens a
-   connection of its own as the built-in application, handshakes and closes;
-   the presence connection is left alone. READY: setup moves on. Anything
-   else: the reason goes below the card in WinUI's InfoBar at Error severity
-   ("put the error text in its own card with a red ! or something"), no
-   title, no close button, in the main window's Discord status wording
-   (`PresenceWorker.DetailFor`: no pipe is "Discord isn't running", and so
-   on). While Next waits, its label gives way to WinUI's 16 px ProgressRing
-   and the button is disabled (on the Tailscale page too). The sandbox has no
-   Discord, so it sees the error; Next going through is for the owner's PC to
-   show. `--press-next` (with `--setup-page`) renders Next mid-check from the
-   demo, whose first check finds Discord closed and later ones connect.
-2. **Tailscale** ("Make this PC reachable with a Tailscale Funnel", the owner's
-   title): the install button runs `winget install --id Tailscale.Tailscale
-   --exact` (by id: the name matches four packages and winget stops to ask),
-   opening the download page where there is no winget; Turn on Funnel; **Run
-   unattended** (`tailscale set --unattended`, read from `tailscale debug
-   prefs`' `ForceDaemon`). **Next** refreshes Tailscale and stays with an error
-   unless Tailscale has this PC's address *and* Funnel is on for Issun's port.
-   **Skip**, always there, moves on without that check, for people who reach
-   Issun some other way.
+1. **Discord**: one card, "Make sure Discord is open", with Open Discord
+   (the `discord://` link, else discord.com/download). **Next checks Issun can
+   connect, once per click** (`DiscordIdCheck`, a connection of its own):
+   READY moves on; anything else shows the reason in an Error InfoBar below
+   the card, in the main window's status wording (`PresenceWorker.DetailFor`).
+   While it waits, Next shows a 16 px ProgressRing and is disabled.
+2. **Tailscale**: install (`winget install --id Tailscale.Tailscale --exact`,
+   by id, else the download page), Turn on Funnel, Run unattended
+   (`tailscale set --unattended`). Next refreshes and stays with an error
+   unless Tailscale has this PC's address and Funnel is on for Issun's port.
+   The two cards' words are still waiting on the owner.
 3. **Connect your source**: the QR code, the endpoint as an editable field
-   (filled from Tailscale until edited), the key read-only with Show, Copy and
-   New key, which makes a new key at once with no confirmation, and the
-   source's live status. **The main window's Connect your source section is
-   the same cards** (the owner, 12 Nov 2026: "i want parity between the
-   connect your source screen on setup and on the main screen", "favor the
-   setup screen"): one control, `Views/PairingCards`, on one view model,
-   `PairingViewModel`, which each window makes its own of (logging as
-   `[setup]` or `[ui]`). So a change to the cards is a change to both. The
-   main window's own old rows went with it: the read-only endpoint, the dotted
-   key, the in-place "Replace the key?" question and the Copied notes. Its
-   endpoint edit is applied when the window closes, as leaving the page
-   applies setup's. "New key" is the owner's word, given for the main window.
-   The endpoint field sets what the QR code carries and nothing else: since
-   13 Nov 2026 nothing saves it (the Public address override it used to be
-   saved as is gone; Settings › Advanced, its other home, went on 12 Nov 2026).
-   Editing the endpoint shows a reload button beside Show, as an edited field
-   shows Restart in Ammy; it redraws the code with the field. Leaving the
-   page or closing the window applies an edit too. The last card waits for the
-   source by itself (the owner, 12 Nov 2026): a 16 px ProgressRing and
-   "Waiting..." with Next greyed out until a source is checking in, then
-   Windows' InfoBar success mark and "Connected" with Next available. **Skip**
-   is here too, and stays while connected, though Next then does the same.
-   The ring is WinUI's own ProgressRing since the move
-   to WinUI 3; the WPF build drew a copy of it (`Views/ProgressRing.cs`, in
-   git history). **The QR code is blurred until Show, by MetaMask's
-   numbers** (the owner, 13 Nov 2026, asked "where did you get the blur
-   level for the qr", had it researched, and chose "go metamask method"):
-   8 while hidden (MetaMask's `blur(8px)` for its recovery phrase and private
-   keys) and 4 at 30% opacity while the code is out of date and Regenerate
-   stands where Show was (MetaMask's expired QR code). A CSS blur's length is
-   the Gaussian's standard deviation, as Win2D's BlurAmount is, so they go in
-   as they are, in DIPs. The research, every source and commit, and the
-   comparison sheets are in the design library's
-   `cross-platform/secret-blur-values/`; the old 14 (a reach, sigma 4.67)
-   had no source at all. **The blur is animated, never cross-faded** ("do a
-   fancy blur/unblur animation none of that fake cross fade shit either"):
-   the code is drawn by the compositor through Win2D's GaussianBlurEffect
-   (soft borders, as a CSS blur), and its BlurAmount is animated, so every
-   frame is the code blurred by that frame's amount (`PairingCards.xaml.cs`).
-   WinUI's normal duration (ControlNormalAnimationDuration, 250 ms) on
-   Windows' Point to Point curve (0.55, 0.55, 0, 1), the nearest row Windows'
-   motion table has, as it has none for a blur; the 30% dim fades linearly at
-   ControlFasterAnimationDuration (83 ms), as Windows fades opacity. Nothing
-   moves when Windows' animation effects are off, and the log says so.
-   Measured in the sandbox (frames 30 ms apart, fitted against the sharp code
-   of the same run): hidden 7.5, out of date 4.0 at 0.30, and the in-between
-   frames fit a blur three to seven times better than a cross-fade. A hidden
-   or dimmed code doesn't decode with zxing-cpp; a shown one does. Windows
-   Sandbox runs with animation effects off, so its test turns them on.
-   An Image holds the sharp code at no opacity under the compositor's copy,
-   because an Image with no picture is offscreen to UI Automation and screen
-   readers would skip the code. Win2D (Microsoft.Graphics.Win2D 1.4.0) came
-   in for this; the CPU blur (`Presentation/Blur.cs`) went. The key was
-   blurred on the CPU too (`Views/BlurredText`, in git history) until 13 Nov
-   2026, when the owner asked: "change the key blur to dots". Hidden, it is
-   now one ● (U+25CF) per character, the character a PasswordBox hides its
-   text with (`PairingViewModel.KeyDisplay`).
-   Both windows' columns stop at 1000 effective pixels since the same day,
-   Windows Settings' measured width and PowerToys' `PageMaxWidth`; the setup
-   window's buttons keep to the same column.
-4. **Start with Windows**, ticked by default on a first run. Last, so Cancel is
-   Close here and Next is gone.
+   (filled from Tailscale; sets only what the QR code carries, nothing saves
+   it; a reload button redraws the code), the key as ● dots with Show, Copy
+   and **New key** (no confirmation), and the source's live status:
+   ProgressRing and "Waiting..." until a source checks in, then a success
+   mark and "Connected". **The main window's Connect your source is the same
+   control** (`Views/PairingCards` on `PairingViewModel`): a change to one is
+   a change to both (the owner: "favor the setup screen").
+4. **Start with Windows**, ticked by default on a first run, Yes and No radio
+   buttons, Next labelled "Finish".
 
-The structure is Microsoft's wizard guidance, saved in the design library at
-`microsoft/windows-setup-wizards/`: no welcome page, a main instruction per page
-(Windows 11's Title style, 28/36 semibold), Back, Next and Cancel, Cancel
-becoming Close on the last page. The rest is the main window's cards. Every
-step logs as `[setup]`. **Skip is on every page, and says Skip** (the owner,
-13 Nov 2026: "give every setup page a skip button, and you know damn well the
-placeholder button next to next on those pages is supposed to say skip"; the
-wording page's `footer.skip` holds it). It moves on without the page's check,
-and on the last page it ends setup as Finish does. Moving between pages slides, since 13 Nov 2026 (the
-owner: "let's add transition animations between issun's setup pages"): the
-pages sit in a `Frame` and use WinUI's own horizontal slide, Next and Skip
-from the right, Back from the left, the first page with none. Microsoft's Page
-transitions guidance (design library, `microsoft/windows-page-transitions/`)
-has it for "sibling pages" next to each other and says nothing about wizards,
-so it is the nearest documented fit, not a rule. The pages are still written in
-`SetupView.xaml` for x:Bind and moved into each `SetupStep` page as it's shown;
-a `StepSlot` remembers which one holds it (Back threw otherwise). Installed in
-build 129; not yet seen moving on the owner's screen. Command links (Windows' title-and-note buttons, measured
-in the library's `microsoft/command-links/`) were rendered for the Tailscale
-page's choice on 12 Nov 2026 and set aside for Next and Skip.
+**The QR code** is plain JSON `{"endpoint": "...", "key": "..."}`
+(`PairingCode`), black on white in light theme and white on black in dark,
+error correction M. Either value may be left out. Not a link, so it names no
+app. **Blurred until Show, by MetaMask's numbers**: 8 while hidden; 4 at 30%
+opacity while out of date. The blur is animated through Win2D's
+`GaussianBlurEffect` (never a cross-fade) over `ControlNormalAnimationDuration`
+on Point to Point (0.55, 0.55, 0, 1); the dim fades linearly at
+`ControlFasterAnimationDuration`; nothing moves when Windows' animation
+effects are off. A transparent Image of the sharp code sits beneath for UI
+Automation. Research in the design library, `cross-platform/secret-blur-values/`.
 
-**The QR code is plain JSON**, `{"endpoint": "...", "key": "..."}`
-(`PairingCode`), black on white in the light theme and white on black in the
-dark one (the owner, 12 Nov 2026), error correction M. Both were decoded on
-12 Nov with the `zxing-cpp` Python package (installed for it) from `--screenshot
---expanded` renders, and both read as normal; whether Ammy's VisionKit scanner
-reads the white-on-black one is for the phone to show. Either value may be left
-out (since 12 Nov 2026): Ammy fills in only the field a code carries. Not a
-link: a link would name an app, and Issun names no source. Ammy reads it from
-its **Scan QR Code** row (`CodeScanner.swift`), and so can any source.
+Both windows' columns stop at 1000 epx (Windows Settings' width), centred
+when wider.
 
-## The WinUI 3 move (12 Nov 2026)
+## WinUI 3 specifics
 
-The window and tray moved from WPF to WinUI 3 (Windows App SDK 2.6.5, the
-`Microsoft.WindowsAppSDK.WinUI` and `.Runtime` packages, not the metapackage,
-which adds about 25 MB of AI and ML libraries). `Issun.Core` didn't change.
-Every screen, behaviour and word was carried over; the view models kept
-their shape. What had no direct WinUI equivalent, and what took its place:
+Moved from WPF on 12 Nov 2026 (Windows App SDK 2.6.5, referenced whole for the
+Community Toolkit's SettingsCard). What has no direct WinUI equivalent:
 
-- **Tray icon**: WinUI has none, so `Tray/TrayIcon.cs` is Shell_NotifyIcon on
-  a hidden top-level window of its own (from the spike), with a Win32 popup
-  menu that follows dark mode (uxtheme ordinals 135 and 136, undocumented, as
-  Windows' own tray menus use). The window has no title, or the sandbox test
-  would find it in place of the main window. It also receives
-  WM_QUERYENDSESSION, which replaces WPF's SessionEnding. WinForms is gone.
-- **Message boxes** (install, update, uninstall, crashes): Windows' own
-  `MessageBoxW` through `DesktopShell.Message` and `AskYesNo`, the same box
-  WPF's MessageBox drew, with the same flags. **The open-file dialog** is
-  `GetOpenFileNameW` with WPF's title and filters (`DesktopShell.PickFile`).
-- **Blur**: none in WinUI's own API; Win2D's GaussianBlurEffect on a
-  composition brush since 13 Nov 2026 (the QR code; see the setup window
-  above). It was done on the CPU before.
-- **Triggers and converters**: the status dot is a control with visual
-  states (`Views/StatusDot`), so its colours stay ThemeResources; visibility
-  comes from x:Bind functions (`Views/Converters.cs`, class `Bind`). Every
-  binding is x:Bind, compiled, so a wrong property name fails the build.
-- **WPF's CommandManager** requeried every command after any input; WinUI
-  has nothing like it, so a `Command` whose CanExecute depends on state
-  names its view model and is requeried when that changes.
-- **DockPanel and WrapPanel**: Grids, and a small `Views/WrapPanel`.
-- **Covers** are fetched as bytes and decoded on the UI thread
-  (`Views/Images.cs`), since a WinUI image belongs to the thread that made it.
-  The demo's covers are BMPs, needing no encoder.
-- **Window size**: `WindowFit.Prepare` sizes in view pixels against the DPI,
-  sets the minimum through the presenter, centres on the work area and
-  shrinks to fit, as before; Mica is the window's backdrop.
+- **Tray**: `Tray/TrayIcon.cs`, Shell_NotifyIcon on a hidden untitled window,
+  a Win32 popup menu that follows dark mode; also receives
+  `WM_QUERYENDSESSION`. **Closing the main window hides Issun to the tray; it
+  doesn't quit.**
+- **Message boxes** are `MessageBoxW` (`DesktopShell.Message`, `AskYesNo`); the
+  file dialog is `GetOpenFileNameW`.
+- **Every binding is x:Bind**; visibility comes from `Views/Converters.cs`
+  (class `Bind`). A `Command` whose CanExecute depends on state names its view
+  model and is requeried when that changes (no CommandManager).
+- **Covers** are fetched as bytes and decoded on the UI thread (`Views/Images.cs`).
 - **Theme**: `--theme` sets `Application.RequestedTheme` in App's
-  constructor (WinUI takes it nowhere else). `AppTheme.IsDark` asks Windows
-  directly for the QR code's colours, since WinUI's RequestedTheme doesn't
-  follow a switch made while Issun runs.
-- **Single file**: needs `EnableMsixTooling` (for the embedded
-  resources.pri; no MSIX is made) and unpacks about 180 MB on first run,
-  which `StaleUnpacks` cleans up after updates.
-- **Settings rows are the toolkit's SettingsCard** (since 12 Nov 2026).
-  Windows 11 Settings' rows are `SettingsCard` and `SettingsExpander`, which
-  WinUI doesn't have; Microsoft's settings guidance points to the Windows
-  Community Toolkit's (`CommunityToolkit.WinUI.Controls.SettingsControls`),
-  which began as PowerToys' own Setting controls. Its stable 8.2.251219 asks
-  for `Microsoft.WindowsAppSDK` 1.6 or later. With only the WinUI and Runtime
-  packages referenced, that pulled 1.6's whole SDK in beside 2.6.5, so the
-  owner first chose "just wait for that to become stable"; then PowerToys
-  turned out to use that same toolkit with `Microsoft.WindowsAppSDK` 2.6.5
-  referenced whole, which satisfies it, and the owner chose "switch". The
-  cost is the AI, ML, Search and Widgets packages in the `.exe`. Rows with a
-  title, a description and a control on the right are SettingsCards (Set up
-  again is clickable, with E8A7, Open in new window, as its action icon). The
-  cards that can't be (a picture or a field under the title, a status dot)
-  are Borders in the `Card` style, which takes SettingsCard's own resources
-  (`SettingsCardPadding`, `SettingsCardMinHeight`, its background, border
-  and thickness) from the toolkit's dictionary merged in `App.xaml`, and a
-  single line in one is centred, as SettingsCard centres its content. The
-  toolkit's open issue #391: SettingsCard has no Invoke pattern, so UI
-  Automation can't click Set up again; the sandbox test doesn't need to.
-  The main window's Start with Windows sits above Apply and waits for it,
-  like the settings above it (the owner, 12 Nov 2026: "don't apply it
-  straight away for the sake of consistency with the other settings"); the
-  tray menu's item and setup's Yes and No still apply at once, and the
-  checkbox follows them unless it's mid-edit.
-  Diagnostics and Log are SettingsExpanders (the owner, 12 Nov 2026), titles
-  alone, each opening to one left-aligned SettingsCard of free-form content,
-  indented by the toolkit's own item padding. Their contents sit in a list
-  that builds only what's in view, so `--screenshot` scrolls the page through
-  to the bottom before rendering: in a window held to the screen's height,
-  they otherwise rendered as empty space.
-- **The .pri is named resources.pri.** WinUI finds the compiled XAML and
-  styles in `<exe name>.pri`, else `resources.pri`. Named `Issun.pri`, a
-  renamed copy (a release download is `Issun-<version>-b<build>-<sha>.exe`)
-  found neither: every ThemeResource failed and no view loaded. Users never
-  met it, since a download only installs itself as `Issun.exe` and shows
-  nothing that needs XAML first, but `--screenshot` from a download in the
-  sandbox did. `ProjectPriFileName` in `Issun.csproj` fixes it.
-- **No screenshots from a disconnected session.** With the owner's Remote
-  Desktop session disconnected (a 1080 x 2272 virtual display), WinUI drew
-  the main window at twice the size with checkboxes and section arrows in
-  states they weren't in. `--screenshot` now refuses with a message then. The
-  sandbox test's `shots` step (`run.ps1 -Steps shots`) renders every screen
-  in Windows Sandbox instead, into `out\shots`.
-- **Looks**: the WinUI renders match the WPF ones within a few pixels on
-  every page (dark, 12 Nov 2026). The check-in history, which WPF drew
-  double-spaced, now reads as written.
+  constructor; `AppTheme.IsDark` asks Windows directly for the QR colours.
+- **Settings rows** are the toolkit's `SettingsCard` and `SettingsExpander`;
+  rows that can't be are Borders in the `Card` style using SettingsCard's
+  resources. SettingsCard has no Invoke pattern (toolkit issue #391).
+  Start with Windows in the main window waits for Apply, like the settings
+  above it; the tray's item and setup's Yes and No apply at once.
+- **The .pri must be named `resources.pri`** (`ProjectPriFileName` in
+  `Issun.csproj`), or a renamed copy loads no XAML.
+- **Single file** needs `EnableMsixTooling` (no MSIX is made). Trimming isn't
+  an option.
 
 ## relay.py's gotchas, preserved, and where they live now
 
-Each of these cost real time in the Ammy project. Until 9 Oct 2026 the full
-stories were in Ammy's CLAUDE.md, "Gotchas already paid for" (`git -C
-C:\Users\links\Repos\Ammy show 20ab199:CLAUDE.md`). Ammy's file now points
-here, so this section is the record.
+Ammy's CLAUDE.md points here for these. Full stories in `HISTORY.md`.
 
-**The playhead anchor is paired with the push's arrival time, never the current
-time.** The project's most expensive bug, invisible on inspection because every
-calculation looks right. The worker builds an activity every second, but the
-phone refreshes `elapsed` every thirty. Computing `start = now - elapsed`
-against a frozen reading slides `start` forward a second per second, and
-Discord's bar falls behind and snaps back. That was the rubberbanding (relay
-1.2.1). `IActivityBuilder.Build(track, observedAt, ...)` takes `observedAt`
-from `IPhoneState.Get()`'s `UpdatedAt`. **Never pass it the clock.** There is a
-regression test: thirty builds with the same `observedAt` while the clock
-advances must produce an identical `Start`. Diagnosis tip carried over: the
-giveaway was `[playhead] re-anchored +10.0s` repeating with *identical* drift,
-and a constant drift is a clock, not a measurement. `MateriallyDifferent` still
-treats `Start`/`End` within 2 s as equal (`ActivityBuilder.TimestampTolerance`);
-with a correct anchor that is belt-and-braces, since the anchor doesn't move
-between pushes at all.
-
-The `Playhead` forward-correction rule ("prefer the reading that implies the
-song is further along") has never fired against real data. It is insurance.
-Don't cite it as evidence that staleness exists.
-
-**A rejected payload is not a dead socket.** Discord refuses the entire activity
-when one field breaks a rule, and relay.py's catch-all read the refusal as a
-dropped connection. It reconnected, re-sent the same payload, and looped. The track was
-"i" by Kendrick Lamar. Here the two are different exception types:
-`DiscordRejectedException` (Discord answered `SET_ACTIVITY` with `ERROR`; the
-connection is fine) and `DiscordConnectionLostException` (the pipe is gone).
-`PresenceWorker` catches them in two separate clauses. A rejection keeps the
-connection, retries once with the optional extras stripped, then records the
-*intended* payload as sent so the next tick doesn't re-send a refused payload
-forever. A lost connection is logged, disposed, and waited on (`LostDelay`,
-1 s; never spin) before reconnecting. **Don't collapse those two catch clauses
-back together.** It took an hour to diagnose in relay.py because it printed
-`[rpc] <title>` only after a push succeeded, so the one track Discord refused
-was the only one with no line. Log the refusal itself, as `PresenceWorker` does.
-
-**Two characters minimum.** Discord refuses `details` or `state` shorter than
-two characters. `DiscordText` pads with U+2060 WORD JOINER (invisible, but it
-counts), measures length in code points the way Python's `len()` does, and
-substitutes `Unknown` for a blank field. The padding notice logs once per
-distinct value, because relay 1.3.0 wrote 189 identical lines over one song.
-
-**`push_with_fallback`, and what didn't survive the port.** pypresence raised
-`TypeError` for keyword arguments it didn't recognise, and `AttributeError` when
-handed an int where it wanted an enum; relay.py shed the offending field by
-matching its *quoted* name, because `state` is a substring of `state_url`.
-Issun writes the IPC wire format itself, modelled on pypresence 4.6.2's
-`payloads.py`, so there are no keyword arguments to reject and no enum to call
-`.value` on: `type` is `2` and `status_display_type` is `0`/`1`/`2` on the wire.
-The quoted-name rule has no C# analogue.
-
-One pypresence quirk to know before comparing payloads byte for byte. Its
-`Payload.set_activity` always puts `status_display_type` on the wire, and uses 0
-(name) when it's given none. `Presence.update()` turns `StatusDisplayType.NAME`
-into none first, because the enum's value is 0 and 0 is falsy. So relay.py's
-`STATUS_LINE=name` reached Discord only through that default, and a relay.py
-payload with no status line still carried a 0. Read on 21 Sept 2026 in
-`presence.py` and `payloads.py`. The principle survives: when Discord
-refuses, shed the optional fields (`DetailsUrl`, `StateUrl`, `LargeUrl`,
-`LargeText`, `StatusDisplayType`) and try again rather than tearing anything
-down. `IPresenceWorker.Current` is what Discord actually accepted, which may be
-the degraded payload.
-
-**Silent failure is this project's recurring bug.** Three times in Ammy, a
-function returned nothing on a failure path without logging, and the empty log
-read as "working". Every artwork path logs. The uploaded-JPEG rejections, which
-relay.py returned `None` from silently, now log once per track. **When you add a
-failure path, log it.**
-
-**`X-Ammy-Relay` is on every response.** relay.py set it in `_reply` and
-`_reply_json` only, so `/art/` responses went without. Issun sends it on every
-response, errors included. Status codes alone can't separate Issun's own 404
-(wrong path) from Tailscale Funnel's (hostname resolves, nothing served on that
-port), and Ammy's "Wrong Path" and "Nothing at That Address" messages depend on
-the header.
-
-**`/health` returns exactly `ok`.** Shortcuts test for that string, which is why
-the version has its own route.
-
-**A GET never performs a lookup.** `GET /now-playing` is a projection of state,
-never the raw push (which carries ~80 KB of base64 and the whole diag block).
-Its artwork, links and looked-up explicitness come only from `CachedArtwork` /
-`CachedLinks` / `CachedExplicit`. A public endpoint must not be a way to make
-this machine send traffic.
-
-**`/art/` is unauthenticated.** Discord's CDN fetches covers itself and can't
-send a header. Filenames are the first 20 hex characters of
-`sha256(TrackText.Key)`, byte-identical to relay.py's, so they aren't
-enumerable. `UploadedArtPath` rejects anything but a bare `.jpg` that exists
-directly inside `art_cache`. Uploaded art needs a public base URL, because
-Discord's CDN cannot reach 127.0.0.1: the Settings override, else
-`https://<tailscale dns name>`.
-
-**127.0.0.1 only.** Only a tunnel reaches it: Tailscale Funnel, and, until the
-owner removes it, the old `cloudflared` tunnel (see the top of this file). Kestrel rather than
-`HttpListener`, because http.sys matches on the Host header: a `localhost`
-prefix refuses the requests Funnel forwards with the public hostname, and a
-wildcard prefix needs admin (see the comment in `Issun.Core.csproj`).
-
-**Links only ever come from the exact store-ID lookup.** A near-miss cover is a
-cosmetic annoyance; a link that opens the wrong song is a broken promise.
-
-**So does explicitness, when the source doesn't say** (added 23 Sept 2026, the
-window's "E" after the title). The E is a typed 🅴 (U+1F174) after a space, in
-the title's own colour (`NowPlayingText.ExplicitBadge`), as iOS's Lock Screen
-does it: iOS 26.1's `MRUNowPlayingInfo` appends the badge to the title as text,
-and in SF Pro U+1F174 is the SF Symbol `e.square.fill` at small scale
-(`uni10009D.small`), cap height. Windows' font fallback draws it with Segoe UI
-Symbol, in WPF (24 Sept 2026) and in WinUI: its 🅴 runs exactly from the
-baseline to cap height (0-1434, Segoe's cap height) in the title's colour.
-Since 13 Nov 2026 the badge is its own `Run` with `FontFamily="Segoe UI
-Symbol"`, which pins that rather than leaving it to fallback. **That changed
-no pixel**: Claude took the owner's dislike of the badge on build 114 ("this
-explicit symbol looks like shit") for fallback having picked Segoe UI Emoji's
-colour emoji, and a render of the same song before and after the change is
-identical. What the owner dislikes is Segoe UI Symbol's design, an E three
-quarters of the square's height in thin strokes, against Apple's (SF Pro's
-glyph and Apple Music for Windows' badge): an E half the height in a softer
-square. **The owner chose "Draw Apple's design"**, so since 13 Nov 2026 the
-badge is drawn: a `Path` in the title's `RichTextBlock` (an
-`InlineUIContainer` after a space), built from SF Pro's 🅴 measured as
-fractions of its square (corners 0.15, the E cut out at x 0.32-0.68 and y
-0.24-0.75, stem 0.10, arms 0.08 with round ends, the middle one shorter), at
-Segoe UI Variable's cap height for Body Strong, 9.8 epx. `MainView.xaml` has
-the numbers and their source. Only proportions are copied, no outline from the
-font, which can't ship here. Rendered at 1.25x it spans the capitals' rows to
-within half a pixel. Its screen-reader name is "Explicit", the owner's word
-(13 Nov 2026), and Apple's: Apple Music for Windows' list items read "Veteran
-JPEGMAFIA Explicit", and music.apple.com labels its badge
-`aria-label="Explicit"`. The card's "Not playing" stands alone since the same
-day; the line under it (nothing checked in yet / the source has gone quiet /
-checking in but nothing playing) went at the owner's "remove this line".
-With no cover the square is empty, like Ammy's: no music note (the owner
-asked it gone; it was Segoe Fluent Icons' Audio, U+E8D6, picked in Sept with
-no reference), no hairline (the owner, same day; covers keep theirs), and
-filled with ControlAltFillColorQuarternary, the fill WinUI gives its own empty
-PersonPicture, which stands off the card in both themes (dark 43 to 58, light
-251 to 227 in a render). It was SubtleFillColorSecondary, a hover fill nearly
-the card's colour in light. The research, Apple Music for Windows' own badge included,
-is in the design library, `apple\apple-music-windows-explicit-badge`. It
-replaced a hand-drawn badge the owner asked to have rolled back as more
-complicated than typing the character. `TrackText.Explicit` takes the push's `explicit`
-first: only a JSON `true` or `false` counts, and `false` beats the catalog.
-Ammy sends only `true`, because iOS's `isExplicitItem` is a plain Bool whose
-`false` also means "unrated". Absent, it falls back to `trackExplicitness` from
-the store-ID lookup, and never to fuzzy search, because the clean and explicit
-editions of a song are separate catalog entries with the same title. Discord's
-activity object has no field for it (checked against Discord's gateway docs
-that day), so the card is unchanged; the badge is the window's and
-`GET /now-playing`'s. A song entry with no `trackExplicitness`, or a word other
-than `explicit` / `cleaned` / `notExplicit`, logs once per lookup.
-
-**The interactive session is load-bearing.** Discord's IPC pipe belongs to the
-signed-in user's session. relay.py's Scheduled Task needed `-LogonType
-Interactive`, because a session 0 task starts cleanly, listens on 8787, and
-never reaches Discord, which looks like a Discord problem and isn't. The HKCU
-Run key starts Issun in the interactive session for free. **Don't turn Issun
-into a Windows service.**
-
-**The gap-log wording is data.** `UptimeLog` keeps relay.py's phrases exactly:
-"phone silent, relay up throughout", "relay was down for ... of it", "— the path
-failed, not the app". That includes the word "relay", even though Issun is the
-relay now, because months of history and the summary parser depend on them. Only
-the tag changed, from `[relay 1.9.0 / app ...]` to `[issun ... / app ...]`.
-`Summarize()` reads relay-era lines, untagged lines from before builds were
-recorded, and Issun lines, and counts both "relay started" and "issun started".
-**Don't split the log per version**, for Ammy's reason: the phone's build decides
-survival, and a stamped line can be grouped any way later.
-Since build 48 some verdicts and silence lines carry Issun's own words (see
-"Where Issun deliberately differs from relay.py"). The summary reads only "gap
-HH:MM:SS", "phone silent", "stopped checking in" and the two kinds of start, so
-new words go after those, never in their place.
-
-**Diag values follow Python's types.** relay.py compared with
-`isinstance(x, int)`, so a JSON bool is not an int and neither is a JSON float.
-Flag changes render with Python `repr` (`True`, `None`, `'nominal'`). Parity
-tests pin both.
-
-**`seq` is milliseconds since epoch, not a counter.** A counter resets on
-relaunch, and every push from the new process would read as older (Ammy item 6).
-An absent `seq` always applies, the same compatibility rule as
-`RELAY_SECRET` / `RELAY_KEY` and `X-Relay-Secret` / `X-Relay-Key`, both of which
-Issun still reads.
-
-**Don't transcribe config from screenshots.** A Discord client ID copied with
-one misread digit gets handshake close code 4000, "Client ID is Invalid", which
-reads like a deleted application. With the ID built in since 14 Nov 2026, a
-4000 means the application really is gone, and the status detail for it
-(`PresenceWorker.InvalidIdDetail`) is a `[text]` placeholder for the owner to
-write: the old one said to check the ID for a misread digit.
-
-The timing constants are in `Timing.cs`: gap threshold 90 s, idle timeout 90 s,
-minimum push gap 3 s, seek tolerance 10 s, settle window 6 s. `ArtMinScore`
-defaults to 0.35, not the 0.55 an old Ammy note claimed.
+- **The playhead anchor is paired with the push's arrival time, never the
+  clock.** `IActivityBuilder.Build(track, observedAt, ...)` takes `observedAt`
+  from `IPhoneState.Get()`'s `UpdatedAt`. **Never pass it the clock** (the
+  rubberbanding bar, relay 1.2.1). A regression test pins it. A constant
+  repeating drift in `[playhead] re-anchored` is a clock, not a measurement.
+  The `Playhead` forward-correction rule has never fired; it is insurance.
+- **A rejected payload is not a dead socket.** `DiscordRejectedException` (the
+  connection is fine: retry once with the optional fields shed, then record
+  the intended payload as sent) and `DiscordConnectionLostException` (log,
+  dispose, wait `LostDelay`, reconnect) are **two catch clauses; don't merge
+  them.** Log the refusal itself. Optional fields shed: `DetailsUrl`,
+  `StateUrl`, `LargeUrl`, `LargeText`, `StatusDisplayType`, `name`.
+  `IPresenceWorker.Current` is what Discord accepted.
+- **Two characters minimum** for `details` and `state`: `DiscordText` pads with
+  U+2060, counts code points, substitutes `Unknown` for blank, and logs the
+  padding once per distinct value.
+- Issun writes the IPC wire format itself (modelled on pypresence 4.6.2's
+  `payloads.py`): `type` 2, `status_display_type` on the wire as 0/1/2.
+- **`X-Ammy-Relay` is on every response**, errors included: Ammy tells Issun's
+  404 from Funnel's by it.
+- **`/health` returns exactly `ok`.**
+- **A GET never performs a lookup.** `GET /now-playing` is a projection, never
+  the raw push; artwork, links and explicitness come only from the caches.
+- **`/art/` is unauthenticated** (Discord's CDN can't send a header).
+  Filenames are the first 20 hex characters of `sha256(TrackText.Key)`;
+  `UploadedArtPath` accepts only a bare `.jpg` directly in `art_cache`.
+  Uploaded covers use `https://<tailscale dns name>`.
+- **127.0.0.1 only**, through Kestrel, not `HttpListener` (http.sys matches the
+  Host header, and a wildcard prefix needs admin).
+- **Links only ever come from the exact store-ID lookup.**
+- **The gap-log wording is data**: "phone silent, relay up throughout", "relay
+  was down for ... of it", "— the path failed, not the app", "relay" included.
+  `Summarize()` reads "gap HH:MM:SS", "phone silent", "stopped checking in"
+  and both kinds of start, so new words go after those, never in their place.
+  **Don't split the log per version.**
+- **Diag values follow Python's types** (`isinstance(x, int)`; a bool isn't an
+  int) and flag changes render with Python `repr`.
+- **`seq` is milliseconds since epoch.** An absent `seq` always applies, as do
+  `RELAY_SECRET`/`X-Relay-Secret`, still read.
+- **Don't transcribe config from screenshots.**
+- Timing (`Timing.cs`): gap threshold 90 s, idle timeout 90 s, minimum push gap
+  3 s, seek tolerance 10 s, settle window 6 s. `ArtMinScore` 0.35.
 
 ## Where Issun deliberately differs from relay.py
 
-Each was a known bug or latent hazard in relay.py 1.9.0. This list was written
-from the module specs before integration. Each module's commit says what it
-actually changed; **if this list and the code disagree, the code wins**, so fix
-this file.
+If this list and the code disagree, the code wins; fix this file.
 
-- **Check-ins are atomic.** `CheckinProcessor.Accept` holds one lock around the
-  whole sequence `do_POST` ran: read the previous check-in, record version and
-  diag (capturing the previous `app_uptime_s` at that moment), apply the `seq`
-  rule, stamp the check-in, and note any gap. relay.py didn't. On 14 Sept 2026 a
-  near-simultaneous second push logged the same 38-minute gap twice, the second
-  time as `app restarted 3358s -> 3359s — it died`, which was wrong. Ammy's
-  CLAUDE.md records it as "One wrong line in the history, from a relay.py bug
-  Issun fixed". relay.py never got the fix, and the wrong line stays in the
-  imported history.
-- **A relaunch supersedes the old `seq`.** A push whose `app_uptime_s` fell
-  further than its `seq` did, by more than `SameProcessSlack` (5 s), comes from
-  a new app process and wins. Uptime merely going backwards isn't enough: a
-  request overtaken in flight comes from the same process, sampled a moment
-  earlier, and applying it would be exactly the late push `seq` exists to drop.
-  Sessions are keyed and superseded, never stacked (Ammy item 7).
-- **A phone clock that jumps back is not a race.** In-flight pushes are
-  milliseconds apart. A `seq` more than 60 s older than the last one means the
-  phone's clock moved, and relay.py would drop every push from then on until it
-  restarted. Issun accepts it, resets, and logs why.
-- **A check-in is any authorised push.** `LastCheckinAt` updates on every
-  authorised push, applied or dropped, and gap and silence detection measure
-  that. relay.py measured `updated_at`, which a dropped push never moved.
-  `UpdatedAt` still changes only when a push is applied, `playing: false`
-  included.
-- **The key comparison is constant-time.** relay.py used `==` under a comment
-  that said "constant-time-ish".
-- **"Discord not reachable" is throttled.** relay.py logged it every 10 s for as
-  long as Discord was closed. Issun logs when the reason changes, and at most
-  every 10 minutes while it doesn't.
-- **Artwork resolves while Discord is disconnected**, so the window can show the
-  cover. Concurrent resolves for one track share a single request.
-- **Nothing exits over missing config.** relay.py quit with "Set RELAY_KEY" or
-  "Set DISCORD_CLIENT_ID". Issun generates the key, and the client ID is built
-  in (14 Nov 2026).
-- **Settings apply live.** The key is read per request, and a new port restarts
-  the receiver.
-- **A taken port is a status, not a traceback.** `PortInUseException` asks
-  whether relay.py is still running, the likely culprit for anyone moving over
-  from it, and the window shows it.
-
-Four more since build 48 (11 Nov 2026), all in the uptime log's verdicts and
-the phone's diag, from a census of every log since 24 Aug 2026 (Ammy's
-CLAUDE.md, "The census of 11 Nov 2026"). The owner's go-ahead was "Yes, do
-Issun", to a proposal to log Ammy 167's journal and fix the two labelling
-bugs the census found:
-
-- **A process too old to have started during the gap stayed up.** relay.py
-  called any gain under 90% of the gap a death. Issun does so only when the
-  uptime is also under the gap plus 20 s (`UptimeLog.InFlightSlack`: Ammy gives
-  up on a request after 20 s, so the last push that arrived left the phone no
-  earlier than that), because an older process was already running before the
-  gap began. Issun wrote two false deaths before this, on 16 Oct 2026 at
-  21:56:52 (89081s -> 89165s over 93 s) and 8 Nov at 16:11:50 (6211s -> 6242s
-  over 133 s): each push that ended the gap carried a snapshot built before iOS
-  froze the app and sent when it woke. The 14 Sept race above now reads as
-  stayed up too.
-- **No failed pushes is a suspension, not the path.** A running Ammy sends at
-  least every 30 s, so a process that stayed up through a gap with `push_fails`
-  at 0 wasn't running: iOS had suspended it. The verdict is "— suspended, no
-  pushes failed" where relay.py said "— the path failed, not the app", and the
-  census found 24 of those in the history. A push without `push_fails` keeps
-  relay.py's words, since it can't tell the two apart.
-- **Ammy's Stop is the person's doing.** Stop sends `playing: false` with no
-  diag, and no other push Ammy sends lacks one, so `CheckinProcessor` takes
-  that as a goodbye: only from a source that has sent a diag before, and a push
-  the seq dropped changes nothing. The silence after it reads "last seen
-  HH:MM:SS, stopped on the phone", and the gap it ends "— stopped on the
-  phone", whether or not the process lived through it. Both still say
-  "stopped checking in" and "phone silent", so the summary counts them as
-  relay.py did, and a Stop that's never followed by Start still counts as
-  "never came back".
-- **A death names when the dead process last ran.** From Ammy build 167, a new
-  process sends its predecessor's last keepalive tick (`prev_alive`, written
-  every 10 s while the keepalive is on, so its last value is when that process
-  stopped running) and the last 25 lines of its keepalive journal (`prev_tail`)
-  on every push until one lands. "— it died" gets ", last ran HH:MM:SS
-  engine=yes|no", and issun.log gets the stamp and every journal line, in local
-  time, once per launch (`[keepalive] previous run last ran ...`, then
-  `[keepalive] journal: ...`). The other fields build 167 added go on the diag
-  summary beside the ones they explain, only when sent: `failrun`, `failstage`,
-  `failcode`, `sincefail` and `down` after `fails=`, and `intlate`,
-  `intreason`, `sincebegan` and `sinceended` after `int=`. `int_on_resume`
-  and `int_reason` are also logged as they change.
+- **Check-ins are atomic**: `CheckinProcessor.Accept` holds one lock over the
+  whole check-in, so a near-simultaneous second push can't log a false gap.
+- **A relaunch supersedes the old `seq`**: uptime fell further than `seq` did,
+  by more than `SameProcessSlack` (5 s). Sessions are superseded, never
+  stacked.
+- **A phone clock jumping back** (`seq` more than 60 s older) resets and logs,
+  rather than dropping every push.
+- **A check-in is any authorised push**, applied or dropped (`LastCheckinAt`);
+  `UpdatedAt` moves only when a push is applied.
+- **"Discord not reachable" is throttled**: logged on a change of reason and at
+  most every 10 minutes.
+- **Artwork resolves while Discord is disconnected**; concurrent resolves for
+  one track share a request.
+- **Nothing exits over missing config**; settings apply live; a taken port is
+  a status (`PortInUseException`), not a traceback.
+- Since build 48, in the uptime log:
+  - **a process older than the gap plus 20 s stayed up** (`UptimeLog.InFlightSlack`);
+  - **no failed pushes through a gap is a suspension**: "— suspended, no pushes
+    failed";
+  - **Ammy's Stop** (`playing: false` with no diag, from a source that has sent
+    diag before) reads "stopped on the phone";
+  - **a death names when the dead process last ran** ("— it died, last ran
+    HH:MM:SS engine=yes|no"), and issun.log gets the previous run's journal
+    once per launch (`[keepalive] previous run ...`, `[keepalive] journal:
+    ...`). Build 167's other diag fields print beside the counts they explain.
 
 ## CI and releases
 
-`.github/workflows/build.yml`, one job on `windows-latest`, bash throughout like
-Ammy's workflows. Every push to `main` that changes more than Markdown runs the
-tests, publishes the single-file `.exe`, uploads it, and publishes it as a
-GitHub Release. That is the rule Ammy has followed since 18 Sept 2026. **Pushing
-to main is releasing**, so write the commit message for whoever reads the
-release notes. The notes are the commit message minus trailers, plus the full
-SHA, the `.exe`'s SHA-256 (it's unsigned; the hash is the only integrity check)
-and the SmartScreen instructions.
+`.github/workflows/build.yml`, one job on `windows-latest`, bash throughout.
+**Every push to `main` that changes more than Markdown is a release**: tests,
+the single-file .exe, a GitHub Release whose notes are the commit message
+minus trailers, plus the full SHA, the .exe's SHA-256 and SmartScreen
+instructions. So **write the commit message for whoever reads the release
+notes**, and never push text of your own that the owner hasn't confirmed.
+`workflow_dispatch` from another branch builds without releasing. 0.x releases
+are pre-releases; bumping `<VersionPrefix>` to 1.0.0 ends that. Read the run
+after a push (`gh run list -R kaydenpmd/Issun`). The repo is public, which
+keeps Windows runner minutes free.
 
-- `archive: false` on the upload, so a browser download is the `.exe` itself.
-  Ammy uploads a second, archived copy because a later job downloads it and
-  `download-artifact` unpacks a bare upload. Here the Release is made in the
-  same job from the file on disk, so there's no round trip and one upload.
-- The tag `v<version>-b<build>` exists only so GitHub has somewhere to hang the
-  asset. `target_commitish` pins it to the commit that was built.
-- `workflow_dispatch` from any branch other than `main` builds and uploads but
-  doesn't release, because a branch's commit count can collide with one main has
-  already used.
-- 0.x releases are marked pre-release. That was set because nobody had run one
-  against a live phone; builds 23, 34 and 38 have since, but the live test is
-  still unfinished (items 5, 6 and 8). Bumping `<VersionPrefix>` to 1.0.0 ends
-  the pre-release marking.
+## Updating the installed copy
 
-**CI has run on GitHub since the first push.** `gh run list -R kaydenpmd/Issun`
-shows the runs and `gh release list -R kaydenpmd/Issun` the releases; read the
-run after a push rather than assuming it passed. The shallow-clone guard was
-checked against a `--depth 1` clone on 21 Sept 2026 and failed as intended. On
-the scaffold, the published `.exe` was 74 MB compressed (161 MB without
-`EnableCompressionInSingleFile`), FileVersion `0.1.0.2`, and `Issun.Core`
-carried the SHA, so the CI properties do reach `IssunInfo` through the project
-reference. Trimming is not an option: WPF didn't support it, and WinUI's
-XAML binding isn't checked for it either. The WinUI build's single file was
-about 82 MB with only the WinUI package, a little smaller than WPF's 86, and
-is 108,086,185 bytes (about 103 MB, build 97) with the whole Windows App SDK
-since SettingsCard came in.
+**Get the owner's yes first**: it stops the live receiver for about 6–7 s.
+Run `tools/install-local.ps1` (CI's own publish command, tests first) from
+PowerShell, not the Bash tool. What it does, and what to do by hand if it
+can't:
 
-The repo is public, which keeps Windows runner minutes free; they bill at 2× on
-a private repo.
+1. Publish (or `gh release download` and check the SHA-256 against the
+   release notes).
+2. **Rename** the running `%LOCALAPPDATA%\Programs\Issun\Issun.exe` to
+   `Issun.exe.b<old build>.bak` (Windows allows renaming a running .exe, not
+   overwriting it). That's the rollback too.
+3. Copy the new .exe in and check its hash.
+4. Stop the old process **by the process ID noted before the rename**
+   (`Get-Process` still reports the old path afterwards), then start the new
+   one with `--background`.
+5. Ask `/version`, and check `[rpc] connected to Discord` and the phone's next
+   check-in in the log.
+
+If the script stops at "tests did not pass", run `dotnet test` at normal
+verbosity: a flaky test has struck twice and its name is still unknown, and
+the script reads only "Passed!". Record each install as a line at the end of
+`HISTORY.md`. Deleting old `.bak` files is the owner's call.
 
 ## Distribution: the Microsoft Store (decided 12 Nov 2026)
 
-The owner: "for now, only store, and winget piggybacking off of store". So
-Issun is headed for the Microsoft Store as an MSIX package, which the Store
-signs, installs and updates, and winget then finds through its `msstore`
-source with no separate winget-pkgs submission. No paid code signing and no
-signed `.msix` on GitHub for now. What the research on 12 Nov found, so it
-isn't redone:
-- Store policies 7.20 (effective 22 Oct 2026) block nothing here. A Win32 app
-  always needs a privacy policy (10.5.1); Discord and Tailscale must be named
-  at the start of the description (10.2.4); the Install Tailscale button is
-  allowed as software that enhances the app's function (10.2.3) and should be
-  explained in the certification notes; no trademarks in the app's name. The
-  listing, description and privacy policy are the owner's to write.
-- An individual developer account is free through storedeveloper.microsoft.com
-  (ID and selfie).
-- MSIX replaces `SelfInstall`, the Run key (with a StartupTask) and the Apps
-  entry, and redirects writes to AppData into the package's own folder unless
-  opted out, which matters for carrying the owner's existing settings across.
-  WPF can be packaged as MSIX; it doesn't need WinUI 3.
-- Signing outside the Store: about $9.99 a month (Microsoft's Artifact
-  Signing, US or Canada individuals) or about $129 a year plus a key token
-  (SSL.com), and even then SmartScreen warns until reputation builds; only the
-  Store avoids the warning.
-- The current unsigned `.exe` on GitHub releases goes on as it is until the
-  Store build exists.
-Issun moved to WinUI 3 on 12 Nov 2026 (the owner: "let's move to winui 3
-actually"); the `winui3-spike` branch's report (question 6) shows a WinUI
-Issun packaged as a full-trust MSIX, with what changes inside a package:
-AppData and HKCU writes redirected, a StartupTask for the Run key, and the
-Windows App SDK runtime a dependency the Store installs. Packaging is a step
-of its own, not yet taken.
+"for now, only store, and winget piggybacking off of store": an MSIX package
+the Store signs and updates, found by winget through `msstore`. Not yet
+packaged (the `winui3-spike` report, question 6, shows how). The unsigned .exe
+on GitHub goes on until then. The Store needs a privacy policy and Discord and
+Tailscale named early in the description; the listing, description and policy
+are the owner's to write. MSIX replaces `SelfInstall`, the Run key (a
+StartupTask) and the Apps entry, and redirects AppData writes, which matters
+for carrying settings across. Research details in `HISTORY.md`.
 
 ## Queued work
 
-Asked for by the owner and not yet done. Take the top item unless told otherwise.
+Take the top item unless told otherwise.
 
-1. **Setup wizard and installer: built 11 Nov 2026, not yet run for real.**
-   Talked through first, as asked; the owner chose "Self-install", "QR, scanned
-   in Ammy" and "Its own window". Seen only as `--screenshot` renders of the demo
-   (the owner declined a click-through of the demo window). **Run for real in
-   Windows Sandbox on 12 Nov 2026** (`tools/sandbox/run.ps1`, 20 checks, all
-   passing): the first run installs and opens setup within seconds, every page
-   and Close work, the update over a running copy swaps it and keeps
-   `Issun.exe.previous`, and uninstall removes everything but the settings.
-   It found the main window opening 820 tall in a 775 work area with its title
-   bar above the screen, fixed by `WindowFit`. Not yet tried: the update over
-   the owner's build 48, real Tailscale and Discord, and scanning the code with
-   Ammy (merged into Ammy's main). The QR image wasn't decoded here; the phone
-   is the test.
-   **Its words are the owner's to write** (their rule from 12 Nov 2026, starting
-   with this window): build 51 shipped Claude's drafts, to be replaced word for
-   word with what the owner writes in the "Issun Setup Wording" artifact
-   (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ; its `texts` collection, one
-   document per text, keyed like `discord.title`). That covers the setup window,
-   the Setup row, the install and uninstall messages, and Ammy's scan screens and
-   camera prompt. The Discord application ID was a text box until 14 Nov
-   2026, when it was built in (see "The Discord application"); the wording
-   page's `discord.id.*` and `discord.portal.*` fields no longer have a place
-   in the window.
-   **Still waiting on the owner (12 Nov 2026):** the Tailscale page's two
-   cards. They asked to see the whole page first and to go over Tailscale's own
-   setup again; the page now shows it in all four states (`--demo-tailscale
-   0..3`, screens `setup-1a` to `setup-1d`), and the refresher was given in
-   chat. Its new fields (`tailscale.check`, `tailscale.funnel`,
-   `tailscale.unattended.*`) have no answers yet. `discord.id.saveFailed` is
-   "[have me write error messages myself eventually]": the sample stays until
-   they do. The Discord page's live status line ("Set the Discord application
-   ID in Settings. ...", older text shared with the main window) stays as it
-   is: asked whether to put it on the wording page, the owner said "Leave it".
-   Cancel stays: the owner wanted it only if it's standard in this
-   kind of window, and Microsoft's wizard guidance puts Cancel in every
-   wizard's command area, title-bar X or not.
-   **Where it stood at the handoff of 12 Nov 2026 (06:20).** The pages were
-   reworked through the day to the owner's specifications (the setup window
-   section has the four pages): the winget command link, Next checking the
-   address and Funnel, Skip, the editable endpoint with Regenerate, the
-   read-only key with its new-key button, Waiting.../Connected, and the last
-   page's Yes and No radio buttons with Next labelled "Finish" (the owner:
-   "radiobuttons for yes and no", "make sure Next is still there", "Yes,
-   Finish"). `tools/sandbox/run.ps1 -Steps first` passed all 17 checks on
-   af291a7 at 06:20, the last page included; the other steps (again, update,
-   uninstall, winget, tailscale, address, qrrules) passed on earlier commits
-   that day. The same steps pass on the WinUI build (see "Testing on a clean
-   PC" above). **Still none pushed: 92 commits on `main` ahead of GitHub as of
-   14 Nov 2026** (the WinUI move was merged into `main` locally on 12 Nov, at
-   the owner's "can we merge this all to main"), because a push releases and
-   the window still has 13 `[text]` placeholders: the install link's title
-   and progress line, the new-key button, and the errors (no winget, install
-   failed, no address, Funnel off, endpoint invalid, save failed, new key
-   failed), besides the Tailscale cards above. Since 14 Nov 2026 a 14th, the
-   Discord status for a deleted application (`PresenceWorker.InvalidIdDetail`,
-   shown in the main window and on setup's Discord page). Before asking the
-   owner, check that the wording page has a field for every `[text]` in
-   `SetupView.xaml`, `SetupViewModel.cs` and `PresenceWorker.cs`, and add any
-   that's missing. Push only after their
-   words are in and they've said it can go out.
-   **WinUI 3: decided and done on the `winui3` branch (12 Nov 2026).** The
-   owner chose it ("let's move to winui 3 actually") after the
-   `winui3-spike` branch's report (pushed, never to be merged;
-   `spike/winui3/REPORT.md`, fce7811), and gave the go-ahead to the phased
-   plan. See "The WinUI 3 move" below for what changed and how it was
-   checked. Make further setup-window changes on top of it.
-   **Where it stood at the handoff of 13 Nov 2026 (03:00).** Installed on the
-   owner's PC: build 127 (ea3fc19), a local publish (build 129, f6fede5, with
-   the setup pages' slide, at 05:48 on 13 Nov 2026, at the owner's "install";
-   then build 134, 96670f4, with Skip on every page and the Discord check on
-   Next, at 06:38, at "install and show me every current page"; then build
-   140, da4cf6a, with the Discord page's numbered cards and the owner's
-   wording, at 07:20, at "install"; then build 142, 1f9e7a5, with
-   MetaMask's animated QR blur, at 15:34 ("Yes, install"; the script's first
-   try stopped at its own test run, which then passed twice, cause not
-   found); 127, 129, 134 and 140 kept as `Issun.exe.b<build>.bak`)
-   (`tools/install-local.ps1`, CI's own command), not a release; builds 109 to
-   124 went in the same way the same night (see "Updating the installed
-   copy"). Done since the WinUI move and recorded in their own places: the Now
-   playing card as Windows' Quick Settings media card (58 px cover, title and
-   artist only, "Not playing" alone, empty square in
-   ControlAltFillColorQuarternary with no stroke), the explicit badge drawn to
-   SF Pro's 🅴 proportions ("Explicit" to screen readers), the cover hairline
-   one physical pixel in ControlStrokeColorDefault (the owner's stroke policy,
-   in the global CLAUDE.md), the full-bleed icon with every scaling step's
-   frame and the shell told after an install (`ShellIcons`), 1000 epx columns
-   in both windows, the key as password dots with its buttons under it, and
-   no Public address override. The demo plays songs from a list on the
-   owner's PC (`DemoSongs`). Open, beyond the placeholders:
-   - **Explicit by lookup may never fire.** Apple's public iTunes Search and
-     Lookup returned only clean editions on 13 Nov 2026, in every storefront
-     tried, so `trackExplicitness` from the store-ID lookup (used when the
-     source sends no `explicit`) may never say explicit. Not yet checked with
-     a known explicit store ID. Apple Music's web pages
-     (music.apple.com/us/search) still mark explicit items
-     (`showExplicitBadge` in their server-rendered data).
-   - **A flaky test** in Issun.Core failed once in eight runs on 13 Nov 2026
-     (not in anything changed that day); its name wasn't caught. It struck
-     again at 15:33 that day, in `tools/install-local.ps1`'s own test run,
-     which stops the install (nothing was changed); the next two runs passed.
-     The script prints only the summary line, so the name is still unknown:
-     run `dotnet test` with normal verbosity when it next fails.
-   - The `cloudflared` service is still the owner's to remove.
-   **Where it stood at the handoff of 14 Nov 2026.** Since the 03:00 handoff
-   of 13 Nov, all on `main`, committed, not pushed, and each recorded in its
-   own place above (the setup window section and the Blur line under the
-   WinUI move): the setup pages slide (WinUI's horizontal slide in a Frame);
-   Skip, labelled Skip, on every page; the Discord page's three numbered
-   cards in the owner's words, the third with Open Discord; Next there asking
-   Discord about the ID once per click, with a spinner in Next and the reason
-   in an error InfoBar; and the QR code blurred by MetaMask's numbers on the
-   compositor (Win2D), the blur itself animated. The research behind the blur
-   is in the design library's `cross-platform/secret-blur-values/`, and the
-   words the owner gave in chat are on the wording page (`footer.skip`,
-   `discord.id.title`, `discord.id.desc`, `discord.open.*`). Build 142
-   (1f9e7a5) is installed; the notes commits after it change no code. The
-   sandbox's default run (42 checks) and `address` passed on the day's code;
-   `tailscale` and `qrrules` weren't rerun, though their first click changed
-   from Next to Skip. **Not yet seen on the owner's PC**: Next going through
-   with Discord open, Open Discord, the slide, and the blur
-   animating on real hardware (the sandbox draws in software, a few frames).
-   **Where it stood at the second handoff of 14 Nov 2026.** The Discord
-   application ID is built in and the source names the activity (a3b1276; see
-   "The Discord application and "Listening to""), installed as build 146; 94
-   commits on `main` ahead of GitHub. The owner will write the 14 placeholders
-   "in another session".
-   **Next**: the owner's words for the 14 remaining `[text]` placeholders and
-   the Tailscale page, then a push, only once they say it can go out. Queued
-   item 3 (several PCs backing each other up) waits until asked.
-2. **Review findings still open**, from the 23 Sept review that stopped partway:
-   - a type slip in `settings.json` discards the key;
-   - `Autostart.RepairIfMoved` repoints the Run key at local builds;
-   - the uptime verdict problems in `UptimeLog`. What the review found was
-     never written down. Build 48 fixed the three a census of the logs found
-     (see "Where Issun deliberately differs from relay.py"), so check whether
-     any of the review's are left;
-   - CI builds with the .NET 10 SDK, which needs pinning.
-3. **Later: several of the owner's PCs backing each other up.** A future
-   feature, not to start until asked (the owner, 14 Nov 2026: "i want to make
-   it so that if you install issun on a new device it can start to create a
-   network of devices that back each other up for this", "future feature").
-   The goal is both: no single point of failure for receiving pushes, and
-   presence that carries on when the main PC sleeps ("i think both?"). Only
-   the owner's own devices: Issun sets presence through the Discord app on its
-   own PC, so another person's PC could only ever set *their* presence (the
-   owner's point, the same day), and relaying through it would mean handing it
-   the key for nothing. What a design has to settle, as talked through that
-   day, nothing decided:
-   - a backup sets presence only where Discord desktop is open and logged in;
-     an always-on box without Discord could only relay;
-   - one Issun talks to Discord at a time (else they fight over the
-     activity): a leader by priority, found over the tailnet;
-   - the phone reaches whichever is up: Ammy holding several endpoints (the
-     QR code carrying a list) and failing over, or any Issun forwarding to the
-     active one; each PC has its own Funnel name, and whether Tailscale can
-     put one name in front of several machines for Funnel is unverified;
-   - a new PC joins with the key from an existing
-     one, by a join code, rather than set up from scratch.
-   Prior art named in conversation: Tailscale's high-availability subnet
-   routers, and a floating address (keepalived/VRRP). Design-heavy and big:
-   its own session.
+1. **The owner's words for the `[text]` placeholders and the Tailscale page's
+   cards** (Where things stand, above). Then push, only once they say it can
+   go out.
+2. **Review findings still open**, from the 23 Sept review: a type slip in
+   `settings.json` discards the key; `Autostart.RepairIfMoved` repoints the Run
+   key at local builds; check whether any `UptimeLog` verdict problems remain
+   beyond the three build 48 fixed; CI builds with the .NET 10 SDK, which
+   needs pinning.
+3. **Later, only when asked: several of the owner's PCs backing each other
+   up** (14 Nov 2026, "future feature"). The open questions are in
+   `HISTORY.md`, Queued work item 3. Design-heavy; its own session.
+
+**The live test**, still partway: 1–4 and 7 passed (builds 23 and 34); still
+to check: 5, a skip updates presence; 6, a pause clears it; 8, a few days of
+`uptime.log` continuing the relay-era history. Record results with the build
+number in `HISTORY.md`.
 
 ## Working with the owner
 
 Limited coding experience: comfortable running commands and reading output,
-not writing code. Prefers concise, concrete instructions over conceptual
-explanation. When the owner has to run something, give **one command at a time**
-and wait for the output; stacked commands hide the failure when an early one
-hangs.
+not writing code. Concise, concrete instructions; when the owner has to run
+something, **one command at a time**.
 
-The owner wants Claude to do the work rather than describe it: "the more you
-can do the better (to an extent lol)". Run the commands, commit, verify with a
-real check, and bundle the obvious adjacent work into the same turn rather than
-proposing it item by item. The hedge is real. Anything that reaches outside the
-repo or is hard to undo gets confirmed first: deleting, spending money, or
-touching the live setup (Tailscale Funnel, port 8787, the installed Issun, the
-`cloudflared` service, the disabled `Ammy Relay` task, `C:\Users\links\Python
-Scripts`). The
-GitHub repo is `kaydenpmd/Issun`, public, and
-pushing to `main` is routine, as it is in Ammy. Remember that a push is also a
-release: every push to `main` that changes more than Markdown publishes the
-`.exe`.
+The owner wants Claude to do the work: "the more you can do the better (to an
+extent lol)". Run the commands, commit, verify with a real check, and bundle
+the obvious adjacent work. **Confirm first** anything outside the repo or
+hard to undo: deleting, spending money, or touching the live setup (Tailscale
+Funnel, port 8787, the installed Issun, `cloudflared`, the `Ammy Relay` task,
+`C:\Users\links\Python Scripts`). The repo is `kaydenpmd/Issun`, public;
+**git is Claude's to run**, and pushing to `main` is routine, but a push is a
+release.
 
-**Git is Claude's to run.** A Claude Code session has a real shell on the owner's
-Windows machine, so `git status`, `add`, `commit`, `log` and `push` all work
-against the clone directly. Run them and report what they printed. The old
-hand-it-over rule was Cowork-only (a Linux VM whose mount can't unlink, or no
-shell at all) and doesn't apply here.
-
-**Verify, don't assert.** The Ammy project burned several rounds on confident
-wrong answers. Read the file, read the log, probe the live URL, read the CI run.
-When the owner says something works, believe them and go look. When restating
-something the owner said, use their words rather than a stronger paraphrase.
-
-**The owner's live test is the instrument.** Anything that involves the phone,
-Discord or the tunnel isn't verified by a unit test. The live test for the first
-build should cover:
-
-1. The relay task is stopped and disabled.
-2. The `.env` import shows the key coming across.
-3. The phone checks in without re-pairing.
-4. Discord shows "Listening to Apple Music" with cover, links and a progress
-   bar that doesn't rubberband.
-5. A skip updates presence.
-6. A pause clears it.
-7. A reboot brings Issun back in the tray and it reaches Discord.
-8. Then a few days of `uptime.log` continuing the relay-era history.
-
-Record the result here, with the build number.
-
-**Build 23 (`e9b578e`), 22 Sept 2026 — the GitHub release, run from Downloads:**
-
-- 1: **passed.** The task was stopped at 20:42:37, and Issun took the port at
-  20:42:47 through its 15 s retry, with no restart. The task was disabled at about
-  21:25. `Disable-ScheduledTask` is refused as "Access is denied" from a normal
-  shell, so it ran through a UAC prompt the owner approved.
-- 2: **passed.** The key came across from `RELAY_SECRET` (32 characters), along with
-  the Discord application ID and `PUBLIC_BASE`, plus 176 lines of uptime
-  history placed ahead of Issun's own.
-- 3: **passed.** Ammy 1.0 (83) checked in at 20:43:00 with its existing key, and
-  `/version` on the old Cloudflare tunnel address answered `issun 0.1.0 (23)`.
-- 4: **passed on Issun's side.** "EAT YOU UP" went to Discord at 21:15:05, once,
-  with no re-push on the heartbeats that followed and no `[playhead]` lines. The
-  cover came from the exact store-ID lookup, and all three links resolved — the
-  album link with `?i=` stripped. That the card *looks* right in Discord is the
-  owner's to confirm, not this log's.
-- 5, 6 and 8: not yet.
-
-**Build 34 (`ce2d501`), 23 Sept 2026 — the reboot:**
-
-- 7: **passed.** Issun logged `Windows is shutting down; stopping` at 15:25:43
-  and stopped cleanly. Windows booted at 15:26:53, and the owner signed in over
-  Remote Desktop at 15:27. Issun started in the tray from the Run key at
-  15:29:56, then took 8787 and connected to Discord at 15:29:57, with no retries.
-- **Tailscale did not come back with it.** It reported `NoState` when Issun
-  started, the tray app `tailscale-ipn` wasn't running at 15:31, and Funnel
-  wasn't ready again until 18:20:20, almost three hours later. Anything using
-  the Funnel address was cut off for that long. The old Cloudflare tunnel
-  address, served by a Windows service, answered `issun 0.1.0 (34)` at 15:31.
-- No push from the phone had arrived by 02:51 the next morning.
-
-**What that turned out to be, 24 Sept 2026:**
-
-- **Funnel was broken from outside, not just late.** Tailscale connected at
-  18:20, but check-host.net probes from Los Angeles, Dallas, Atlanta, Miami and
-  New York all had the connection dropped mid-handshake, and the phone saw
-  "Secure Connection Failed". Meanwhile `tailscale funnel status` said "Funnel
-  on" and the PC reached its own address fine. That matches Tailscale bug
-  [#21114](https://github.com/tailscale/tailscale/issues/21114) on 1.102.3
-  (Funnel stops serving after a control-plane reconnect). Restarting the
-  Tailscale service didn't clear it. Updating to 1.102.4, which asked for a
-  reboot, did: all three probed cities got through at 03:18:43, and the phone
-  checked in at 03:19:09.
-- **Don't test Funnel from this PC.** Lookups of its own ts.net name are
-  answered by Tailscale with the tailnet address, even when another DNS server
-  is named, and forcing a request through Funnel's public addresses from here
-  failed even after Funnel worked. check-host.net is what agreed with the phone.
-- **Why Tailscale waited:** it wasn't running unattended, so it connected only
-  once its tray app started, and Windows starts that from the common Startup
-  folder after the Run-key apps, one at a time. On the 03:08 boot: Discord
-  03:09:40, Issun 03:13:43, the tray app and a connected Tailscale 03:18:26. The
-  owner has since turned on **Run unattended** (`ForceDaemon: true`), so
-  Tailscale connects at boot without waiting for sign-in or the tray.
-- **Issun showed "not connected" after Tailscale had connected**, until the
-  owner pressed Refresh, because it re-read Tailscale only every 10 minutes.
-  `IssunHost.NextTailscaleProbe` now looks every 15 s while Tailscale is
-  installed but not connected.
-
-**Updating the installed copy** (build 34 to 38, 24 Sept 2026, about 5 s of
-downtime): download the release asset with `gh release download`, check its
-SHA-256 against the release notes, `Stop-Process -Force` the running Issun,
-copy the new `.exe` over `%LOCALAPPDATA%\Programs\Issun\Issun.exe` (the Run key
-points at that path, so autostart needs no change), then start it with
-`--background`. **Closing the window doesn't quit it**: `CloseMainWindow()`
-only hides Issun to the tray, so the file stays locked and the copy fails. A
-second launch while it runs just shows the running copy's window and exits.
-Keep the previous build beside it (`Issun.exe.b34.bak`) for rollback. Run all of
-it from PowerShell outside the sandbox, as below.
-
-**29 Oct 2026, build 38 to 43 (about 3 s down): the copy failed on a locked
-file**, even after `Stop-Process -Force` and `Wait-Process`, and the restart
-brought back build 38. What worked was renaming the running `Issun.exe` to
-`Issun.exe.b38.bak` first (Windows lets a running `.exe` be renamed, though not
-overwritten), copying the new one in, then stopping and restarting. The rename
-is the backup too, so do it in that order from the start.
-
-**3 Nov 2026, build 43 to 46 (a few seconds down): that order worked first
-time**, from PowerShell outside the sandbox: download and check the SHA-256,
-rename the running `Issun.exe` to `Issun.exe.b43.bak`, copy the new one in and
-check its hash, `Stop-Process -Force`, start it with `--background`, then ask
-`/version`, which answered `issun 0.1.0 (46)`.
-
-**11 Nov 2026, build 46 to 48 (4.1 s down), at the owner's "Yes, install it":
-the same order, as one PowerShell script**, with build 46 kept as
-`Issun.exe.b46.bak`. If the copy or its hash
-check failed, the script was to delete the copy and rename the backup back
-before stopping anything. `/version` answered `issun 0.1.0 (48)`; Discord
-reconnected and the phone's next push (Ammy 1.0 (167)) landed within 2 s of
-the start.
-
-**12 Nov 2026, build 48 to 109, the first WinUI 3 build, at the owner's
-"install the newest build on my pc idc about placeholder text".** Not a
-release: `main` (72d0c0b) wasn't pushed, so build 109 was published locally
-with CI's exact command (`-p:IssunBuild=109 -p:IssunCommit=72d0c0b`, the
-tests passing first), SHA-256 F6EF58BC…ECBF5B9. Build 48 is kept as
-`Issun.exe.b48.bak`. **One new trap:** after the rename, `Get-Process` still
-reports the running process under the old path, `Issun.exe`, so a
-`Where-Object Path -eq <the .bak>` filter matched nothing and build 48 kept
-running. The new copy's launch then handed off to it and exited. Stop the old
-one by the process ID you noted before the rename. Once that was done, build
-109 answered `/version` within 4 s, connected to Discord at once, and deleted
-377 MB of earlier builds' unpacked files from `%TEMP%\.net\Issun`.
-
-**12 Nov 2026, build 109 to 111 (7.4 s down), for the full-bleed icon, at
-the owner's "Install it".** The same local publish (208ec19, SHA-256
-B3839E76…1D5415), build 109 kept as `Issun.exe.b109.bak`, and the running
-Issun stopped by the process ID read before the rename, which worked first
-time.
-
-**Same night, builds 113 and 114, and why the bigger icon didn't show.**
-Build 111's full-bleed tile still measured 31-32 px on the taskbar beside
-Apple Music's 36. Three things, fixed in turn. Build 113 loads the window's
-and the tray's icons at the window's DPI (`Native.IconSize`; plain
-`GetSystemMetrics` had given 32 and 16 at 150%, though the system DPI is
-144), and logs the sizes: `tray icon 24 px`, `main window: icons 48 and 24
-px at 144 dpi`. Build 114's `.ico` carries a frame for every scaling step (30,
-36, 42, 60, 72, 80, 96 added). Neither changed the taskbar, because it
-wasn't reading the window or the new file at all. Issun isn't pinned, so the
-taskbar draws the Start menu shortcut's icon from Explorer's icon cache, which
-still held build 48's picture: the `.exe`'s path never changes, so nothing
-tells the shell it did, and `ie4uinit -show` didn't help. What did, at once:
-touching `Issun.lnk`'s write time and `SHChangeNotify(SHCNE_UPDATEITEM,
-SHCNF_PATHW | SHCNF_FLUSH)` for the `.exe` and the shortcut, then
-`SHCNE_ASSOCCHANGED`. Then 36 x 36, the same as Apple Music's. Which of the
-three changes the 36 itself needed isn't known, since the cache hid them all.
-**After an icon change, notify the shell, or no one sees it.** Builds 111 and
-113 kept as `.bak` beside the `.exe`. Since build 116 Issun does it itself
-(`ShellIcons.Refresh`, the owner's "Yes, add it"): after `SelfInstall.Install`
-and whenever `EnsureRegistered` finds a new build at the installed path, so a
-hand swap like these is covered too. Logged as `[install] told Windows the
-icons of the .exe and the Start menu entry may have changed`.
-
-**13 Nov 2026, builds 117 to 127**, each at the owner's ask ("install",
-"Install it"), with `tools/install-local.ps1` (the script these steps became):
-117, 119, 121, 122, 123, 124 and 127, down 7.5 to 17.7 s each, the build
-before kept as `Issun.exe.b<build>.bak` every time (so the folder holds
-several; deleting old ones is the owner's call). Build 117 logged the first
-`ShellIcons` refresh by itself. Build 127 was installed with
-`ISSUN_CLEAR_PUBLICBASE=1`, which dropped the removed override's 26-character
-value from settings.json while Issun was stopped (a backup is beside it as
-`settings.json.before-publicbase.bak`). Each time, Discord reconnected within
-2 s and the phone checked in within 30 s.
-
-**14 Nov 2026, build 146 to 149 (6.6 s down), for the icon in Discord's
-colours, at the owner's "Push and install".** `main` (ce75d02) was pushed
-first, so CI's release carries the same build number, and
-`tools/install-local.ps1` published it here (SHA-256 B4F3819E…FC093E1), build
-146 kept as `Issun.exe.b146.bak`. It logged the shell refresh, `tray icon 16
-px, from its 16 px frame` (the new tray.ico) and `[rpc] connected to Discord`
-within a second. The tray icon sits in the taskbar's overflow (^) on the
-owner's PC, as Discord's does, so a capture of the taskbar doesn't show it.
-
-**14 Nov 2026, build 149 to 155 (6.6 s down), for covers shrunk the way
-Quick Settings shrinks them, at the owner's "Push and install".** `main`
-(7d6c26f) pushed first, then `tools/install-local.ps1` (SHA-256
-F9DE6F10…7B2AC1), build 149 kept as `Issun.exe.b149.bak`. Discord reconnected
-within a second.
-
-**Same day, build 155 to 158 (6.1 s down), for the main and setup windows'
-columns centred in a wide window, at the owner's "Push and install".** `main`
-(84cbbe8) pushed first, SHA-256 FCC96813…5D91E4, build 155 kept as
-`Issun.exe.b155.bak`, Discord reconnected within a second. The owner felt the
-off-centre column was new in 155 ("not the first time i've fullscreened
-issun"); renders of 149 and 155 at 1908 wide put it at the same x = 551.5,
-and the shift is half of (1048 minus the content's natural width), so what
-was open or how long its text was can hide it. Not settled in a real window.
-
-**Same day, build 158 to 160 (6.2 s down), for covers fitted rather than
-cropped, at the owner's "Push and install".** `main` (6c5c3df), SHA-256
-B41CAF81…A5DE56, build 158 kept as `Issun.exe.b158.bak`, Discord reconnected
-within a second.
-
-**Same day, build 160 to 162 (6.3 s down), for one-line titles and artists,
-at the owner's "Push and install".** `main` (d29637b), SHA-256
-6855D6D3…DAF69A4E, build 160 kept as `Issun.exe.b160.bak`, Discord reconnected
-at once. The first run of `install-local.ps1` stopped at "tests did not pass"
-and changed nothing; `dotnet test` straight after passed 1157 of 1157, only
-the live Issun was running, and the second run went through. The script only
-looks for "Passed!" in the test output, so a failed build (a file in use,
-most likely, after a session of test renders) reads the same; why isn't
-known.
-
-**Two things the handover taught, for anyone repeating it:**
-
-- **Do anything that touches live state from PowerShell, not from Claude Code's Bash
-  tool.** That shell runs sandboxed. An `.env` import run from it printed success,
-  but its writes to `%APPDATA%` and `%LOCALAPPDATA%` never landed. A log watcher run
-  from it saw a stale copy of `issun.log` and stayed silent while Issun was working.
-- **The order is: Issun open and imported first, then stop the relay.** The first
-  attempt stopped the relay while Issun still had its own freshly generated key.
-  The phone's pushes got 401 for about two minutes, Ammy stopped on "Key
-  Rejected", and it had to be relaunched by hand.
+**Verify, don't assert.** Read the file, the log, the CI run; probe the live
+URL. When the owner says something works, believe them and go look. When
+restating what the owner said, use their words. **The owner's live test is
+the instrument** for anything involving the phone, Discord or the tunnel.

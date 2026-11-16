@@ -1617,3 +1617,12 @@ the old process's last run and the new one's failed pushes. A stop before the
 gap and an update still win, and a snapshot either side without a whole
 number keeps "it died". Four new tests; `dotnet test` passed 1165 of 1165.
 Committed, not yet pushed or installed.
+
+**Same night, released and installed at the owner's "Release and install".**
+CI run 43826337317 passed first time and released `v0.1.0-b168` at 01:50,
+SHA-256 A728D180…34873FE. `tools/install-local.ps1` had installed a local
+publish of the same commit at 01:49: 1165 of 1165 tests, SHA-256
+0242C4B4…3194326, the receiver down 7.3 s, build 162 kept as
+`Issun.exe.b162.bak`. `[rpc] connected to Discord` came at 01:49:28 and the
+phone's first check-in at 01:49:59 (Ammy 184, `pushfail=1/1`: one push failed
+during the swap).

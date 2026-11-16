@@ -46,8 +46,8 @@ PC awake with Discord desktop open.
 
 ## Where things stand
 
-As of 15 Nov 2026: `main` is pushed and released through build 166 (dba3e7f),
-and build 162 is installed on the owner's PC. The window still has `[text]`
+As of 16 Nov 2026: `main` is pushed through build 168 (86b0a62), and build
+168 is installed on the owner's PC. The window still has `[text]`
 placeholders for the owner to write (the setup window's install link and
 progress line, the new-key button, its errors, the Tailscale page's cards, and
 `PresenceWorker.InvalidIdDetail`), the owner said they'd write them "in

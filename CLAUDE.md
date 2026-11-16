@@ -55,9 +55,14 @@ progress line, the new-key button, its errors, the Tailscale page's cards, and
 another session". Before asking, check the wording page
 (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ, its `texts` collection) has a
 field for every `[text]` in `SetupView.xaml`, `SetupViewModel.cs` and
-`PresenceWorker.cs`, and add any missing.
+`PresenceWorker.cs`, and add any missing. It also had fields for setup's
+Discord page (`discord.id.*`, `discord.open.*`, as of 14 Nov 2026): that page
+is gone, so take them and its picture off if they're still there.
 
 **Not yet seen on the owner's PC or in a real window:**
+- setup opening on the Tailscale page on the owner's PC (the sandbox's first
+  run has); the sandbox's `address`, `qrrules` and `tailscale` steps, which
+  now skip one page fewer, and its `shots` step's new names, not run since
 - the setup pages' slide; the QR blur animating on real hardware
 - the centred column in a maximized window; a real non-square cover; the
   one-line title; covers at 150% (`--screenshot` above 1x can't judge them)

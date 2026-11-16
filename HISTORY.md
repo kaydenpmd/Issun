@@ -1668,3 +1668,22 @@ SHA-256 BBC63F67…E416705E, its notes the commit message as the owner saw it.
 build 168 kept as `Issun.exe.b168.bak`. `[rpc] connected to Discord` came at
 03:08:50 and the phone's first check-in at 03:09:19 (Ammy 184, `pushfail=1/2`:
 one push failed during the swap).
+
+Afterwards the owner asked "show me all setup pages" and was sent dark
+`--screenshot` renders of the demo's three pages.
+
+## 16 Nov 2026: handoff (03:57)
+
+Build 170 (3dd2680) is released and installed; the commits after it are notes
+only. Both repositories are clean and in step with GitHub, and nothing is
+running: the sandbox is closed and CI's run is done.
+
+Not checked: setup itself on the owner's PC with build 170; the sandbox's
+`address`, `qrrules` and `tailscale` steps and its `shots` step since their
+edits (only `first` ran, 22 ok, its report and logs in
+`%LOCALAPPDATA%\IssunSandbox\20261116-025950\out`).
+
+Next is Queued work item 1, the owner's words for the `[text]` placeholders,
+starting by taking the Discord page's fields off the wording page. The
+session's scratchpad held only renders of the setup pages, not kept:
+`--demo --screenshot <png> --theme dark --setup-page 0..2` remakes them.

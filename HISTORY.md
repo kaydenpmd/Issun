@@ -1596,3 +1596,24 @@ it, 1160 of 1161 passing. It had passed locally minutes before. The re-run
 of the failed job passed and released `v0.1.0-b166`, SHA-256
 05F81A77…BE5E8A2. Not installed: the phone had been silent since 22:36, and
 an Issun restart forgets an open gap, so that silence would get no verdict.
+
+## 16 Nov 2026: a phone restart isn't a death
+
+That silence got its verdict at 00:32:12 on 16 Nov: "it died, last ran
+22:36:11 engine=yes". But the phone itself had restarted. The death line's
+snapshot had `devup=232063s`, and the reopened process's `/diag` at about
+01:18 read `devup=6214s`. Ammy's `device_uptime_s` is
+`ProcessInfo.systemUptime`, which goes back only on a reboot. Compared across
+all 75 "it died" lines in `uptime.log`, 23 were phone restarts, 8 of them
+since 1 Nov 2026 (Ammy's HISTORY.md, same date, has the census and where its
+script is).
+
+`PhoneDiagnostics.RecordDiag` now hands on the replaced snapshot's
+`device_uptime_s` beside its app uptime (`DiagRecord.PreviousDeviceUptime`),
+`CheckinProcessor.Accept` passes it to `NoteCheckin`, and a restart whose
+device uptime went back, to no more than the gap plus `InFlightSlack`, reads
+"— the phone restarted, devup <old>s -> <new>s", followed, as a death is, by
+the old process's last run and the new one's failed pushes. A stop before the
+gap and an update still win, and a snapshot either side without a whole
+number keeps "it died". Four new tests; `dotnet test` passed 1165 of 1165.
+Committed, not yet pushed or installed.

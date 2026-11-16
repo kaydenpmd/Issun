@@ -471,6 +471,11 @@ If this list and the code disagree, the code wins; fix this file.
   still wins. It claims no death either way: a long gap ending in a new build
   may hold one before the install, and a same-build reinstall (a SideStore
   refresh) still reads "it died".
+- **A restart on a new boot reads "— the phone restarted, devup <old>s ->
+  <new>s"** (16 Nov 2026): a phone restart ends every app on it, and Ammy's
+  `device_uptime_s` (`systemUptime`) goes back only then. The new reading must
+  be below the old and within the gap plus `InFlightSlack`. A stop or an
+  update still wins; a snapshot without the field keeps "it died".
 
 ## CI and releases
 

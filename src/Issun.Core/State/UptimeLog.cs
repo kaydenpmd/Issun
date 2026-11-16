@@ -152,8 +152,12 @@ public sealed class UptimeLog : IUptimeLog
     /// The app build that checked in before this push, read before this push
     /// could replace it; null when the caller doesn't know.
     /// </param>
+    /// <param name="previousDeviceUptime">
+    /// device_uptime_s from the diag snapshot this push replaced; null when the
+    /// caller doesn't know.
+    /// </param>
     internal void NoteCheckin(double previous, double now, PyValue previousUptime, PyDict? current, bool? goodbye = null,
-        string? previousBuild = null)
+        string? previousBuild = null, PyValue? previousDeviceUptime = null)
     {
         bool afterStop;
         lock (_silenceGate)
@@ -179,7 +183,7 @@ public sealed class UptimeLog : IUptimeLog
             previousBuild is { } was && was != PhoneDiagnostics.UnknownVersion && was != build
                 ? (was, build)
                 : null;
-        var verdict = GapVerdict(gap, wasDown, previousUptime, current, afterStop, update);
+        var verdict = GapVerdict(gap, wasDown, previousUptime, current, afterStop, update, previousDeviceUptime);
         Line(wasDown
             ? $"gap {FormatGap(gap)}  relay was down for {FormatGap(gap - uptime)} of it{verdict}"
             : $"gap {FormatGap(gap)}  phone silent, relay up throughout{verdict}");
@@ -204,17 +208,19 @@ public sealed class UptimeLog : IUptimeLog
     /// the silence failing to send knows it was alive, and says so. The two
     /// agree or the verdict is worth distrusting.
     ///
-    /// Four verdicts are Issun's, not relay.py's: a process too old to have
+    /// Five verdicts are Issun's, not relay.py's: a process too old to have
     /// started during the gap stayed up, however little its uptime gained; one
     /// that stayed up without a failed push was suspended, not cut off; a gap
     /// that began with the goodbye (<paramref name="afterStop"/>) was a Stop on
-    /// the phone; and a restart that brought a different build
-    /// (<paramref name="update"/>) was an update. A death or an update names
-    /// when the old process last ran, when its successor carries that (Ammy
-    /// build 167 on).
+    /// the phone; a restart that brought a different build
+    /// (<paramref name="update"/>) was an update; and a restart whose device
+    /// uptime went back (<paramref name="previousDeviceUptime"/>) came after
+    /// the phone restarted. A death, an update or a phone restart names when
+    /// the old process last ran, when its successor carries that (Ammy build
+    /// 167 on).
     /// </summary>
     internal static string GapVerdict(double gap, bool relayWasDown, PyValue previousUptime, PyDict? current,
-        bool afterStop = false, (string From, string To)? update = null)
+        bool afterStop = false, (string From, string To)? update = null, PyValue? previousDeviceUptime = null)
     {
         // An app build predating this, the first push, or — unlike relay.py,
         // which fell back on whatever snapshot it last held — a push that
@@ -261,6 +267,13 @@ public sealed class UptimeLog : IUptimeLog
         // refresh, can't be told from a death here and still reads as one.
         if (restarted && update is { } u)
             return $", app restarted {previousUptime}s -> {now}s — updated, {u.From} -> {u.To}{LastRan(current)}{tried}";
+        // Not relay.py's: a phone that restarts ends every app on it, and Ammy
+        // stays closed until it's opened. Issun called these deaths until
+        // 16 Nov 2026, when 23 of the 75 in uptime.log turned out to be
+        // restarts, among them the silence from 22:36 on 15 Nov, after which
+        // devup read 6214s where it had read 232063s.
+        if (restarted && PhoneRestarted(gap, previousDeviceUptime, current) is { } boot)
+            return $", app restarted {previousUptime}s -> {now}s — the phone restarted, devup {boot.From}s -> {boot.To}s{LastRan(current)}{tried}";
         if (restarted)
             return $", app restarted {previousUptime}s -> {now}s — it died{LastRan(current)}{tried}";
         // When the receiver was the thing that was down, that already explains
@@ -277,6 +290,31 @@ public sealed class UptimeLog : IUptimeLog
         if (fails.IsInt && fails.IntValue.IsZero)
             return $", app stayed up {previousUptime}s -> {now}s — suspended, no pushes failed";
         return $", app stayed up {previousUptime}s -> {now}s — the path failed, not the app{tried}";
+    }
+
+    /// <summary>
+    /// The device uptimes either side of a gap, when they show the phone
+    /// restarted in it; null when they don't, or when either snapshot lacks
+    /// one (a source that doesn't send it, or the first push Issun has seen).
+    ///
+    /// Ammy's device_uptime_s is <c>ProcessInfo.systemUptime</c>: it stops
+    /// while the phone sleeps but goes back only when the phone starts again,
+    /// so a new process reporting less of it than the old one did is running
+    /// on a new boot. It must also be no more than the gap could hold: the old
+    /// boot was still up when the last push before the gap left the phone, at
+    /// most <see cref="InFlightSlack"/> before it arrived, so a reading too
+    /// big for that comes from something other than a restart in this gap.
+    /// </summary>
+    private static (BigInteger From, BigInteger To)? PhoneRestarted(double gap, PyValue? previousDeviceUptime, PyDict current)
+    {
+        var now = current.Get("device_uptime_s");
+        if (previousDeviceUptime is not { IsInt: true } || !now.IsInt)
+            return null;
+        var was = previousDeviceUptime.IntValue;
+        var up = now.IntValue;
+        if (up >= was || !PyText.LessThan(up, gap + InFlightSlack))
+            return null;
+        return (was, up);
     }
 
     /// <summary>

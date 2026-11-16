@@ -317,6 +317,31 @@ public class CheckinProcessorTests : IDisposable
     }
 
     [Fact]
+    public void A_new_boot_ending_the_gap_is_a_phone_restart_not_a_death()
+    {
+        // 15 Nov 2026, 22:36:14 to 00:32:12: the phone restarted in the gap.
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 153233, "\"push_fails\": 0, \"device_uptime_s\": 232063"));
+        _clock.Advance(6957);
+        _checkins.Accept(Push(true, BaseMs + 6_957_000, 0, "\"push_fails\": 0, \"device_uptime_s\": 3452"));
+
+        Assert.EndsWith(
+            $"gap 01:55:57  phone silent, relay up throughout, app restarted 153233s -> 0s \x2014 the phone restarted, devup 232063s -> 3452s  [{IssunInfo.Wire} / app 1.0 (80)]",
+            Assert.Single(GapLines()));
+    }
+
+    [Fact]
+    public void A_restart_on_the_same_boot_is_still_a_death()
+    {
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 153233, "\"push_fails\": 0, \"device_uptime_s\": 232063"));
+        _clock.Advance(6957);
+        _checkins.Accept(Push(true, BaseMs + 6_957_000, 0, "\"push_fails\": 0, \"device_uptime_s\": 237000"));
+
+        Assert.Contains("app restarted 153233s -> 0s \x2014 it died  [", Assert.Single(GapLines()));
+    }
+
+    [Fact]
     public void Failed_pushes_are_reported_on_the_gap_line()
     {
         using var capture = Log.Capture();

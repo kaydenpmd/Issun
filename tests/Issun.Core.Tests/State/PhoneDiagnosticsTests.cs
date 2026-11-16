@@ -126,6 +126,19 @@ public class PhoneDiagnosticsTests
     }
 
     [Fact]
+    public void The_record_carries_the_device_uptime_it_replaced()
+    {
+        var diag = new PhoneDiagnostics();
+        using var capture = Log.Capture();
+
+        Assert.Equal(PyKind.None, diag.RecordDiag(Json("{\"device_uptime_s\": 232063}"), 1).PreviousDeviceUptime.Kind);
+        Assert.Equal("232063", diag.RecordDiag(Json("{\"device_uptime_s\": 3452}"), 2).PreviousDeviceUptime.Repr());
+        // A snapshot without one hands on none.
+        diag.RecordDiag(Json("{\"app_uptime_s\": 1}"), 3);
+        Assert.Equal(PyKind.None, diag.RecordDiag(Json("{\"device_uptime_s\": 3460}"), 4).PreviousDeviceUptime.Kind);
+    }
+
+    [Fact]
     public void Lone_surrogates_do_not_throw()
     {
         // Legal JSON that json.loads accepts and System.Text.Json won't decode.

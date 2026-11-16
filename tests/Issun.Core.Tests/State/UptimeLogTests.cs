@@ -247,6 +247,56 @@ public class UptimeLogTests : IDisposable
     }
 
     [Fact]
+    public void A_restart_on_a_new_boot_says_the_phone_restarted()
+    {
+        // 15 Nov 2026: last seen 22:36:14, back at 00:32:12 (01:55:57), logged
+        // as a death. The phone had been up 232063 s before the gap.
+        var at = Local("2026-11-16T04:36:11Z", "HH:mm:ss");
+        var prev = Int("153233");
+        var prevDev = Int("232063");
+        string Restarted(string device, string more = "") =>
+            "{\"app_uptime_s\": 0, \"push_fails\": 0" + (device.Length > 0 ? ", \"device_uptime_s\": " + device : "") + more + "}";
+
+        Assert.Equal($", app restarted 153233s -> 0s — the phone restarted, devup 232063s -> 3452s, last ran {at} engine=yes",
+            UptimeLog.GapVerdict(6957, false, prev,
+                Dict(Restarted("3452", ", \"prev_alive\": \"2026-11-16T04:36:11Z engine=yes\"")), previousDeviceUptime: prevDev));
+        // The new process's own failed pushes come after, as on a death.
+        Assert.Equal(", app restarted 153233s -> 0s — the phone restarted, devup 232063s -> 3452s, 2 pushes failed over 00:00:10",
+            UptimeLog.GapVerdict(6957, false, prev,
+                Dict("{\"app_uptime_s\": 0, \"device_uptime_s\": 3452, \"push_fails\": 2, \"offline_s\": 10}"),
+                previousDeviceUptime: prevDev));
+
+        // The same boot: the device uptime went on, so the app died.
+        Assert.Equal(", app restarted 153233s -> 0s — it died",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("235000")), previousDeviceUptime: prevDev));
+        // A new boot is no older than the gap plus a push's time in flight.
+        Assert.Equal(", app restarted 153233s -> 0s — the phone restarted, devup 232063s -> 6976s",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("6976")), previousDeviceUptime: prevDev));
+        Assert.Equal(", app restarted 153233s -> 0s — it died",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("6977")), previousDeviceUptime: prevDev));
+        // Either side without a whole number of seconds says nothing.
+        Assert.Equal(", app restarted 153233s -> 0s — it died",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("3452"))));
+        Assert.Equal(", app restarted 153233s -> 0s — it died",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("3452")), previousDeviceUptime: PyValue.None));
+        Assert.Equal(", app restarted 153233s -> 0s — it died",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("")), previousDeviceUptime: prevDev));
+        Assert.Equal(", app restarted 153233s -> 0s — it died",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("3452.0")), previousDeviceUptime: prevDev));
+
+        // A process that stayed up wasn't ended by a restart, whatever the device says.
+        Assert.Equal(", app stayed up 153233s -> 160000s — suspended, no pushes failed",
+            UptimeLog.GapVerdict(6957, false, prev,
+                Dict("{\"app_uptime_s\": 160000, \"device_uptime_s\": 3452, \"push_fails\": 0}"), previousDeviceUptime: prevDev));
+        // An update and a goodbye are still the explanation when they apply.
+        Assert.Equal(", app restarted 153233s -> 0s — updated, 1.0 (181) -> 1.0 (184)",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("3452")),
+                update: ("1.0 (181)", "1.0 (184)"), previousDeviceUptime: prevDev));
+        Assert.Equal(", app restarted 153233s -> 0s — stopped on the phone",
+            UptimeLog.GapVerdict(6957, false, prev, Dict(Restarted("3452")), afterStop: true, previousDeviceUptime: prevDev));
+    }
+
+    [Fact]
     public void A_silence_after_the_goodbye_says_so_and_the_next_push_ends_it()
     {
         var clock = new ManualClock(Base);

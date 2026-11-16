@@ -58,7 +58,8 @@ public sealed class CheckinProcessor : ICheckinProcessor
             // push the seq dropped was overtaken by the one applied before it,
             // so it can't say whether the session was still running.
             bool? goodbye = result.Applied ? !push.Playing && push.Diag is null && _diag.LatestAt > 0 : null;
-            _uptime.NoteCheckin(previous, now, diag.PreviousUptime, diag.Current, goodbye, previousBuild);
+            _uptime.NoteCheckin(previous, now, diag.PreviousUptime, diag.Current, goodbye, previousBuild,
+                diag.PreviousDeviceUptime);
             return result;
         }
     }

@@ -8,11 +8,13 @@ namespace Issun.Core.State;
 /// What <see cref="PhoneDiagnostics.RecordDiag"/> saw, for the rest of the
 /// check-in: the app uptime of the snapshot it replaced (what _gap_verdict
 /// calls _prev_app_uptime), and the snapshot this push carried. Current is
-/// null when the push carried no diag object at all.
+/// null when the push carried no diag object at all. PreviousDeviceUptime is
+/// the replaced snapshot's device_uptime_s, which tells a phone restart from
+/// a death (not relay.py's).
 /// </summary>
-internal readonly record struct DiagRecord(PyValue PreviousUptime, PyDict? Current)
+internal readonly record struct DiagRecord(PyValue PreviousUptime, PyDict? Current, PyValue PreviousDeviceUptime)
 {
-    public static readonly DiagRecord None = new(PyValue.None, null);
+    public static readonly DiagRecord None = new(PyValue.None, null, PyValue.None);
 
     /// <summary>This push's app_uptime_s, when it is an integer.</summary>
     public BigInteger? CurrentUptime =>
@@ -224,7 +226,10 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
         // Captured here, at the moment the snapshot is replaced: note_checkin
         // runs after this and compares the two uptimes to decide whether a
         // silence was a death or a network outage.
-        var record = new DiagRecord(previous.Count > 0 ? previous.Get("app_uptime_s") : PyValue.None, current);
+        var record = new DiagRecord(
+            previous.Count > 0 ? previous.Get("app_uptime_s") : PyValue.None,
+            current,
+            previous.Count > 0 ? previous.Get("device_uptime_s") : PyValue.None);
 
         foreach (var line in Changes(previous, current))
             Log.Write(line);

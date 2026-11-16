@@ -1722,3 +1722,12 @@ renders 570 px tall with no box (620 before, box included), and Next refused
 then Check again renders 590, as tall as the page that never showed an error.
 Not checked: a person clicking through in a real window, or the main window's
 and Connect your source's bindings beyond their generated code.
+
+**Released and installed at the owner's "Release and install".** CI run
+43849733650 passed first time and released `v0.1.0-b173` at 04:34, SHA-256
+13A5F9FB…642F0A95, its notes the commit message as the owner saw it.
+`tools/install-local.ps1` had installed a local publish of the same commit at
+04:33: 1162 of 1162 tests, SHA-256 661000D1…A3A90D, the receiver down 7.8 s,
+build 170 kept as `Issun.exe.b170.bak`. `[rpc] connected to Discord` came at
+04:33:33 and the phone's first check-in at 04:33:58 (Ammy 184, `pushfail=1/4`:
+one push failed during the swap).

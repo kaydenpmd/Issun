@@ -46,10 +46,9 @@ PC awake with Discord desktop open.
 
 ## Where things stand
 
-As of 16 Nov 2026: `main` is pushed through build 170 (3dd2680, setup without
-its Discord page), and build 170 is installed on the owner's PC. After it, a
-fix committed but not pushed (a push is a release): a cleared message no
-longer leaves an empty box.
+As of 16 Nov 2026: `main` is pushed through build 173 (31c9861, a cleared
+message no longer leaves an empty box), and build 173 is installed on the
+owner's PC.
 The window still has `[text]`
 placeholders for the owner to write (the setup window's install link and
 progress line, the new-key button, its errors, the Tailscale page's cards, and

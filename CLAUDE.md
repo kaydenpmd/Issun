@@ -46,9 +46,9 @@ PC awake with Discord desktop open.
 
 ## Where things stand
 
-As of 16 Nov 2026: `main` is pushed through build 173 (31c9861, a cleared
-message no longer leaves an empty box), and build 173 is installed on the
-owner's PC.
+As of 16 Nov 2026: `main` is pushed through build 175 (58b0a94, no status
+dots; setup's not-installed Tailscale card offers Install), and build 175 is
+installed on the owner's PC.
 The window still has `[text]`
 placeholders for the owner to write (the line under setup's progress bar
 while Tailscale installs, the new-key button, its errors, the Tailscale page's cards, and
@@ -220,7 +220,9 @@ from the folder you just built**: the other one holds an older build.
 - `--demo`: `DemoHost`, a fake that never writes into the real data folder. On
   the owner's PC its songs come from `%LOCALAPPDATA%\Issun demo songs\`
   (`songs.json` and `covers\`), the owner's listening, which stays off this
-  public repository. `ISSUN_DEMO_SONGS` points it at another folder.
+  public repository: 227 songs since 16 Nov 2026, three picked at random per
+  run; `scripts\expand.py` there adds more from the logs.
+  `ISSUN_DEMO_SONGS` points it at another folder.
 - `--screenshot <png>` (with `--demo`): renders the window offscreen and exits.
   **This is how a session looks at the UI**: render, then Read the PNG. Never
   put a window on the owner's desktop. `--setup-page 0..2`, `--expanded` (the

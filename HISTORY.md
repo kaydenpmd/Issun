@@ -1783,3 +1783,30 @@ Checked: `dotnet build Issun.sln` clean; `dotnet test` 1162 of 1162; dark
 `--screenshot` renders from a scratch copy of the working tree: setup not
 installed, installing, not signed in, Funnel off, Funnel failed, all on, and
 the main window. Not seen in a real window or on the owner's PC.
+
+**Released and installed at the owner's "yes release and install".** CI run
+43870425595 passed first time and released `v0.1.0-b175` at 06:54, SHA-256
+4034E02D…64CD6C7F, its notes the commit message as the owner saw it.
+`tools/install-local.ps1` installed a local publish of the same commit at
+06:53: 1162 of 1162 tests, SHA-256 BAAB36F0…5F5AFA8F, the receiver down
+8.8 s, build 173 kept as `Issun.exe.b173.bak`. `[rpc] connected to Discord`
+came at 06:53:28 and the phone's first check-in at 06:53:39 (Ammy 184).
+
+## 16 Nov 2026: the demo's song list grows from 36 to 227
+
+The owner: "expaaaaaaaaaand the demo song list". The list (on the owner's PC
+only, `%LOCALAPPDATA%\Issun demo songs\`) was 36 songs picked by hand on
+12 and 13 Nov. `scripts\expand.py` there now adds to it: the titles of the
+`[rpc] <title>` lines in issun.log and the old relay.log (1,737 titles, the
+status lines left out), most played first, 400 tried, each looked up in
+iTunes Search (US) and kept only on an exact title match, case and
+punctuation included, since the logs carry Apple Music's own titles. Where
+several artists share the title, one already in the list wins, and with none
+there the title is skipped rather than guessed. 191 added, 209 skipped (79 no
+exact match, 130 ambiguous); covers 300 px. The first try matched on letters
+alone and took a film's "Family Ties" for Baby Keem's "family ties", then
+stopped on a title the console's code page couldn't print; 29 covers it had
+fetched were deleted. Search gave clean editions, so the list's explicit
+songs are still the 11 from 13 Nov. `songs.before-expand.json` is the old
+list. Three `--demo --screenshot` runs showed Porter Robinson's "Kitsune
+Maison Freestyle", Drake's "Dust" and Basement Jaxx's "Good Luck".

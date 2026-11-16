@@ -148,7 +148,12 @@ public sealed class UptimeLog : IUptimeLog
     /// last answer standing, for a push that seq dropped as late, which says
     /// nothing about what the phone did last.
     /// </param>
-    internal void NoteCheckin(double previous, double now, PyValue previousUptime, PyDict? current, bool? goodbye = null)
+    /// <param name="previousBuild">
+    /// The app build that checked in before this push, read before this push
+    /// could replace it; null when the caller doesn't know.
+    /// </param>
+    internal void NoteCheckin(double previous, double now, PyValue previousUptime, PyDict? current, bool? goodbye = null,
+        string? previousBuild = null)
     {
         bool afterStop;
         lock (_silenceGate)
@@ -167,7 +172,14 @@ public sealed class UptimeLog : IUptimeLog
 
         var uptime = now - _startedAt;
         var wasDown = uptime < gap;
-        var verdict = GapVerdict(gap, wasDown, previousUptime, current, afterStop);
+        // Only between two builds the source reported: one it never named
+        // can't be told apart from the build after it.
+        var build = _diag.PhoneVersion;
+        (string From, string To)? update =
+            previousBuild is { } was && was != PhoneDiagnostics.UnknownVersion && was != build
+                ? (was, build)
+                : null;
+        var verdict = GapVerdict(gap, wasDown, previousUptime, current, afterStop, update);
         Line(wasDown
             ? $"gap {FormatGap(gap)}  relay was down for {FormatGap(gap - uptime)} of it{verdict}"
             : $"gap {FormatGap(gap)}  phone silent, relay up throughout{verdict}");
@@ -192,15 +204,17 @@ public sealed class UptimeLog : IUptimeLog
     /// the silence failing to send knows it was alive, and says so. The two
     /// agree or the verdict is worth distrusting.
     ///
-    /// Three verdicts are Issun's, not relay.py's: a process too old to have
+    /// Four verdicts are Issun's, not relay.py's: a process too old to have
     /// started during the gap stayed up, however little its uptime gained; one
-    /// that stayed up without a failed push was suspended, not cut off; and a
-    /// gap that began with the goodbye (<paramref name="afterStop"/>) was a Stop
-    /// on the phone. A death names when the dead process last ran, when its
-    /// successor carries that (Ammy build 167 on).
+    /// that stayed up without a failed push was suspended, not cut off; a gap
+    /// that began with the goodbye (<paramref name="afterStop"/>) was a Stop on
+    /// the phone; and a restart that brought a different build
+    /// (<paramref name="update"/>) was an update. A death or an update names
+    /// when the old process last ran, when its successor carries that (Ammy
+    /// build 167 on).
     /// </summary>
     internal static string GapVerdict(double gap, bool relayWasDown, PyValue previousUptime, PyDict? current,
-        bool afterStop = false)
+        bool afterStop = false, (string From, string To)? update = null)
     {
         // An app build predating this, the first push, or — unlike relay.py,
         // which fell back on whatever snapshot it last held — a push that
@@ -240,6 +254,13 @@ public sealed class UptimeLog : IUptimeLog
         // the app and may end it, and neither is a fault.
         if (afterStop)
             return $", app {(restarted ? "restarted" : "stayed up")} {previousUptime}s -> {now}s — stopped on the phone{tried}";
+        // Not relay.py's: installing a build ends the process it replaces, so a
+        // different build ending the gap explains the restart. Issun called
+        // these deaths until 15 Nov 2026; 14 Nov had two, the installs of Ammy
+        // 181 and 184. A reinstall of the same build, such as a SideStore
+        // refresh, can't be told from a death here and still reads as one.
+        if (restarted && update is { } u)
+            return $", app restarted {previousUptime}s -> {now}s — updated, {u.From} -> {u.To}{LastRan(current)}{tried}";
         if (restarted)
             return $", app restarted {previousUptime}s -> {now}s — it died{LastRan(current)}{tried}";
         // When the receiver was the thing that was down, that already explains

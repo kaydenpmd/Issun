@@ -1568,3 +1568,22 @@ known.
   attempt stopped the relay while Issun still had its own freshly generated key.
   The phone's pushes got 401 for about two minutes, Ammy stopped on "Key
   Rejected", and it had to be relaunched by hand.
+
+## 15 Nov 2026: an app update isn't a death
+
+Found while reading the uptime log for an opinion of both projects: on 14 Nov
+2026 the gaps at 02:21:47 (00:02:08, Ammy 177 to 181) and 04:02:23 (00:01:39,
+181 to 184) both read "it died", but each gap line's stamp carried a newer
+build than the "stopped checking in" line before it. They were the owner's
+installs, and `GapVerdict` never saw the builds. Across the whole
+`uptime.log`, 19 of the 74 "it died" lines cross a change of build: 12 are
+gaps of 16 minutes or less, installs, and 7 run from 37 minutes to 177 hours,
+where the app may have died before the install.
+
+`CheckinProcessor.Accept` now reads `PhoneVersion` before the push can replace
+it and passes it to `NoteCheckin`, and a restart that brings a different build
+reads "— updated, <old> -> <new>", followed, as a death is, by the old
+process's last run and the new one's failed pushes. Only between two named
+builds (a source that named none before the gap keeps the old verdict), and a
+stop before the gap still wins. Four new tests; `dotnet test` passed 1161 of
+1161. Committed, not yet pushed or installed.

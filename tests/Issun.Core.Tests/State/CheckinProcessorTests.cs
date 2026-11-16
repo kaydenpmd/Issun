@@ -25,13 +25,14 @@ public class CheckinProcessorTests : IDisposable
     public void Dispose() => _temp.Dispose();
 
     private static NowPlayingPush Push(bool playing, long? seq = null, long? uptime = null, string? extraDiag = null,
-        string? title = "Song", bool diag = true)
+        string? title = "Song", bool diag = true, string? version = "1.0 (80)")
     {
         var body = new JsonObject
         {
             ["playing"] = playing,
-            ["app_version"] = "1.0 (80)",
         };
+        if (version is not null)
+            body["app_version"] = version;
         if (seq is not null)
             body["seq"] = seq;
         if (playing)
@@ -287,6 +288,32 @@ public class CheckinProcessorTests : IDisposable
         var gap = Assert.Single(GapLines());
         Assert.Contains("gap 00:06:55  phone silent, relay up throughout, app restarted 16048s -> 0s \x2014 it died", gap);
         Assert.Contains("[keepalive] app restarted: uptime 16048s -> 0s, counters reset", capture.Lines);
+    }
+
+    [Fact]
+    public void A_new_build_ending_the_gap_is_an_update_not_a_death()
+    {
+        // 14 Nov 2026 04:02:23: the install of Ammy 184 over 181.
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 5937, "\"push_fails\": 0", version: "1.0 (181)"));
+        _clock.Advance(99);
+        _checkins.Accept(Push(true, BaseMs + 99_000, 0, "\"push_fails\": 0", version: "1.0 (184)"));
+
+        Assert.EndsWith(
+            $"gap 00:01:39  phone silent, relay up throughout, app restarted 5937s -> 0s \x2014 updated, 1.0 (181) -> 1.0 (184)  [{IssunInfo.Wire} / app 1.0 (184)]",
+            Assert.Single(GapLines()));
+    }
+
+    [Fact]
+    public void A_build_first_named_after_a_gap_is_not_an_update()
+    {
+        // The push before the gap named no build, so there is none to compare.
+        using var capture = Log.Capture();
+        _checkins.Accept(Push(true, BaseMs, 5937, "\"push_fails\": 0", version: null));
+        _clock.Advance(99);
+        _checkins.Accept(Push(true, BaseMs + 99_000, 0, "\"push_fails\": 0", version: "1.0 (184)"));
+
+        Assert.Contains("app restarted 5937s -> 0s \x2014 it died  [", Assert.Single(GapLines()));
     }
 
     [Fact]

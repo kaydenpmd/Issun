@@ -195,6 +195,58 @@ public class UptimeLogTests : IDisposable
     }
 
     [Fact]
+    public void A_restart_that_brings_a_new_build_was_an_update()
+    {
+        // 14 Nov 2026 04:02:23: Ammy 184 installed over 181, logged as a death.
+        var at = Local("2026-11-14T12:00:46Z", "HH:mm:ss");
+        var prev = Int("5937");
+        var update = ("1.0 (181)", "1.0 (184)");
+
+        Assert.Equal($", app restarted 5937s -> 0s — updated, 1.0 (181) -> 1.0 (184), last ran {at} engine=yes",
+            UptimeLog.GapVerdict(99, false, prev,
+                Dict("{\"app_uptime_s\": 0, \"push_fails\": 0, \"prev_alive\": \"2026-11-14T12:00:46Z engine=yes\"}"),
+                update: update));
+        // The new process's own failed pushes come after, as on a death.
+        Assert.Equal(", app restarted 5937s -> 0s — updated, 1.0 (181) -> 1.0 (184), 2 pushes failed over 00:00:10",
+            UptimeLog.GapVerdict(99, false, prev, Dict("{\"app_uptime_s\": 0, \"push_fails\": 2, \"offline_s\": 10}"),
+                update: update));
+        // The same build restarting is still a death.
+        Assert.Equal(", app restarted 5937s -> 0s — it died",
+            UptimeLog.GapVerdict(99, false, prev, Dict("{\"app_uptime_s\": 0, \"push_fails\": 0}")));
+        // A process that stayed up wasn't replaced, whatever the builds say.
+        Assert.Equal(", app stayed up 5937s -> 6036s — suspended, no pushes failed",
+            UptimeLog.GapVerdict(99, false, prev, Dict("{\"app_uptime_s\": 6036, \"push_fails\": 0}"), update: update));
+        // A gap that began with the goodbye is still explained by it.
+        Assert.Equal(", app restarted 5937s -> 0s — stopped on the phone",
+            UptimeLog.GapVerdict(99, false, prev, Dict("{\"app_uptime_s\": 0, \"push_fails\": 0}"),
+                afterStop: true, update: update));
+    }
+
+    [Fact]
+    public void Only_a_change_between_two_named_builds_is_an_update()
+    {
+        var clock = new ManualClock(Base);
+        var diag = new FakeDiagnostics { PhoneVersion = "1.0 (184)" };
+        var log = new UptimeLog(_temp.File("update.log"), diag, clock, Base - 100_000);
+        var restarted = Dict("{\"app_uptime_s\": 0, \"push_fails\": 0}");
+
+        using var capture = Log.Capture();
+        log.NoteCheckin(Base, Base + 99, Int("5937"), restarted, previousBuild: "1.0 (181)");
+        // Nothing had named a build before this push.
+        log.NoteCheckin(Base, Base + 99, Int("5937"), restarted, previousBuild: PhoneDiagnostics.UnknownVersion);
+        log.NoteCheckin(Base, Base + 99, Int("5937"), restarted, previousBuild: "1.0 (184)");
+        log.NoteCheckin(Base, Base + 99, Int("5937"), restarted);
+
+        Assert.Equal(new[]
+        {
+            "gap 00:01:39  phone silent, relay up throughout, app restarted 5937s -> 0s — updated, 1.0 (181) -> 1.0 (184)",
+            "gap 00:01:39  phone silent, relay up throughout, app restarted 5937s -> 0s — it died",
+            "gap 00:01:39  phone silent, relay up throughout, app restarted 5937s -> 0s — it died",
+            "gap 00:01:39  phone silent, relay up throughout, app restarted 5937s -> 0s — it died",
+        }, UptimeTexts(capture.Lines, "1.0 (184)"));
+    }
+
+    [Fact]
     public void A_silence_after_the_goodbye_says_so_and_the_next_push_ends_it()
     {
         var clock = new ManualClock(Base);

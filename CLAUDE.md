@@ -465,6 +465,12 @@ If this list and the code disagree, the code wins; fix this file.
     HH:MM:SS engine=yes|no"), and issun.log gets the previous run's journal
     once per launch (`[keepalive] previous run ...`, `[keepalive] journal:
     ...`). Build 167's other diag fields print beside the counts they explain.
+- **A restart that brings a different app build reads "— updated, <old> ->
+  <new>"**, not "it died" (15 Nov 2026): an install ends the process it
+  replaces. Only between two builds the source named; a stop before the gap
+  still wins. It claims no death either way: a long gap ending in a new build
+  may hold one before the install, and a same-build reinstall (a SideStore
+  refresh) still reads "it died".
 
 ## CI and releases
 

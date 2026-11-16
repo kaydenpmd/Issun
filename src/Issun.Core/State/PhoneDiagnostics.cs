@@ -77,10 +77,13 @@ public sealed class PhoneDiagnostics : IPhoneDiagnostics
 
     private readonly object _gate = new();
 
+    /// <summary><see cref="PhoneVersion"/> until a source reports a build.</summary>
+    internal const string UnknownVersion = "unknown";
+
     // The build matters more than Issun's own version: whether the phone
     // survives backgrounding is decided by code in the iOS build, so it is the
     // axis every uptime-log line is attributed to.
-    private string _version = "unknown";
+    private string _version = UnknownVersion;
 
     private PyDict _diag = PyDict.Empty;
     private JsonObject? _diagJson;

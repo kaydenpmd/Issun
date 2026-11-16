@@ -38,6 +38,9 @@ public sealed class CheckinProcessor : ICheckinProcessor
             var now = _clock.Now;
             var previous = _state.LastCheckinAt;
 
+            // The build that checked in last, read before this push can replace
+            // it: a different build ending a gap is an update, not a death.
+            var previousBuild = _diag.PhoneVersion;
             _diag.RecordVersion(push.Raw["app_version"]);
             _diag.RecordName(push.Raw["app_name"]);
             // The raw node rather than push.Diag: record_phone_diag took whatever
@@ -55,7 +58,7 @@ public sealed class CheckinProcessor : ICheckinProcessor
             // push the seq dropped was overtaken by the one applied before it,
             // so it can't say whether the session was still running.
             bool? goodbye = result.Applied ? !push.Playing && push.Diag is null && _diag.LatestAt > 0 : null;
-            _uptime.NoteCheckin(previous, now, diag.PreviousUptime, diag.Current, goodbye);
+            _uptime.NoteCheckin(previous, now, diag.PreviousUptime, diag.Current, goodbye, previousBuild);
             return result;
         }
     }

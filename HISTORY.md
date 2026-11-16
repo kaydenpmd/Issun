@@ -1587,3 +1587,12 @@ process's last run and the new one's failed pushes. Only between two named
 builds (a source that named none before the gap keeps the old verdict), and a
 stop before the gap still wins. Four new tests; `dotnet test` passed 1161 of
 1161. Committed, not yet pushed or installed.
+
+**Same day, pushed at the owner's "Push it"; released, not installed.** CI's
+first attempt (run 43809605758) failed one test the change doesn't touch:
+`RelayServerTests.A_client_that_half_closes_mid_body_is_logged_as_normal`
+waited its 10 s for "[http] client disconnected mid-request" and never saw
+it, 1160 of 1161 passing. It had passed locally minutes before. The re-run
+of the failed job passed and released `v0.1.0-b166`, SHA-256
+05F81A77…BE5E8A2. Not installed: the phone had been silent since 22:36, and
+an Issun restart forgets an open gap, so that silence would get no verdict.

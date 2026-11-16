@@ -46,7 +46,7 @@ PC awake with Discord desktop open.
 
 ## Where things stand
 
-As of 15 Nov 2026: `main` is pushed and released through build 162 (d29637b),
+As of 15 Nov 2026: `main` is pushed and released through build 166 (dba3e7f),
 and build 162 is installed on the owner's PC. The window still has `[text]`
 placeholders for the owner to write (the setup window's install link and
 progress line, the new-key button, its errors, the Tailscale page's cards, and
@@ -505,8 +505,11 @@ can't:
    check-in in the log.
 
 If the script stops at "tests did not pass", run `dotnet test` at normal
-verbosity: a flaky test has struck twice and its name is still unknown, and
-the script reads only "Passed!". Record each install as a line at the end of
+verbosity: a flaky test has struck twice there, name unknown, and the script
+reads only "Passed!". In CI on 15 Nov 2026,
+`RelayServerTests.A_client_that_half_closes_mid_body_is_logged_as_normal`
+timed out waiting for its log line and a re-run passed; whether it's the
+same test isn't known. Record each install as a line at the end of
 `HISTORY.md`. Deleting old `.bak` files is the owner's call.
 
 ## Distribution: the Microsoft Store (decided 12 Nov 2026)

@@ -68,7 +68,7 @@
                 <TextBox Text="{x:Bind ViewModel.EndpointText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0"
                          AutomationProperties.Name="Endpoint" />
                 <TextBlock Text="{x:Bind ViewModel.EndpointProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
-                           Visibility="{x:Bind v:Bind.Present(ViewModel.EndpointProblem)}" />
+                           Visibility="{x:Bind v:Bind.Present(ViewModel.EndpointProblem), FallbackValue=Collapsed}" />
             </StackPanel>
         </Border>
 
@@ -82,7 +82,7 @@
                     <TextBlock Text="{x:Bind ViewModel.KeyDisplay}" Margin="0,3,0,0" TextWrapping="Wrap"
                                FontFamily="{StaticResource MonoFont}" />
                     <TextBlock Text="{x:Bind ViewModel.KeyProblem}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
-                               Visibility="{x:Bind v:Bind.Present(ViewModel.KeyProblem)}" />
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.KeyProblem), FallbackValue=Collapsed}" />
                 </StackPanel>
             </tk:SettingsCard.Description>
             <StackPanel Orientation="Horizontal">

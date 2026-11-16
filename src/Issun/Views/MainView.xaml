@@ -34,7 +34,7 @@
             <Border Style="{StaticResource Card}"
                     Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                     Margin="0,8,0,4"
-                    Visibility="{x:Bind v:Bind.Present(ViewModel.StartupError)}">
+                    Visibility="{x:Bind v:Bind.Present(ViewModel.StartupError), FallbackValue=Collapsed}">
                 <TextBlock Text="{x:Bind ViewModel.StartupError}" Style="{StaticResource RowTitle}" />
             </Border>
 
@@ -261,7 +261,7 @@
                                            Visibility="{x:Bind v:Bind.Visible(ViewModel.EnableFunnelCommand.IsRunning)}" />
                             </StackPanel>
                             <TextBlock Text="{x:Bind ViewModel.TailscaleError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
-                                       Visibility="{x:Bind v:Bind.Present(ViewModel.TailscaleError)}" />
+                                       Visibility="{x:Bind v:Bind.Present(ViewModel.TailscaleError), FallbackValue=Collapsed}" />
                         </StackPanel>
                     </Grid>
 
@@ -270,7 +270,7 @@
                          it, so links are clickable. -->
                     <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{ThemeResource ControlCornerRadius}"
                             Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                            Visibility="{x:Bind v:Bind.Present(ViewModel.FunnelOutput)}">
+                            Visibility="{x:Bind v:Bind.Present(ViewModel.FunnelOutput), FallbackValue=Collapsed}">
                         <TextBlock v:LinkTextBlock.Text="{x:Bind ViewModel.FunnelOutput}" Style="{StaticResource MonoBlock}" />
                     </Border>
                 </StackPanel>
@@ -327,7 +327,7 @@
                     <!-- No description (the owner, 12 Nov 2026); only an error, when
                          Windows didn't take the change. -->
                     <TextBlock Text="{x:Bind ViewModel.StartWithWindowsError}" Style="{StaticResource ErrorText}"
-                               Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError)}" />
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.StartWithWindowsError), FallbackValue=Collapsed}" />
                 </tk:SettingsCard.Description>
                 <CheckBox MinWidth="0" Padding="0" IsChecked="{x:Bind ViewModel.StartWithWindowsField, Mode=TwoWay}"
                           AutomationProperties.Name="Start with Windows" />
@@ -342,7 +342,7 @@
                     <TextBlock Text="{x:Bind ViewModel.SettingsSaved.Text}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Text="{x:Bind ViewModel.SettingsErrors}" Style="{StaticResource ErrorText}" Margin="0,8,0,0"
-                           Visibility="{x:Bind v:Bind.Present(ViewModel.SettingsErrors)}" />
+                           Visibility="{x:Bind v:Bind.Present(ViewModel.SettingsErrors), FallbackValue=Collapsed}" />
             </StackPanel>
 
 

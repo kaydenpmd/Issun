@@ -47,7 +47,9 @@ PC awake with Discord desktop open.
 ## Where things stand
 
 As of 16 Nov 2026: `main` is pushed through build 170 (3dd2680, setup without
-its Discord page), and build 170 is installed on the owner's PC.
+its Discord page), and build 170 is installed on the owner's PC. After it, a
+fix committed but not pushed (a push is a release): a cleared message no
+longer leaves an empty box.
 The window still has `[text]`
 placeholders for the owner to write (the setup window's install link and
 progress line, the new-key button, its errors, the Tailscale page's cards, and
@@ -383,6 +385,9 @@ Community Toolkit's SettingsCard). What has no direct WinUI equivalent:
 - **Every binding is x:Bind**; visibility comes from `Views/Converters.cs`
   (class `Bind`). A `Command` whose CanExecute depends on state names its view
   model and is requeried when that changes (no CommandManager).
+- **A `v:Bind.Present(...)` binding carries `FallbackValue=Collapsed`**: x:Bind
+  skips a function whose argument turns null, so without it a cleared message
+  stays on screen, empty.
 - **Covers** are fetched as bytes and decoded on the UI thread (`Views/Images.cs`).
 - **Theme**: `--theme` sets `Application.RequestedTheme` in App's
   constructor; `AppTheme.IsDark` asks Windows directly for the QR colours.

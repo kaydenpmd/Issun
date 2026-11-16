@@ -163,7 +163,7 @@
                             </Grid>
                             <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{ThemeResource ControlCornerRadius}"
                                     Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                    Visibility="{x:Bind v:Bind.Present(ViewModel.FunnelOutput)}">
+                                    Visibility="{x:Bind v:Bind.Present(ViewModel.FunnelOutput), FallbackValue=Collapsed}">
                                 <TextBlock v:LinkTextBlock.Text="{x:Bind ViewModel.FunnelOutput}" Style="{StaticResource MonoBlock}" />
                             </Border>
                         </StackPanel>
@@ -188,7 +188,7 @@
                     </Border>
 
                     <TextBlock Text="{x:Bind ViewModel.TailscaleError}" Style="{StaticResource ErrorText}" Margin="2,8,0,0"
-                               Visibility="{x:Bind v:Bind.Present(ViewModel.TailscaleError)}" />
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.TailscaleError), FallbackValue=Collapsed}" />
                 </StackPanel>
 
                 <!-- ───────────── 3. Start with Windows ───────────── -->

@@ -4,8 +4,14 @@ namespace Issun.Views;
 
 /// <summary>
 /// Functions for x:Bind, in place of the WPF build's value converters:
-/// <c>Visibility="{x:Bind v:Bind.Present(ViewModel.KeyProblem)}"</c>.
-/// x:Bind calls them again whenever the property they're given changes.
+/// <c>Visibility="{x:Bind v:Bind.Present(ViewModel.KeyProblem), FallbackValue=Collapsed}"</c>.
+/// x:Bind calls them again whenever the property they're given changes, except
+/// when it changes to null: the generated code then skips the function and
+/// leaves its last result standing. So every <see cref="Present"/> binding
+/// carries FallbackValue=Collapsed, which the generated code applies on null
+/// instead. Without it a message that was shown and then cleared stayed on
+/// screen empty: setup's grey Funnel box after a failed, then successful, Turn
+/// on Funnel (16 Nov 2026). Visible, Hidden and Not take bools, never null.
 /// </summary>
 public static class Bind
 {

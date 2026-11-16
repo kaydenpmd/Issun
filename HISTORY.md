@@ -1687,3 +1687,38 @@ Next is Queued work item 1, the owner's words for the `[text]` placeholders,
 starting by taking the Discord page's fields off the wording page. The
 session's scratchpad held only renders of the setup pages, not kept:
 `--demo --screenshot <png> --theme dark --setup-page 0..2` remakes them.
+
+## 16 Nov 2026: a cleared message no longer leaves an empty box
+
+The owner asked to see "all versions of the tailscale screen from setup" and
+was sent eleven dark `--screenshot` renders of the Tailscale page: the four
+`--demo-tailscale` states, `--press-next`, and six that need a button pressed
+first (installing; Turn on Funnel failing; failing, then turning on; Run
+unattended turned on; Next refused with no address, and with Funnel off). Those
+six came from a scratch copy of f784f41 whose `Screenshot.cs` pressed setup's
+commands, named in an `ISSUN_SHOT_PRESS` variable, before rendering. That patch
+was never committed.
+
+The render of Turn on Funnel failing, then succeeding, showed an empty grey box
+under Check again. `FunnelOutput` was back to null, but the code x:Bind
+generates for `v:Bind.Present(ViewModel.FunnelOutput)` queues the function
+only `if (obj != null)`, so a change to null left the last result, Visible,
+standing. The first render is right only because the initial update queues
+every function binding unconditionally. All nine `Present` bindings had the
+flaw (MainView's StartupError, TailscaleError, FunnelOutput,
+StartWithWindowsError and SettingsErrors; SetupView's FunnelOutput and
+TailscaleError; PairingCards' EndpointProblem and KeyProblem), so a cleared
+error line stayed as a blank one. `Visible`, `Hidden` and `Not` take bools and
+can't hit it.
+
+The fix is `FallbackValue=Collapsed` on each: the generated code gains an
+`else` that applies the fallback when the argument is null (5, 2 and 2 such
+branches in MainView.g.cs, SetupView.g.cs and PairingCards.g.cs, each setting
+"Collapsed"). `Converters.cs` says why.
+
+Checked: `dotnet build Issun.sln` clean; `dotnet test` 1162 of 1162; the
+scratch harness with the committed XAML: Funnel failing then succeeding now
+renders 570 px tall with no box (620 before, box included), and Next refused
+then Check again renders 590, as tall as the page that never showed an error.
+Not checked: a person clicking through in a real window, or the main window's
+and Connect your source's bindings beyond their generated code.

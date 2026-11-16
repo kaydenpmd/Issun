@@ -1659,3 +1659,12 @@ while the solution build had gone to `bin/Debug` (the solution maps the app
 to Any CPU). CLAUDE.md now says which folder each build uses. Also fixed
 there: Cancel stays Cancel on the last page (it hasn't said Close since
 12 Nov 2026).
+
+**Same night, released and installed at the owner's "Release and install".**
+CI run 43836945802 passed first time and released `v0.1.0-b170` at 03:10,
+SHA-256 BBC63F67…E416705E, its notes the commit message as the owner saw it.
+`tools/install-local.ps1` had installed a local publish of the same commit at
+03:08: 1162 of 1162 tests, SHA-256 459E9C33…FA8D806, the receiver down 7.2 s,
+build 168 kept as `Issun.exe.b168.bak`. `[rpc] connected to Discord` came at
+03:08:50 and the phone's first check-in at 03:09:19 (Ammy 184, `pushfail=1/2`:
+one push failed during the swap).

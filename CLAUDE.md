@@ -46,9 +46,8 @@ PC awake with Discord desktop open.
 
 ## Where things stand
 
-As of 16 Nov 2026: `main` is pushed through build 168 (86b0a62), and build
-168 is installed on the owner's PC. The removal of setup's Discord page is
-committed after it, not pushed: its release notes wait on the owner's OK.
+As of 16 Nov 2026: `main` is pushed through build 170 (3dd2680, setup without
+its Discord page), and build 170 is installed on the owner's PC.
 The window still has `[text]`
 placeholders for the owner to write (the setup window's install link and
 progress line, the new-key button, its errors, the Tailscale page's cards, and

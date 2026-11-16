@@ -2,7 +2,6 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:v="using:Issun.Views"
-             xmlns:tk="using:CommunityToolkit.WinUI.Controls"
              x:DefaultBindMode="OneWay"
              IsTabStop="False">
 
@@ -107,42 +106,16 @@
             <Grid>
             <Grid Margin="24,20,24,12" MaxWidth="1000">
                 <!-- The pages slide in a Frame, with WinUI's own navigation
-                     transition (SetupView.xaml.cs says which). The four pages
+                     transition (SetupView.xaml.cs says which). The three pages
                      below are written here, where x:Bind reaches them, and the
-                     code moves each into the Frame's page as it's shown. -->
+                     code moves each into the Frame's page as it's shown. A
+                     Discord page came first until 16 Nov 2026, when the owner
+                     had it removed. -->
                 <Frame x:Name="Pages" IsNavigationStackEnabled="False" IsTabStop="False" />
 
                 <Grid x:Name="StepStore" Visibility="Collapsed">
 
-                <!-- ───────────── 1. Discord ───────────── -->
-                <StackPanel x:Name="DiscordStep">
-                    <TextBlock Text="Connect to Discord" Style="{StaticResource MainInstruction}" Margin="0,0,0,20" />
-
-                    <!-- The third of three numbered cards until 14 Nov 2026, when the
-                         application ID was built in and the first two (make an
-                         application, enter its ID) went; alone, it has no number.
-                         The owner's words and button, 13 Nov 2026 ("add a third one
-                         that says "Make sure Discord is open" with a button that
-                         says "Open""). Next checks that Issun can connect, which
-                         needs Discord running; Open starts it. -->
-                    <tk:SettingsCard Header="Make sure Discord is open" Style="{StaticResource Row}"
-                                     Description="Discord needs to be open on this PC for Issun to connect to.">
-                        <Button Content="Open Discord" Command="{x:Bind ViewModel.OpenDiscordCommand}" AutomationProperties.AutomationId="OpenDiscord" />
-                    </tk:SettingsCard>
-
-                    <!-- Next's answer from Discord, where the status card was
-                         (the owner, 13 Nov 2026: "i want the error to be where
-                         the status card is rn", then "put the error text in its
-                         own card with a red ! or something"): WinUI's InfoBar at
-                         Error severity, Windows' own bar for an error, with its
-                         red icon and tinted fill, in the cards' column. No
-                         title and no close button: the next Next clears it. -->
-                    <InfoBar Severity="Error" IsClosable="False"
-                             IsOpen="{x:Bind v:Bind.Has(ViewModel.DiscordProblem)}"
-                             Message="{x:Bind ViewModel.DiscordProblem}" />
-                </StackPanel>
-
-                <!-- ───────────── 2. Tailscale ───────────── -->
+                <!-- ───────────── 1. Tailscale ───────────── -->
                 <StackPanel x:Name="TailscaleStep">
                     <TextBlock Text="Make this PC reachable with a Tailscale Funnel" Style="{StaticResource MainInstruction}" />
                     <TextBlock Style="{StaticResource PageBody}"
@@ -233,7 +206,7 @@
                                  AutomationProperties.AutomationId="LaunchNo" />
                 </StackPanel>
 
-                <!-- ───────────── 4. Source ───────────── -->
+                <!-- ───────────── 2. Source ───────────── -->
                 <StackPanel x:Name="SourceStep">
                     <TextBlock Text="Connect your source" Style="{StaticResource MainInstruction}" />
                     <TextBlock Style="{StaticResource PageBody}"
@@ -260,13 +233,13 @@
                  the page's check; on the last page it ends setup. -->
             <Button Content="Skip" Command="{x:Bind ViewModel.SkipCommand}" Style="{StaticResource FooterButton}"
                     AutomationProperties.AutomationId="Skip" />
-            <!-- While Next waits on a check (Discord's answer about the ID,
-                 Tailscale's address), the label gives way to WinUI's
-                 ProgressRing at 16 px, the size Connect your source's Waiting
-                 ring uses (the owner, 13 Nov 2026: "replace the "next" text
-                 with a spinner"). The button is disabled meanwhile, so the ring
-                 takes the disabled accent button's text colour. The button
-                 keeps its 120 width, so nothing beside it moves. -->
+            <!-- While Next waits on a check (Tailscale's address), the label
+                 gives way to WinUI's ProgressRing at 16 px, the size Connect
+                 your source's Waiting ring uses (the owner, 13 Nov 2026:
+                 "replace the "next" text with a spinner"). The button is
+                 disabled meanwhile, so the ring takes the disabled accent
+                 button's text colour. The button keeps its 120 width, so
+                 nothing beside it moves. -->
             <Button Command="{x:Bind ViewModel.NextCommand}" Style="{StaticResource AccentFooterButton}"
                     AutomationProperties.Name="{x:Bind ViewModel.NextLabel}"
                     Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowNext)}" KeyboardAcceleratorPlacementMode="Hidden">

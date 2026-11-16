@@ -47,7 +47,9 @@ PC awake with Discord desktop open.
 ## Where things stand
 
 As of 16 Nov 2026: `main` is pushed through build 168 (86b0a62), and build
-168 is installed on the owner's PC. The window still has `[text]`
+168 is installed on the owner's PC. The removal of setup's Discord page is
+committed after it, not pushed: its release notes wait on the owner's OK.
+The window still has `[text]`
 placeholders for the owner to write (the setup window's install link and
 progress line, the new-key button, its errors, the Tailscale page's cards, and
 `PresenceWorker.InvalidIdDetail`), the owner said they'd write them "in
@@ -57,8 +59,7 @@ field for every `[text]` in `SetupView.xaml`, `SetupViewModel.cs` and
 `PresenceWorker.cs`, and add any missing.
 
 **Not yet seen on the owner's PC or in a real window:**
-- Next on the setup's Discord page going through with Discord open; Open
-  Discord; the pages' slide; the QR blur animating on real hardware
+- the setup pages' slide; the QR blur animating on real hardware
 - the centred column in a maximized window; a real non-square cover; the
   one-line title; covers at 150% (`--screenshot` above 1x can't judge them)
 - the update over an old build 48, and scanning the white-on-black QR code
@@ -204,8 +205,11 @@ dotnet test
 dotnet run --project src/Issun -- --demo
 ```
 
-.NET 9 SDK, Windows only, x64 only (`win-x64`); a local build lands in
-`src/Issun/bin/x64/Debug/net9.0-windows10.0.22621.0/win-x64/`.
+.NET 9 SDK, Windows only, x64 only (`win-x64`). `dotnet build Issun.sln`
+puts the app in `src/Issun/bin/Debug/net9.0-windows10.0.22621.0/win-x64/`
+(the solution builds it as Any CPU); a build of the project itself, as
+`dotnet run --project` does, goes to `bin/x64/Debug/...` instead. **Render
+from the folder you just built**: the other one holds an older build.
 
 - `--background`: start in the tray (the autostart entry passes it).
 - `--demo`: `DemoHost`, a fake that never writes into the real data folder. On
@@ -214,7 +218,7 @@ dotnet run --project src/Issun -- --demo
   public repository. `ISSUN_DEMO_SONGS` points it at another folder.
 - `--screenshot <png>` (with `--demo`): renders the window offscreen and exits.
   **This is how a session looks at the UI**: render, then Read the PNG. Never
-  put a window on the owner's desktop. `--setup-page 0..3`, `--expanded` (the
+  put a window on the owner's desktop. `--setup-page 0..2`, `--expanded` (the
   QR code), `--demo-tailscale 0..3`, `--press-next`, `--theme dark`. Each PNG
   gets a `.text.json` of every visible text and its position, for wording
   pages. Refuses from a disconnected Remote Desktop session; use the
@@ -321,23 +325,22 @@ Never beside the .exe.
 Opens by itself on a first run, once, and from **Set up again** after.
 Microsoft's wizard structure (design library,
 `microsoft/windows-setup-wizards/`): no welcome page, a Title-style main
-instruction per page, Back, Next and Cancel (Close on the last page), and
-**Skip on every page, labelled Skip**, which moves on without the page's check.
-Pages slide with WinUI's horizontal slide in a `Frame` (Next and Skip from the
-right, Back from the left). Every step logs as `[setup]`.
+instruction per page, Back, Next and Cancel (Cancel on every page; Next is
+Finish on the last), and **Skip on every page, labelled Skip**, which moves
+on without the page's check. Pages slide with WinUI's horizontal slide in a
+`Frame` (Next and Skip from the right, Back from the left). Every step logs
+as `[setup]`. **No Discord page**: the owner had it removed on 16 Nov 2026
+("remove the first page (discord) from setup"), with Open Discord and Next's
+connection check; don't bring it back without asking.
 
-1. **Discord**: one card, "Make sure Discord is open", with Open Discord
-   (the `discord://` link, else discord.com/download). **Next checks Issun can
-   connect, once per click** (`DiscordIdCheck`, a connection of its own):
-   READY moves on; anything else shows the reason in an Error InfoBar below
-   the card, in the main window's status wording (`PresenceWorker.DetailFor`).
-   While it waits, Next shows a 16 px ProgressRing and is disabled.
-2. **Tailscale**: install (`winget install --id Tailscale.Tailscale --exact`,
+1. **Tailscale**: install (`winget install --id Tailscale.Tailscale --exact`,
    by id, else the download page), Turn on Funnel, Run unattended
-   (`tailscale set --unattended`). Next refreshes and stays with an error
-   unless Tailscale has this PC's address and Funnel is on for Issun's port.
-   The two cards' words are still waiting on the owner.
-3. **Connect your source**: the QR code, the endpoint as an editable field
+   (`tailscale set --unattended`). Opening setup asks Tailscale afresh, as
+   arriving from another page does. Next refreshes and stays with an error
+   unless Tailscale has this PC's address and Funnel is on for Issun's port;
+   while it waits, Next shows a 16 px ProgressRing and is disabled. The two
+   cards' words are still waiting on the owner.
+2. **Connect your source**: the QR code, the endpoint as an editable field
    (filled from Tailscale; sets only what the QR code carries, nothing saves
    it; a reload button redraws the code), the key as ● dots with Show, Copy
    and **New key** (no confirmation), and the source's live status:
@@ -345,7 +348,7 @@ right, Back from the left). Every step logs as `[setup]`.
    mark and "Connected". **The main window's Connect your source is the same
    control** (`Views/PairingCards` on `PairingViewModel`): a change to one is
    a change to both (the owner: "favor the setup screen").
-4. **Start with Windows**, ticked by default on a first run, Yes and No radio
+3. **Start with Windows**, ticked by default on a first run, Yes and No radio
    buttons, Next labelled "Finish".
 
 **The QR code** is plain JSON `{"endpoint": "...", "key": "..."}`

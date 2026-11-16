@@ -37,7 +37,6 @@ public sealed partial class SetupView : UserControl
         {
             slot = new StepSlot(page switch
             {
-                SetupPage.Discord => DiscordStep,
                 SetupPage.Tailscale => TailscaleStep,
                 SetupPage.Source => SourceStep,
                 _ => StartStep,

@@ -258,14 +258,6 @@ public sealed class IssunHost : IIssunHost
         return result;
     }
 
-    public async Task<DiscordIdCheckResult> CheckDiscordAsync()
-    {
-        // The client's own limits come first (1 s a pipe, 10 s for Discord's
-        // answer); this only stops a check that somehow outlives them.
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        return await DiscordIdCheck.RunAsync(() => new DiscordIpcClient(), DiscordApplication.Id, timeout.Token);
-    }
-
     public bool StartWithWindows
     {
         get

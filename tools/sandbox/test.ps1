@@ -208,26 +208,20 @@ if ($Step -in @("all","first")) {
     Start-Sleep 2
     Dump $w "page 0"; Shot "setup-page-0" $w
     function SkipShown { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "Skip"))); return [bool]($r -and $r.Current.Name -eq "Skip" -and -not $r.Current.IsOffscreen) }
-    Expect "Skip on the Discord page" (SkipShown)
-    # Next checks that Issun can connect to Discord, once per click. No
-    # Discord here, so the page stays with the reason, and Skip moves on. The
-    # application ID is built in since 14 Nov 2026: one card, no ID box.
-    function NameShown($name) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $name))); return [bool]($r -and -not $r.Current.IsOffscreen) }
-    Expect "only Make sure Discord is open, and no application ID" ((NameShown "Make sure Discord is open") -and -not (NameShown "Make an application") -and -not (NameShown "Enter your application ID") -and -not (NameShown "Discord application ID"))
-    $openDiscord = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "OpenDiscord")))
-    Expect "the card has Open Discord" ($openDiscord -and $openDiscord.Current.Name -eq "Open Discord")
-    Click $w "Next" | Out-Null; Start-Sleep 3
-    Dump $w "page 0 after Next without Discord"; Shot "setup-page-0-no-discord" $w
-    Expect "Next without Discord stays and says Discord isn't running" ((OnPage $w "Connect to Discord") -and (NameShown "Discord isn't running. Open the Discord desktop app and Issun will connect by itself."))
-    ClickId $w "Skip" | Out-Null; Start-Sleep 3
-    Expect "Skip leads to the Tailscale page" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
-    Dump $w "page 1"; Shot "setup-page-1" $w
+    # Setup opens on Tailscale: the Discord page that came first was removed
+    # on 16 Nov 2026.
+    Expect "setup opens on the Tailscale page" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
+    Expect "Skip on the Tailscale page" (SkipShown)
+    $back = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Back")),
+        (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
+    Expect "Back is greyed out on the first page" ($back -and -not $back.Current.IsEnabled)
     Click $w "Next" | Out-Null; Start-Sleep 4
     Expect "Next stays on the Tailscale page without Tailscale" (OnPage $w "Make this PC reachable with a Tailscale Funnel")
-    Dump $w "page 1 after Next"; Shot "setup-page-1-refused" $w
+    Dump $w "page 0 after Next"; Shot "setup-page-0-refused" $w
     ClickId $w "Skip" | Out-Null; Start-Sleep 3
     Expect "Skip leads to Connect your source" (OnPage $w "Connect your source")
-    Dump $w "page 2"; Shot "setup-page-2" $w
+    Dump $w "page 1"; Shot "setup-page-1" $w
     $show = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Show")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))))
@@ -272,10 +266,10 @@ if ($Step -in @("all","first")) {
     Click $w "Back" | Out-Null; Start-Sleep 1
     Expect "Back returns to Connect your source" (OnPage $w "Connect your source")
     ClickId $w "Skip" | Out-Null; Start-Sleep 2
-    Dump $w "page 3"; Shot "setup-page-3" $w
+    Dump $w "page 2"; Shot "setup-page-2" $w
     function Picked($id) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))); return [bool]($r -and $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) }
     function Pick($id) { $r = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))); $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Say "picked $id" }
-    Shot "setup-page-3-radios" $w
+    Shot "setup-page-2-radios" $w
     Expect "Skip on the last page" (SkipShown)
     Expect "Yes is picked on a first run" (Picked "LaunchYes")
     Pick "LaunchNo"; Start-Sleep 2
@@ -460,9 +454,7 @@ if ($Step -eq "tailscale") {
     Start-Process $download.FullName
     $w = FindWindow "Set up Issun" 90
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
-    Start-Sleep 3
-    ClickId $w "Skip" | Out-Null  # past the Discord page: no Discord here, so Next waits
-    Start-Sleep 3
+    Start-Sleep 6  # setup opens on the Tailscale page, which asks Tailscale as it opens
     Dump $w "Tailscale page before"
     Shot "tailscale-before" $w
     $ts = Get-ChildItem "$env:LOCALAPPDATA\Issun" -ErrorAction SilentlyContinue | Out-Null
@@ -502,8 +494,7 @@ if ($Step -eq "address") {
     $w = FindWindow "Set up Issun" 90
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
     Start-Sleep 3
-    ClickId $w "Skip" | Out-Null; Start-Sleep 3  # past the Discord page: no Discord here, so Next waits
-    ClickId $w "Skip" | Out-Null; Start-Sleep 3
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3  # past the Tailscale page: no Tailscale here, so Next stays
     $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))))
@@ -546,8 +537,7 @@ if ($Step -eq "qrrules") {
     $w = FindWindow "Set up Issun" 90
     if (-not $w) { Say "FAIL setup window didn't open"; exit 1 }
     Start-Sleep 3
-    ClickId $w "Skip" | Out-Null; Start-Sleep 3  # past the Discord page: no Discord here, so Next waits
-    ClickId $w "Skip" | Out-Null; Start-Sleep 3
+    ClickId $w "Skip" | Out-Null; Start-Sleep 3  # past the Tailscale page: no Tailscale here, so Next stays
     $box = $w.FindFirst($Tree::Descendants, (New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, "Endpoint")),
         (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))))
@@ -592,13 +582,12 @@ if ($Step -eq "shots") {
     $dir = Join-Path $out "shots"; New-Item -ItemType Directory -Force $dir | Out-Null
     $runs = [ordered]@{
         "1-main" = @(); "2-main-expanded" = @("--expanded");
-        "3-setup-discord" = @("--setup-page", "0");
-        "4-setup-tailscale" = @("--setup-page", "1");
-        "4b-setup-tailscale-not-installed" = @("--setup-page", "1", "--demo-tailscale", "0");
-        "4c-setup-tailscale-all-on" = @("--setup-page", "1", "--demo-tailscale", "3");
-        "5-setup-connect-hidden" = @("--setup-page", "2");
-        "6-setup-connect-shown" = @("--setup-page", "2", "--expanded");
-        "7-setup-startup" = @("--setup-page", "3")
+        "3-setup-tailscale" = @("--setup-page", "0");
+        "3b-setup-tailscale-not-installed" = @("--setup-page", "0", "--demo-tailscale", "0");
+        "3c-setup-tailscale-all-on" = @("--setup-page", "0", "--demo-tailscale", "3");
+        "4-setup-connect-hidden" = @("--setup-page", "1");
+        "5-setup-connect-shown" = @("--setup-page", "1", "--expanded");
+        "6-setup-startup" = @("--setup-page", "2")
     }
     foreach ($name in $runs.Keys) {
         $a = @("--screenshot", (Join-Path $dir "$name.png"), "--theme", "dark") + $runs[$name]

@@ -1626,3 +1626,36 @@ publish of the same commit at 01:49: 1165 of 1165 tests, SHA-256
 `Issun.exe.b162.bak`. `[rpc] connected to Discord` came at 01:49:28 and the
 phone's first check-in at 01:49:59 (Ammy 184, `pushfail=1/1`: one push failed
 during the swap).
+
+## 16 Nov 2026: setup's Discord page removed
+
+The owner: "remove the first page (discord) from setup". Setup has three pages
+and opens on Tailscale; `SetupPage` is `Tailscale = 0, Source = 1,
+StartWithWindows = 2`, so `--setup-page` takes 0 to 2. Everything only that
+page used went with it: the "Connect to Discord" title, the "Make sure Discord
+is open" card and its Open Discord button (`DesktopShell.OpenDiscord`), the
+error InfoBar, Next's connection check (`IIssunHost.CheckDiscordAsync`,
+`DiscordIdCheck`, its three tests, the demo's pretend check). The two status
+wordings those tests compared are still covered by `PresenceWorkerTests`. The
+last version of all of it is in this entry's commit's parent.
+
+Arriving at the Tailscale page always asked Tailscale afresh (`Go`), so
+opening on it now does too: "Set up again" long after Issun started shows
+the current state rather than the last probe. Back is greyed out on the
+first page, as before.
+
+The sandbox test skips one page fewer in its first-run, address and qrrules
+steps; the first-run step now checks that setup opens on Tailscale with Back
+greyed out, and the shots step renders three setup pages.
+
+Checked: `dotnet build Issun.sln` clean; `dotnet test` 1162 of 1162 (1165
+less the three removed); `--screenshot --theme dark` of each page, with
+`--press-next` showing Next's ring on the Tailscale page; and Windows Sandbox,
+`run.ps1 -Steps first` on the working tree (build 169, b1ab371-dirty): 22 ok,
+0 failed. Its log reads `[setup] opened on the Tailscale page`, then the
+Tailscale probe, then each page through to Finish. The first renders
+showed the old Discord page: they came from `bin/x64/Debug`, a 14 Nov build,
+while the solution build had gone to `bin/Debug` (the solution maps the app
+to Any CPU). CLAUDE.md now says which folder each build uses. Also fixed
+there: Cancel stays Cancel on the last page (it hasn't said Close since
+12 Nov 2026).

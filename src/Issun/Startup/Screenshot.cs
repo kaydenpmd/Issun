@@ -139,7 +139,7 @@ public static class Screenshot
 
             // --press-next presses the setup page's Next just before the
             // render, so the picture shows Next while it waits on its check
-            // (the demo's Discord check takes a second).
+            // (the demo's Tailscale check takes 0.7 s).
             if (options.PressNext && setup is not null)
             {
                 setup.NextCommand.Execute(null);

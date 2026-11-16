@@ -35,7 +35,7 @@ public sealed record StartupOptions
     /// <summary>--uninstall: what Settings › Apps runs. Asks, then removes Issun and leaves the settings and logs.</summary>
     public bool Uninstall { get; init; }
 
-    /// <summary>--setup-page N (with --screenshot): render the setup window on page N (0 to 3) instead of the main window.</summary>
+    /// <summary>--setup-page N (with --screenshot): render the setup window on page N (0 to 2) instead of the main window.</summary>
     public int? SetupPage { get; init; }
 
     /// <summary>--press-next (with --setup-page): press Next just before the render, to show it waiting on its check.</summary>
@@ -89,10 +89,10 @@ public sealed record StartupOptions
                 case "--setup-page":
                     if (Next() is { } page)
                     {
-                        if (int.TryParse(page, NumberStyles.None, CultureInfo.InvariantCulture, out var p) && p <= 3)
+                        if (int.TryParse(page, NumberStyles.None, CultureInfo.InvariantCulture, out var p) && p <= 2)
                             options = options with { SetupPage = p };
                         else
-                            problems.Add($"--setup-page takes 0 to 3, not {page}");
+                            problems.Add($"--setup-page takes 0 to 2, not {page}");
                     }
                     break;
                 case "--press-next":

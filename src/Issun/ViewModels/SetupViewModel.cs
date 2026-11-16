@@ -8,19 +8,20 @@ using Issun.Views;
 
 namespace Issun.ViewModels;
 
-public enum SetupPage { Discord = 0, Tailscale = 1, Source = 2, StartWithWindows = 3 }
+public enum SetupPage { Tailscale = 0, Source = 1, StartWithWindows = 2 }
 
 /// <summary>
-/// The setup window: four pages, each one live. Connect your source comes
+/// The setup window: three pages, each one live. Connect your source comes
 /// straight after Tailscale (the owner, 12 Nov 2026), and its endpoint is a
 /// field: filled from Tailscale when it has an address, editable either way,
 /// and applied by the QR code's reload button or on leaving the page.
 /// The Tailscale buttons act when clicked, Start with Windows applies when
 /// ticked, and the last page watches for the source's first push. So every page
 /// shows the real state of what it set up. Next moves on, except that on the
-/// Discord page it first checks that Issun can connect to Discord,
-/// and on the Tailscale page it first checks Tailscale has an address for this
-/// PC with Funnel on; Skip moves on without those checks.
+/// Tailscale page it first checks Tailscale has an address for this PC with
+/// Funnel on; Skip moves on without that check. The Discord page that came
+/// first went on 16 Nov 2026 (the owner: "remove the first page (discord)
+/// from setup").
 ///
 /// The structure is Microsoft's wizard guidance, read 11 Nov 2026 and saved in
 /// the design-research library (microsoft/windows-setup-wizards): no welcome
@@ -40,7 +41,7 @@ public sealed class SetupViewModel : Observable, IDisposable
     private HostSnapshot _snapshot = new();
     private bool _disposed;
 
-    public SetupViewModel(IIssunHost host, DispatcherQueue dispatcher, SetupPage startPage = SetupPage.Discord)
+    public SetupViewModel(IIssunHost host, DispatcherQueue dispatcher, SetupPage startPage = SetupPage.Tailscale)
     {
         _host = host;
         _dispatcher = dispatcher;
@@ -57,7 +58,7 @@ public sealed class SetupViewModel : Observable, IDisposable
                 SourceConnectedChanged();
         };
 
-        BackCommand = new Command(() => Go(_page - 1), () => _page > SetupPage.Discord, this);
+        BackCommand = new Command(() => Go(_page - 1), () => _page > SetupPage.Tailscale, this);
         NextCommand = new AsyncCommand("setup: next", NextAsync, ex =>
         {
             Log.Write($"[setup] Next failed on the {Describe(_page)} page: {ex.Message}");
@@ -81,7 +82,6 @@ public sealed class SetupViewModel : Observable, IDisposable
                 Go(_page + 1);
         });
         CloseCommand = new Command(() => CloseRequested?.Invoke());
-        OpenDiscordCommand = new Command(() => Log.Write($"[setup] Open on the Discord page: opening {DesktopShell.OpenDiscord()}"));
         // Installs with winget, as the owner asked (12 Nov 2026). Where there is
         // no winget (some Windows 10 and LTSC installs, Windows Sandbox) it opens
         // the download page instead, as the button did before. The words are
@@ -126,6 +126,11 @@ public sealed class SetupViewModel : Observable, IDisposable
         _host.Changed += OnHostChanged;
         Log.Write($"[setup] opened on the {Describe(_page)} page");
         Refresh();
+        // Arriving at the Tailscale page asks Tailscale afresh (Go does it when
+        // a page change lands there); now that setup opens on it, opening does
+        // too, so "Set up again" long after Issun started shows what's true now.
+        if (_page == SetupPage.Tailscale)
+            CheckTailscaleCommand.Execute(null);
         _ = ReadStartWithWindowsAsync();
     }
 
@@ -138,7 +143,6 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public SetupPage Page => _page;
 
-    public bool OnDiscordPage => _page == SetupPage.Discord;
     public bool OnTailscalePage => _page == SetupPage.Tailscale;
     public bool OnStartPage => _page == SetupPage.StartWithWindows;
 
@@ -183,9 +187,6 @@ public sealed class SetupViewModel : Observable, IDisposable
     {
         switch (_page)
         {
-            case SetupPage.Discord:
-                await NextOnDiscordAsync();
-                break;
             case SetupPage.Tailscale:
                 TailscaleError = null;
                 await _host.RefreshTailscaleAsync();
@@ -219,7 +220,7 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     private void Go(SetupPage page)
     {
-        if (page < SetupPage.Discord || page > SetupPage.StartWithWindows || page == _page)
+        if (page < SetupPage.Tailscale || page > SetupPage.StartWithWindows || page == _page)
             return;
         // Leaving Connect your source with an edited endpoint still applies it.
         if (_page == SetupPage.Source)
@@ -227,7 +228,6 @@ public sealed class SetupViewModel : Observable, IDisposable
         Log.Write($"[setup] {Describe(_page)} -> {Describe(page)}");
         _page = page;
         Raise(nameof(Page));
-        Raise(nameof(OnDiscordPage));
         Raise(nameof(OnTailscalePage));
         Raise(nameof(OnStartPage));
         Raise(nameof(OnSourcePage));
@@ -243,53 +243,10 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     internal static string Describe(SetupPage page) => page switch
     {
-        SetupPage.Discord => "Discord",
         SetupPage.Tailscale => "Tailscale",
         SetupPage.StartWithWindows => "Start with Windows",
         _ => "Connect your source",
     };
-
-    // ───────────────────────────── Discord ─────────────────────────────
-
-    /// <summary>The page's one card's Open (the owner, 13 Nov 2026): starts Discord, or brings it forward.</summary>
-    public Command OpenDiscordCommand { get; }
-
-    /// <summary>Why Next stayed on the Discord page, in the words the main window's Discord status uses; null when it didn't.</summary>
-    public string? DiscordProblem { get => _discordProblem; private set => Set(ref _discordProblem, value); }
-    private string? _discordProblem;
-
-    /// <summary>
-    /// Next on the Discord page (the owner, 13 Nov 2026: "make click send the
-    /// request and pop an error somewhere if the request returns wrong. it
-    /// will only check when next is pressed. once per click. if the connection
-    /// is valid, proceed to the next page"). Since the application ID was
-    /// built in (14 Nov 2026) there is nothing to type, and the check is
-    /// whether Issun can connect at all, the owner's "Keep it, Next checks".
-    /// One check with Discord per click, on a connection of its own; while it
-    /// runs Next shows a spinner and takes no clicks. Connected: setup moves
-    /// on. Otherwise Discord's reason shows and setup stays.
-    /// </summary>
-    private async Task NextOnDiscordAsync()
-    {
-        DiscordProblem = null;
-        Log.Write("[setup] Next on the Discord page: checking that Issun can connect to Discord");
-        var result = await _host.CheckDiscordAsync();
-        if (_page != SetupPage.Discord)
-        {
-            Log.Write("[setup] Discord answered after the page changed; ignoring it");
-            return;
-        }
-        if (!result.Accepted)
-        {
-            Log.Write($"[setup] Next on the Discord page: couldn't connect, staying ({result.Problem})");
-            DiscordProblem = result.Problem;
-            return;
-        }
-        Log.Write("[setup] Next on the Discord page: connected");
-        Go(SetupPage.Tailscale);
-    }
-
-
 
     // ───────────────────────────── Tailscale ─────────────────────────────
 

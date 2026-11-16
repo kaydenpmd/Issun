@@ -212,23 +212,6 @@ public sealed class DemoHost : IIssunHost
         return new TailscaleInstallResult(true, false, "");
     }
 
-    private int _discordChecks;
-
-    /// <summary>
-    /// Pretend: after a second, so the spinner in Next shows, the first check
-    /// finds Discord closed and every later one connects, so both outcomes can
-    /// be seen.
-    /// </summary>
-    public async Task<Core.Discord.DiscordIdCheckResult> CheckDiscordAsync()
-    {
-        await Task.Delay(1000);
-        var ok = Interlocked.Increment(ref _discordChecks) > 1;
-        Log.Write($"[demo] Discord check: {(ok ? "connected" : "Discord isn't running")} (pretend)");
-        // Worded as the presence worker words it.
-        return new Core.Discord.DiscordIdCheckResult(ok, ok ? null
-            : "Discord isn't running. Open the Discord desktop app and Issun will connect by itself.");
-    }
-
     public async Task<(bool Ok, string Output)> EnableFunnelAsync()
     {
         await Task.Delay(1200);

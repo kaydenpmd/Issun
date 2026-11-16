@@ -254,16 +254,14 @@ public sealed class SetupViewModel : Observable, IDisposable
 
     public AsyncCommand GetTailscaleCommand { get; }
 
-    /// <summary>The command the install link runs, word for word, shown as its note.</summary>
-    public string InstallCommandText { get; } = "winget " + string.Join(' ', Core.Platform.TailscaleCli.WingetInstallArguments);
     public AsyncCommand CheckTailscaleCommand { get; }
     public AsyncCommand EnableFunnelCommand { get; }
     public AsyncCommand EnableUnattendedCommand { get; }
 
     public StatusLine TailscaleStatus { get => _tailscaleStatus; private set => Set(ref _tailscaleStatus, value); }
-    private StatusLine _tailscaleStatus = new("Checking…", StatusLevel.Neutral);
+    private StatusLine _tailscaleStatus = new("Checking…");
 
-    /// <summary>Tailscale isn't on this PC: offer the download page.</summary>
+    /// <summary>Tailscale isn't on this PC: the card says so and offers Install.</summary>
     public bool OfferInstall { get => _offerInstall; private set => Set(ref _offerInstall, value); }
     private bool _offerInstall;
 
@@ -271,7 +269,7 @@ public sealed class SetupViewModel : Observable, IDisposable
     private bool _offerFunnel;
 
     public StatusLine UnattendedStatus { get => _unattendedStatus; private set => Set(ref _unattendedStatus, value); }
-    private StatusLine _unattendedStatus = new("Checking…", StatusLevel.Neutral);
+    private StatusLine _unattendedStatus = new("Checking…");
 
     public bool ShowUnattended { get => _showUnattended; private set => Set(ref _showUnattended, value); }
     private bool _showUnattended;
@@ -292,9 +290,9 @@ public sealed class SetupViewModel : Observable, IDisposable
     /// </summary>
     internal static StatusLine Unattended(bool? on) => on switch
     {
-        true => new("On: Tailscale connects when this PC starts, before you sign in", StatusLevel.Good),
-        false => new("Off: after a restart, Tailscale waits until you sign in to Windows", StatusLevel.Warning),
-        null => new("Couldn't tell whether it's on", StatusLevel.Neutral),
+        true => new("On: Tailscale connects when this PC starts, before you sign in"),
+        false => new("Off: after a restart, Tailscale waits until you sign in to Windows"),
+        null => new("Couldn't tell whether it's on"),
     };
 
     // ───────────────────────────── Start with Windows ─────────────────────────────
@@ -348,7 +346,7 @@ public sealed class SetupViewModel : Observable, IDisposable
     public void ShowQrForScreenshot() => Pairing.ShowQrForScreenshot();
 
     public StatusLine SourceStatus { get => _sourceStatus; private set => Set(ref _sourceStatus, value); }
-    private StatusLine _sourceStatus = new("Waiting for the first push", StatusLevel.Neutral);
+    private StatusLine _sourceStatus = new("Waiting for the first push");
 
     // ───────────────────────────── Refresh ─────────────────────────────
 

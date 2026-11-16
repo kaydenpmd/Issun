@@ -50,8 +50,8 @@ As of 16 Nov 2026: `main` is pushed through build 173 (31c9861, a cleared
 message no longer leaves an empty box), and build 173 is installed on the
 owner's PC.
 The window still has `[text]`
-placeholders for the owner to write (the setup window's install link and
-progress line, the new-key button, its errors, the Tailscale page's cards, and
+placeholders for the owner to write (the line under setup's progress bar
+while Tailscale installs, the new-key button, its errors, the Tailscale page's cards, and
 `PresenceWorker.InvalidIdDetail`), the owner said they'd write them "in
 another session". Before asking, check the wording page
 (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ, its `texts` collection) has a
@@ -340,10 +340,12 @@ connection check; don't bring it back without asking.
 
 1. **Tailscale**: install (`winget install --id Tailscale.Tailscale --exact`,
    by id, else the download page), Turn on Funnel, Run unattended
-   (`tailscale set --unattended`). Opening setup asks Tailscale afresh, as
+   (`tailscale set --unattended`). Not installed, the card is the owner's
+   title, "Tailscale isn't installed", with an accent **Install** on the right
+   and nothing else: no command, no Check again (16 Nov 2026). Opening setup asks Tailscale afresh, as
    arriving from another page does. Next refreshes and stays with an error
    unless Tailscale has this PC's address and Funnel is on for Issun's port;
-   while it waits, Next shows a 16 px ProgressRing and is disabled. The two
+   while it waits, Next shows a 16 px ProgressRing and is disabled. The other
    cards' words are still waiting on the owner.
 2. **Connect your source**: the QR code, the endpoint as an editable field
    (filled from Tailscale; sets only what the QR code carries, nothing saves
@@ -395,6 +397,9 @@ Community Toolkit's SettingsCard). What has no direct WinUI equivalent:
   resources. SettingsCard has no Invoke pattern (toolkit issue #391).
   Start with Windows in the main window waits for Apply, like the settings
   above it; the tray's item and setup's Yes and No apply at once.
+- **No coloured status dots**, anywhere: the owner had them removed on
+  16 Nov 2026 ("remove the colored dots gimmick from everywhere in the app").
+  A status row is its name and its words (`StatusLine` is the words alone).
 - **The .pri must be named `resources.pri`** (`ProjectPriFileName` in
   `Issun.csproj`), or a renamed copy loads no XAML.
 - **Single file** needs `EnableMsixTooling` (no MSIX is made). Trimming isn't

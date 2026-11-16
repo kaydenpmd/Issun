@@ -20,57 +20,6 @@
          each piece still theirs to write. Carried over word for word from the
          WPF build. -->
     <UserControl.Resources>
-        <!-- A command link, Windows' title-and-note button, measured from a
-             Windows 11 24H2 task dialog (design library, microsoft/command-links):
-             an arrow about 20 px at x+3, the title about 16 px at x+34, the note
-             about 12 px under it, ink 15 px below the top, no box at rest. The
-             task dialog's #0078D7 becomes Fluent's accent text colour, since
-             Windows draws no dark command link. The hover fill is
-             SubtleFillColorSecondary: the task dialog's hover wasn't captured. -->
-        <Style x:Key="CommandLink" TargetType="Button">
-            <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid x:Name="Box" Background="{TemplateBinding Background}" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="3,9,8,9">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="PointerOver">
-                                        <VisualState.Setters>
-                                            <Setter Target="Box.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <VisualState.Setters>
-                                            <Setter Target="Box.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
-                                        <VisualState.Setters>
-                                            <Setter Target="Arrow.Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
-                                            <Setter Target="Body.Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="Arrow" Text="&#xE72A;" FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                       FontSize="20" Width="20" Margin="0,0,11,0" VerticalAlignment="Top"
-                                       Foreground="{TemplateBinding Foreground}" />
-                            <ContentPresenter x:Name="Body" Grid.Column="1" Content="{TemplateBinding Content}"
-                                              Foreground="{TemplateBinding Foreground}" />
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <Style x:Key="MainInstruction" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
@@ -123,45 +72,48 @@
 
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
-                            <Grid>
+                            <!-- Not installed: the owner's title and an Install button on
+                                 the right, nothing else (16 Nov 2026: "card title:
+                                 "Tailscale isn't installed."", "button on right:
+                                 "Install"", "that's it i don't wanna show the command
+                                 anymore"). Their title ended in a period they weren't
+                                 sure of; Windows ends no title with one. It was a
+                                 command link with the winget command as its note until
+                                 that day: command links are for choosing between paths
+                                 (design library, microsoft/command-links). While winget
+                                 installs, an indeterminate bar, as Windows Settings shows
+                                 while it adds a feature, and a line of the owner's words. -->
+                            <Grid Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferInstall)}">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <v:StatusDot Status="{x:Bind ViewModel.TailscaleStatus}" />
-                                <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Tailscale" Style="{StaticResource RowTitle}" />
-                                    <TextBlock Text="{x:Bind ViewModel.TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
-                                    <!-- Installing Tailscale: a command link whose note is the
-                                         exact winget command it runs, so people see it before
-                                         they click (the owner, 12 Nov 2026). The title is
-                                         theirs to write; the command is the code's own. -->
-                                    <Button Style="{StaticResource CommandLink}" Command="{x:Bind ViewModel.GetTailscaleCommand}"
-                                            Margin="-3,8,0,0" AutomationProperties.AutomationId="InstallTailscale"
-                                            Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferInstall)}">
-                                        <StackPanel>
-                                            <TextBlock Text="[text]" FontSize="16" />
-                                            <TextBlock Text="{x:Bind ViewModel.InstallCommandText, Mode=OneTime}" FontSize="{StaticResource CaptionTextBlockFontSize}" TextWrapping="Wrap"
-                                                       FontFamily="{StaticResource MonoFont}" Margin="0,2,0,0" />
-                                        </StackPanel>
-                                    </Button>
-                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                        <Button Content="Turn on Funnel" Command="{x:Bind ViewModel.EnableFunnelCommand}"
-                                                Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0"
-                                                Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferFunnel)}" />
-                                        <Button Content="Check again" Command="{x:Bind ViewModel.CheckTailscaleCommand}" />
-                                    </StackPanel>
-                                    <!-- While winget installs Tailscale: an indeterminate
-                                         bar, as Windows Settings shows while it adds a
-                                         feature, and a line of the owner's words. -->
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Tailscale isn't installed" Style="{StaticResource RowTitle}" />
                                     <StackPanel Margin="0,12,0,0"
                                                 Visibility="{x:Bind v:Bind.Visible(ViewModel.GetTailscaleCommand.IsRunning)}">
                                         <ProgressBar IsIndeterminate="True" />
                                         <TextBlock Text="[text]" Style="{StaticResource RowDescription}" Margin="0,6,0,0" />
                                     </StackPanel>
                                 </StackPanel>
+                                <Button Grid.Column="1" Content="Install" Command="{x:Bind ViewModel.GetTailscaleCommand}"
+                                        Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                        AutomationProperties.AutomationId="InstallTailscale" />
                             </Grid>
-                            <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{ThemeResource ControlCornerRadius}"
+                            <!-- Installed: its name, what Tailscale says, and what to do.
+                                 No coloured dot since 16 Nov 2026 (the owner: "remove the
+                                 colored dots gimmick from everywhere in the app"). -->
+                            <StackPanel Visibility="{x:Bind v:Bind.Hidden(ViewModel.OfferInstall)}">
+                                <TextBlock Text="Tailscale" Style="{StaticResource RowTitle}" />
+                                <TextBlock Text="{x:Bind ViewModel.TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Content="Turn on Funnel" Command="{x:Bind ViewModel.EnableFunnelCommand}"
+                                            Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0"
+                                            Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferFunnel)}" />
+                                    <Button Content="Check again" Command="{x:Bind ViewModel.CheckTailscaleCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <Border Margin="0,10,0,0" Padding="10,8" CornerRadius="{ThemeResource ControlCornerRadius}"
                                     Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                     Visibility="{x:Bind v:Bind.Present(ViewModel.FunnelOutput), FallbackValue=Collapsed}">
                                 <TextBlock v:LinkTextBlock.Text="{x:Bind ViewModel.FunnelOutput}" Style="{StaticResource MonoBlock}" />
@@ -172,16 +124,14 @@
                     <Border Style="{StaticResource Card}" Visibility="{x:Bind v:Bind.Visible(ViewModel.ShowUnattended)}">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <v:StatusDot Status="{x:Bind ViewModel.UnattendedStatus}" />
-                            <StackPanel Grid.Column="1">
+                            <StackPanel>
                                 <TextBlock Text="Run unattended" Style="{StaticResource RowTitle}" />
                                 <TextBlock Text="{x:Bind ViewModel.UnattendedStatus.Text}" Style="{StaticResource RowDescription}" />
                             </StackPanel>
-                            <Button Grid.Column="2" Content="Turn on" Command="{x:Bind ViewModel.EnableUnattendedCommand}"
+                            <Button Grid.Column="1" Content="Turn on" Command="{x:Bind ViewModel.EnableUnattendedCommand}"
                                     VerticalAlignment="Center" Margin="12,0,0,0"
                                     Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferUnattended)}" />
                         </Grid>

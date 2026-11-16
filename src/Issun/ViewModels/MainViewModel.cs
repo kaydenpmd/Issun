@@ -280,16 +280,16 @@ public sealed partial class MainViewModel : Observable, IDisposable
     // ─────────────────────────────── Status ───────────────────────────────
 
     public StatusLine PhoneStatus { get => _phoneStatus; private set => Set(ref _phoneStatus, value); }
-    private StatusLine _phoneStatus = new("", StatusLevel.Neutral);
+    private StatusLine _phoneStatus = new("");
 
     public StatusLine DiscordStatus { get => _discordStatus; private set => Set(ref _discordStatus, value); }
-    private StatusLine _discordStatus = new("", StatusLevel.Neutral);
+    private StatusLine _discordStatus = new("");
 
     public StatusLine ReceiverStatus { get => _receiverStatus; private set => Set(ref _receiverStatus, value); }
-    private StatusLine _receiverStatus = new("", StatusLevel.Neutral);
+    private StatusLine _receiverStatus = new("");
 
     public StatusLine TailscaleStatus { get => _tailscaleStatus; private set => Set(ref _tailscaleStatus, value); }
-    private StatusLine _tailscaleStatus = new("", StatusLevel.Neutral);
+    private StatusLine _tailscaleStatus = new("");
 
     public bool OfferFunnel { get => _offerFunnel; private set => Set(ref _offerFunnel, value); }
     private bool _offerFunnel;

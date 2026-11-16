@@ -75,12 +75,6 @@
                 <Setter Property="IsTextSelectionEnabled" Value="False" />
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
             </Style>
-
-            <!-- The dot beside each status row: Views/StatusDot. -->
-            <Style x:Key="StatusDotPlace" TargetType="FrameworkElement">
-                <Setter Property="VerticalAlignment" Value="Top" />
-                <Setter Property="Margin" Value="0,6,14,0" />
-            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

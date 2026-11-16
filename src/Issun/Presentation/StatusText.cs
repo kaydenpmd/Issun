@@ -3,9 +3,12 @@ using Issun.Core;
 
 namespace Issun.Presentation;
 
-public enum StatusLevel { Neutral, Good, Warning, Error }
-
-public sealed record StatusLine(string Text, StatusLevel Level);
+/// <summary>
+/// One status row's words. It carried a level for a coloured dot beside the
+/// row until 16 Nov 2026, when the owner had the dots removed ("remove the
+/// colored dots gimmick from everywhere in the app"); the words say it all.
+/// </summary>
+public sealed record StatusLine(string Text);
 
 /// <summary>
 /// The four status rows, as words. Each describes the present: a reason that
@@ -21,41 +24,41 @@ public static class StatusText
     public static StatusLine Phone(HostSnapshot s, double now, DateTime nowLocal)
     {
         if (s.LastCheckinAt <= 0)
-            return new("Waiting for the first push", StatusLevel.Neutral);
+            return new("Waiting for the first push");
 
         // PhoneSilent is the host's verdict (quiet for longer than the 90 s gap
         // threshold), not recomputed here, so the window and the uptime log can
         // never disagree about whether the phone has gone quiet.
         if (s.PhoneSilent)
-            return new($"Quiet since {TimeText.Moment(s.LastCheckinAt, nowLocal)}", StatusLevel.Warning);
+            return new($"Quiet since {TimeText.Moment(s.LastCheckinAt, nowLocal)}");
 
-        return new($"Checking in, last push {TimeText.Ago(now - s.LastCheckinAt)}", StatusLevel.Good);
+        return new($"Checking in, last push {TimeText.Ago(now - s.LastCheckinAt)}");
     }
 
     public static StatusLine Discord(DiscordStatus d) => d.State switch
     {
         DiscordLinkState.Connected => new(
-            d.User is { Length: > 0 } user ? $"Connected as {user}" : "Connected", StatusLevel.Good),
-        DiscordLinkState.Connecting => new(Present(d.Detail) ?? "Connecting…", StatusLevel.Neutral),
-        _ => new(Present(d.Detail) ?? "Not connected", StatusLevel.Warning),
+            d.User is { Length: > 0 } user ? $"Connected as {user}" : "Connected"),
+        DiscordLinkState.Connecting => new(Present(d.Detail) ?? "Connecting…"),
+        _ => new(Present(d.Detail) ?? "Not connected"),
     };
 
     public static StatusLine Receiver(ServerStatus s) => s.Listening
-        ? new(string.Format(Inv, "Listening on port {0}", s.Port), StatusLevel.Good)
-        : new(Present(s.Error) ?? string.Format(Inv, "Not listening on port {0}", s.Port), StatusLevel.Error);
+        ? new(string.Format(Inv, "Listening on port {0}", s.Port))
+        : new(Present(s.Error) ?? string.Format(Inv, "Not listening on port {0}", s.Port));
 
     public static StatusLine Tailscale(TailscaleStatus? t, int port)
     {
         if (t is null)
-            return new("Checking…", StatusLevel.Neutral);
+            return new("Checking…");
         if (t.FunnelOn && t.FunnelTargetsPort)
         {
             // Reaching Issun with a caveat — Funnel started in a terminal
-            // without --bg works now and stops with that terminal — is still a
-            // warning, and the caveat is the thing to show.
+            // without --bg works now and stops with that terminal — shows the
+            // caveat, since that is the thing to act on.
             return Present(t.Detail) is { } caveat
-                ? new(caveat, StatusLevel.Warning)
-                : new(string.Format(Inv, "Funnel on → port {0}", port), StatusLevel.Good);
+                ? new(caveat)
+                : new(string.Format(Inv, "Funnel on → port {0}", port));
         }
 
         // The probe's own Detail says what to do next; these are only for a
@@ -65,7 +68,7 @@ public static class StatusText
             !t.Running ? "Tailscale isn't running, or this PC isn't signed in" :
             !t.FunnelOn ? "Funnel is off, so nothing outside your tailnet can reach this PC" :
             string.Format(Inv, "Funnel is on, but not pointed at port {0}", port);
-        return new(Present(t.Detail) ?? fallback, StatusLevel.Warning);
+        return new(Present(t.Detail) ?? fallback);
     }
 
     /// <summary>

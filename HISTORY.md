@@ -1731,3 +1731,55 @@ and Connect your source's bindings beyond their generated code.
 build 170 kept as `Issun.exe.b170.bak`. `[rpc] connected to Discord` came at
 04:33:33 and the phone's first check-in at 04:33:58 (Ammy 184, `pushfail=1/4`:
 one push failed during the swap).
+
+## 16 Nov 2026: Install Tailscale, from command link to a card; the dots go
+
+The owner, looking at setup's not-installed render: "ditch that blue thing
+with the arrow i want something more normal but still with the whole command
+somewhere", and the status line trimmed to "Tailscale isn't installed.". The
+command link (from 12 Nov) had been one action dressed as a choice between
+paths, which is all command links are for; the design library's
+`microsoft/command-links/NOTES.md` now says so first, under "Mistakes found".
+First version: an accent button labelled `[text]` beside Check again, the
+winget command under the status line in Cascadia Mono. Its wrapping broke
+after "--" ("--" at a line's end, "silent" on the next), so a word joiner
+(U+2060) went after each hyphen of the shown text.
+
+The owner then asked for other Fluent apps with buttons that run commands.
+Read from source and captured in Windows Sandbox, dark and light (design
+library, `microsoft/fluent-command-buttons/`): PowerToys 0.102.3101's Command
+Not Found page (accent Install, plain Install beside "Not detected", no command
+shown, an "Installation logs" box after), UniGetUI 2026.3.4's "Command-line to
+run:" box (whose own command breaks after "--" too), and Windows Terminal
+1.25's "Command line" field. Three ways of showing Issun's command were built
+and rendered for them (plain text, UniGetUI's box, Terminal's field,
+`issun-options-2026-11-16/` there).
+
+Their decision: "i want to remove the colored dots gimmick from everywhere in
+the app right now first of all", and for the card: "card title: "Tailscale
+isn't installed." (don't know the etiquette for periods here)", "button on
+right: "Install"", "that's it i don't wanna show the command anymore", "every
+button is already running whatever commands it wants anyway technically". So:
+
+- **The dots are gone**: the main window's Source, Discord, Receiver and
+  Tailscale rows and setup's Tailscale and Run unattended cards lose
+  `Views/StatusDot` (deleted, with App.xaml's unused `StatusDotPlace` style);
+  `StatusLine` loses its level and `StatusLevel` goes, since only the dot read
+  it. The Funnel output box, indented 24 to line up past the dot, now starts
+  at the text.
+- **Not installed**, setup's Tailscale card is a title, "Tailscale isn't
+  installed", and an accent **Install** on the right, where PowerToys'
+  Command Not Found header puts its own (captured above). No period:
+  the owner wasn't sure, and Windows ends no title with one. No command, and
+  no Check again in that state ("that's it"); setup still asks Tailscale
+  afresh on arriving and on Next. While winget installs, the bar and its
+  `[text]` line sit under the title and Install greys out. The installed
+  states are unchanged but for the dot. The trimmed status line and the
+  command properties (`InstallCommandText`, `InstallCommandDisplay` with its
+  joiners) went with the command. The main window's not-installed line keeps
+  the probe's longer advice, having no Install button.
+
+Checked: `dotnet build Issun.sln` clean; `dotnet test` 1162 of 1162; dark
+`--screenshot` renders from a scratch copy of the working tree: setup not
+installed, installing, not signed in, Funnel off, Funnel failed, all on, and
+the main window. Not seen in a real window or on the owner's PC.

@@ -197,78 +197,51 @@
             <!-- ───────────── Status ───────────── -->
             <TextBlock Text="Status" Style="{StaticResource SectionHeader}" />
 
+            <!-- No coloured dot beside the status rows since 16 Nov 2026 (the
+                 owner: "remove the colored dots gimmick from everywhere in the
+                 app"): each row is its name and what's true now, in words. -->
             <Border Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <v:StatusDot Status="{x:Bind ViewModel.PhoneStatus}" />
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Source" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{x:Bind ViewModel.PhoneStatus.Text}" Style="{StaticResource RowDescription}" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <v:StatusDot Status="{x:Bind ViewModel.DiscordStatus}" />
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Discord" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{x:Bind ViewModel.DiscordStatus.Text}" Style="{StaticResource RowDescription}" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <v:StatusDot Status="{x:Bind ViewModel.ReceiverStatus}" />
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Receiver" Style="{StaticResource RowTitle}" />
-                        <TextBlock Text="{x:Bind ViewModel.ReceiverStatus.Text}" Style="{StaticResource RowDescription}" />
-                    </StackPanel>
-                </Grid>
+                <StackPanel>
+                    <TextBlock Text="Source" Style="{StaticResource RowTitle}" />
+                    <TextBlock Text="{x:Bind ViewModel.PhoneStatus.Text}" Style="{StaticResource RowDescription}" />
+                </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <v:StatusDot Status="{x:Bind ViewModel.TailscaleStatus}" />
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Text="Tailscale" Style="{StaticResource RowTitle}" />
-                            <TextBlock Text="{x:Bind ViewModel.TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
-                            <!-- Below the text rather than beside it: Tailscale's
-                                 advice can run to a whole command line. -->
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                <Button Content="Turn on Funnel" Command="{x:Bind ViewModel.EnableFunnelCommand}"
-                                        Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0"
-                                        Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferFunnel)}" />
-                                <Button Content="Refresh" Command="{x:Bind ViewModel.RefreshTailscaleCommand}" Margin="0,0,12,0" />
-                                <TextBlock Text="Working…" Style="{StaticResource Caption}" VerticalAlignment="Center"
-                                           Visibility="{x:Bind v:Bind.Visible(ViewModel.EnableFunnelCommand.IsRunning)}" />
-                            </StackPanel>
-                            <TextBlock Text="{x:Bind ViewModel.TailscaleError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
-                                       Visibility="{x:Bind v:Bind.Present(ViewModel.TailscaleError), FallbackValue=Collapsed}" />
-                        </StackPanel>
-                    </Grid>
+                    <TextBlock Text="Discord" Style="{StaticResource RowTitle}" />
+                    <TextBlock Text="{x:Bind ViewModel.DiscordStatus.Text}" Style="{StaticResource RowDescription}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Receiver" Style="{StaticResource RowTitle}" />
+                    <TextBlock Text="{x:Bind ViewModel.ReceiverStatus.Text}" Style="{StaticResource RowDescription}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Tailscale" Style="{StaticResource RowTitle}" />
+                    <TextBlock Text="{x:Bind ViewModel.TailscaleStatus.Text}" Style="{StaticResource RowDescription}" />
+                    <!-- Below the text rather than beside it: Tailscale's
+                         advice can run to a whole command line. -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Content="Turn on Funnel" Command="{x:Bind ViewModel.EnableFunnelCommand}"
+                                Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0"
+                                Visibility="{x:Bind v:Bind.Visible(ViewModel.OfferFunnel)}" />
+                        <Button Content="Refresh" Command="{x:Bind ViewModel.RefreshTailscaleCommand}" Margin="0,0,12,0" />
+                        <TextBlock Text="Working…" Style="{StaticResource Caption}" VerticalAlignment="Center"
+                                   Visibility="{x:Bind v:Bind.Visible(ViewModel.EnableFunnelCommand.IsRunning)}" />
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind ViewModel.TailscaleError}" Style="{StaticResource ErrorText}" Margin="0,6,0,0"
+                               Visibility="{x:Bind v:Bind.Present(ViewModel.TailscaleError), FallbackValue=Collapsed}" />
 
                     <!-- What `tailscale funnel` said. On a tailnet that hasn't
                          allowed Funnel yet this is a link to the page that allows
                          it, so links are clickable. -->
-                    <Border Margin="24,10,0,0" Padding="10,8" CornerRadius="{ThemeResource ControlCornerRadius}"
+                    <Border Margin="0,10,0,0" Padding="10,8" CornerRadius="{ThemeResource ControlCornerRadius}"
                             Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                             Visibility="{x:Bind v:Bind.Present(ViewModel.FunnelOutput), FallbackValue=Collapsed}">
                         <TextBlock v:LinkTextBlock.Text="{x:Bind ViewModel.FunnelOutput}" Style="{StaticResource MonoBlock}" />

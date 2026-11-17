@@ -36,7 +36,10 @@ public class AutostartTests : IDisposable
         }
     }
 
-    private Autostart Make(string exe = Exe) => new(RunPath, ApprovedPath, Name, exe);
+    /// <summary>Where a local build runs from: a real Issun.exe, in a bin folder.</summary>
+    private const string LocalBuild = @"C:\Users\someone\Repos\Issun\src\Issun\bin\x64\Debug\net9.0-windows10.0.22621.0\win-x64\Issun.exe";
+
+    private Autostart Make(string exe = Exe, bool release = true) => new(RunPath, ApprovedPath, Name, exe, release);
 
     private object? RunValue()
     {
@@ -245,6 +248,62 @@ public class AutostartTests : IDisposable
         Assert.Null(RunValue());
         Assert.False(underDotnet.IsEnabled);
         Assert.Contains(log.Lines, l => l.StartsWith("[autostart] not enabled: running under dotnet.exe", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_local_build_leaves_the_installed_copys_entry_alone()
+    {
+        SetRun($"\"{Exe}\" --background");
+
+        using var log = Log.Capture();
+        Make(LocalBuild, release: false).RepairIfMoved();
+
+        Assert.Equal($"\"{Exe}\" --background", RunValue());
+        Assert.Equal(
+            [$"[autostart] not checking the startup entry: this is a local build ({LocalBuild}), which leaves the startup entry to the installed copy"],
+            log.Lines);
+    }
+
+    [Fact]
+    public void A_local_build_never_registers_itself()
+    {
+        var local = Make(LocalBuild, release: false);
+
+        using var log = Log.Capture();
+        local.Enable();
+
+        Assert.Null(RunValue());
+        Assert.False(local.IsEnabled);
+        Assert.Contains($"[autostart] not enabled: this is a local build ({LocalBuild}), which leaves the startup entry to the installed copy", log.Lines);
+
+        // Nor does it take over an entry that is there, or undo Task Manager's switch.
+        SetRun($"\"{Exe}\" --background");
+        SetApproved(TaskManagerDisabled());
+        local.Enable();
+
+        Assert.Equal($"\"{Exe}\" --background", RunValue());
+        Assert.Equal(TaskManagerDisabled(), ApprovedValue());
+    }
+
+    [Fact]
+    public void A_local_build_can_still_read_and_remove_the_entry()
+    {
+        SetRun($"\"{Exe}\" --background");
+        var local = Make(LocalBuild, release: false);
+
+        Assert.True(local.IsEnabled);
+        local.Disable();
+        Assert.Null(RunValue());
+    }
+
+    [Fact]
+    public void Release_or_local_follows_the_build_number_by_default()
+    {
+        SetRun($"\"{Exe}\" --background");
+
+        new Autostart(RunPath, ApprovedPath, Name, LocalBuild).RepairIfMoved();
+
+        Assert.Equal(IssunInfo.Build > 0 ? $"\"{LocalBuild}\" --background" : $"\"{Exe}\" --background", RunValue());
     }
 
     [Fact]

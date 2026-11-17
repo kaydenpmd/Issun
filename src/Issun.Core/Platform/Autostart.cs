@@ -35,6 +35,13 @@ namespace Issun.Core.Platform;
 /// An absent value means enabled; Windows only writes one once somebody flips
 /// the switch. Ignoring the value altogether would show "Start with Windows"
 /// ticked for an app Windows will not start.
+///
+/// Local builds (build 0, "dev") never point the entry at themselves, neither
+/// by <see cref="Enable"/> nor by <see cref="RepairIfMoved"/>: they run out of
+/// a bin folder, and the entry belongs to the installed copy. The same rule as
+/// the Start menu entry and the self-install. Until 16 Nov 2026 any local run
+/// outside the demo, with no Issun already running, repointed the owner's entry
+/// at the bin folder on start.
 /// </summary>
 public sealed class Autostart : IAutostart
 {
@@ -50,6 +57,7 @@ public sealed class Autostart : IAutostart
     private readonly string _runKeyPath;
     private readonly string _approvedKeyPath;
     private readonly string _valueName;
+    private readonly bool _releaseBuild;
     private readonly object _gate = new();
     private string? _lastReadProblem;
 
@@ -57,16 +65,19 @@ public sealed class Autostart : IAutostart
     /// <param name="approvedKeyPath">Under HKEY_CURRENT_USER.</param>
     /// <param name="valueName">The name Task Manager lists the entry under.</param>
     /// <param name="exePath">The .exe to start; null means this process's own.</param>
+    /// <param name="releaseBuild">False for local builds, which never point the entry at themselves.</param>
     public Autostart(
         string runKeyPath = DefaultRunKeyPath,
         string approvedKeyPath = DefaultApprovedKeyPath,
         string valueName = "Issun",
-        string? exePath = null)
+        string? exePath = null,
+        bool? releaseBuild = null)
     {
         _runKeyPath = runKeyPath;
         _approvedKeyPath = approvedKeyPath;
         _valueName = valueName;
         ExePath = exePath ?? Environment.ProcessPath ?? "";
+        _releaseBuild = releaseBuild ?? IssunInfo.Build > 0;
     }
 
     public string ExePath { get; }
@@ -180,7 +191,8 @@ public sealed class Autostart : IAutostart
     /// Both paths go in the log, so a surprise is traceable.
     ///
     /// Task Manager's switch is left as it is either way: repointing fixes the
-    /// path, not the person's choice.
+    /// path, not the person's choice. A local build leaves the entry alone and
+    /// says so (the class comment).
     /// </summary>
     public void RepairIfMoved()
     {
@@ -267,7 +279,8 @@ public sealed class Autostart : IAutostart
 
     /// <summary>
     /// Under <c>dotnet Issun.dll</c>, the process path is dotnet.exe, and a Run
-    /// entry for it would start the .NET host with no app at every logon.
+    /// entry for it would start the .NET host with no app at every logon. A
+    /// local build is a real Issun.exe, but in a bin folder (see the class comment).
     /// </summary>
     private bool CanRegister(out string why)
     {
@@ -279,6 +292,11 @@ public sealed class Autostart : IAutostart
         if (string.Equals(Path.GetFileName(ExePath), "dotnet.exe", StringComparison.OrdinalIgnoreCase))
         {
             why = "running under dotnet.exe rather than as Issun.exe — only the published Issun.exe can start with Windows";
+            return false;
+        }
+        if (!_releaseBuild)
+        {
+            why = $"this is a local build ({ExePath}), which leaves the startup entry to the installed copy";
             return false;
         }
         why = "";

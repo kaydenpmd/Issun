@@ -308,15 +308,22 @@ Never beside the .exe.
 | Window state | `%LOCALAPPDATA%\Issun\window.json` | Whether the tray hint and setup have shown. |
 
 - **Settings**: a missing file is a first run (fresh key, setup window opens).
-  An empty key gets one generated. A corrupt file is moved aside to
-  `settings.json.bad-<timestamp>`, never overwritten, and the log says loudly
-  the source needs the new key.
+  An empty key gets one generated. **A value of the wrong type costs only
+  itself** (a port as `"87o7"`, `"yes"` for true): its default is used, a
+  `[config] WARNING` names it, the key and the rest load, and the file is
+  left as written. Nulls are defaults. A key written as a number is used as
+  written; a key that's `true`, an object or a list gets a new key, keeping
+  the rest, with the file moved aside first. A file that isn't a JSON object
+  is moved aside to `settings.json.bad-<timestamp>`, never overwritten, and
+  the log says loudly the source needs the new key.
 - **The key**: 32 characters of `[A-Za-z0-9]`. Logs give its length, never its
   value. An empty key refuses every authenticated request. The comparison is
   constant-time.
 - **Autostart** is the HKCU Run key, not a Scheduled Task and **never a
   Windows service**: Discord's pipe belongs to the interactive session.
-  `RepairIfMoved` repoints the entry when Issun runs from a new path.
+  `RepairIfMoved` repoints the entry when Issun runs from a new path. **Local
+  builds (build 0) never point it at themselves**, by `Enable` or
+  `RepairIfMoved`, as they never install or touch the Start menu entry.
 - **Tailscale's state is Tailscale's.** Issun reads the MagicDNS name (which is
   `PublicBase`), Funnel status and Run unattended; it changes nothing unless the
   owner clicks **Turn on Funnel** or **Turn on**. While Tailscale is installed
@@ -553,11 +560,9 @@ Take the top item unless told otherwise.
 1. **The owner's words for the `[text]` placeholders and the Tailscale page's
    cards** (Where things stand, above). Then push, only once they say it can
    go out.
-2. **Review findings still open**, from the 23 Sept review: a type slip in
-   `settings.json` discards the key; `Autostart.RepairIfMoved` repoints the Run
-   key at local builds; check whether any `UptimeLog` verdict problems remain
-   beyond the three build 48 fixed; CI builds with the .NET 10 SDK, which
-   needs pinning.
+2. **Review findings still open**, from the 23 Sept review: check whether any
+   `UptimeLog` verdict problems remain beyond the three build 48 fixed; CI
+   builds with the .NET 10 SDK, which needs pinning.
 3. **Later, only when asked: several of the owner's PCs backing each other
    up** (14 Nov 2026, "future feature"). The open questions are in
    `HISTORY.md`, Queued work item 3. Design-heavy; its own session.

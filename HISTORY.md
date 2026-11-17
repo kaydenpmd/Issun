@@ -1810,3 +1810,81 @@ fetched were deleted. Search gave clean editions, so the list's explicit
 songs are still the 11 from 13 Nov. `songs.before-expand.json` is the old
 list. Three `--demo --screenshot` runs showed Porter Robinson's "Kitsune
 Maison Freestyle", Drake's "Dust" and Basement Jaxx's "Good Luck".
+
+## 16 Nov 2026: a type slip no longer costs the key; local builds leave the Run key alone
+
+Two of the 23 Sept review's open findings (Queued work item 2), fixed in a
+side session started from Ammy's. Neither had struck the owner: issun.log,
+complete since the first run on 22 Sept 2026, has no `[autostart]` line at
+all, the Run value names `%LOCALAPPDATA%\Programs\Issun\Issun.exe`, and
+`%APPDATA%\Issun` holds no `settings.json.bad-*`.
+
+**A type slip in settings.json cost the key.** `SettingsStore` read the
+file with one `JsonSerializer.Deserialize<Settings>`. Any single value
+System.Text.Json couldn't convert threw `JsonException`: a port as `"87o7"`
+or `8787.5`, `"yes"` or `1` for a switch, a word for the score, even `null`
+for a number or a switch. The catch treated that as a corrupt file: moved
+aside to `settings.json.bad-<stamp>` and replaced with a fresh key, so the
+source stopped connecting until it was paired again or the key copied back
+by hand. The corrupt-file test listed `{ "port": "not a number" }` among its
+cases.
+
+Now the file is split into fields first (`JsonDocument`, comments and
+trailing commas allowed as before), and each field is tried alone, in an
+object of its own, through the same serializer and options. So what counts
+as readable is unchanged (a quoted port, any capitalisation), and a setting
+added later is covered with no change to the loader. A field that doesn't
+read falls back to its default, with one line per field:
+
+```
+[config] WARNING: "port" in <path> is "not a number", not a whole number — using 8787 instead. The key and the file's other settings are kept.
+```
+
+The file isn't rewritten at load, so the warning comes back each start
+until the value is corrected or a save from the window writes the default
+in. A null is the default for every setting, without a warning (it already
+was for the text settings). A name given twice counts once, the later one,
+as the serializer always read it. The key: written as a number, without
+quotes, its digits are used as written, with a warning to quote it, since
+they're the only key it can mean. `true`, `false`, an object or a list
+can't be a key, so the file's other settings are kept, a new key is made
+(`CreatedOnThisRun` true, as for any new key) and the file is moved aside
+first, since the old key may be in it. A file that isn't JSON, or isn't a
+JSON object, is moved aside whole, as before. Only fields that name a
+setting are decoded at all, so an unknown field is ignored whatever it
+holds, as before. Text that can't be decoded (a lone `\uD800` escape, which
+is valid JSON) counts as an unreadable value, and in the key as a key that
+can't be used. The first version of this change threw on it
+(`InvalidOperationException` from System.Text.Json, which would have stopped
+Issun starting), found by a test written to check. The options also name
+their resolver now (`DefaultJsonTypeInfoResolver`, the one the serializer
+picks anyway): asking them about `Settings` before their first use threw
+`NotSupportedException`, and that had passed only because a probe always
+ran first. Found while testing: `1e400` for the score reads as infinity,
+before and after; it isn't a type slip, and the score is locked to 0.35
+anyway.
+
+**Local builds repointed the Run key.** `IssunHost.StartAsync` calls
+`Autostart.RepairIfMoved()` on every start, and `Autostart` had no idea of
+a local build. A local build runs as a real `Issun.exe` (the apphost in
+`bin\`, so the dotnet.exe guard didn't apply), so any local run outside the
+demo would repoint the owner's entry at the bin folder whenever no Issun was
+already running (a second launch hands over to the running one and exits
+before the host starts). Setup's first run does the same through `Enable()`,
+since it ticks Start with Windows by itself when the entry is off, and a
+local run under a fresh `ISSUN_HOME` is a first run. `Autostart` now takes
+`releaseBuild` (default `IssunInfo.Build > 0`), like `StartMenuShortcut` and
+`SelfInstall`, and `CanRegister` refuses a local build, so `Enable` and
+`RepairIfMoved` change nothing and log `this is a local build (<path>),
+which leaves the startup entry to the installed copy`. `IsEnabled` and
+`Disable` are unchanged: reading is harmless, removing the entry is the
+person's own choice, and uninstalling relies on it.
+
+Checked: `dotnet test` 1196 of 1196 (1162 before, 34 new). Against the
+previous code (`git archive HEAD` with the new tests), 27 of the 31 new
+settings tests failed, and a local-build check failed too. The four that
+passed are three new corrupt-file cases, which both versions set aside, and
+an unknown field holding undecodable text, which both ignore. Built into a
+scratch folder (`--artifacts-path`), because another session was building
+in the same checkout. Committed on `main`, not pushed: the commit
+message is the release notes, so it waits on the owner's OK.

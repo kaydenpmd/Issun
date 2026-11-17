@@ -1888,3 +1888,59 @@ an unknown field holding undecodable text, which both ignore. Built into a
 scratch folder (`--artifacts-path`), because another session was building
 in the same checkout. Committed on `main`, not pushed: the commit
 message is the release notes, so it waits on the owner's OK.
+
+## 16 Nov 2026: the workflow's actions move off Node 20
+
+The release run for build 175 (43870425595) warned: "Node.js 20 is deprecated.
+The following actions target Node.js 20 but are being forced to run on Node.js
+24: actions/checkout@v4, softprops/action-gh-release@v2." A tag's `action.yml`
+names its runtime (`runs.using`): checkout v5, v6 and v7 and action-gh-release
+v3 say `node24`; checkout v4 and action-gh-release v2 say `node20`.
+`setup-dotnet@v5` and `upload-artifact@v7` already said `node24`, so they
+stayed (setup-dotnet v6 has been out since 16 Jul 2026).
+
+`build.yml` now uses `checkout@v7` and `action-gh-release@v3`. Neither
+release's notes list an input change, and `action.yml` differs between the old
+and new floating tags (checkout v4.4.0 and v7.0.1, action-gh-release v2.6.2
+and v3.0.4) only in its `using` line. Along the way: checkout v5 needs runner
+2.327.1 or newer; v6 keeps the sign-in in a separate file under `$RUNNER_TEMP`
+instead of `.git/config`, which only matters to a job that pushes (Ammy's
+publish job does, and was tried); v7 refuses fork pull-request checkouts under
+`pull_request_target` and `workflow_run`, which this workflow doesn't use.
+
+**Tried before pushing.** Run 44021335888, `build.yml` by hand from a branch,
+which builds and uploads but doesn't release: passed in 2 min 37 s with no
+annotations. The release step only runs on `main`, so a second branch widened
+its two `if:` lines to itself and made the release with `draft: true` and the
+tag `test-node24-<run id>` (a branch's commit count is `main`'s plus one, so a
+`v0.1.0-b<n>` tag could have collided with a real release's), run
+44021518396: the draft held the .exe (109,191,273 bytes) and its notes,
+`prerelease` came out true from the `startsWith` expression, and no tag was
+created, because a draft has none until it is published. The draft and both
+branches were deleted afterwards. **That is how to try the release step
+without releasing.** A `workflow_dispatch` from `main` itself would release.
+
+**Pushed at the owner's "Yes, push both"**, at 23:28 local, as `a238ae6`,
+rebased onto the settings commit `2e2b040`, which the other session had pushed
+under a minute before. Run 44024338275 passed in 2 min 55 s with no
+annotations and no "Node.js 20" line in its log, and released `v0.1.0-b178` at
+23:31: pre-release, target `a238ae6`, notes the commit message as the owner
+saw it, and the asset's digest on GitHub (SHA-256 82747BB0…9AC40804) the same
+as the one in the notes. Since `a238ae6` sits on `2e2b040`, build 178 holds the
+settings fix as well, under notes that name only the workflow.
+
+**Seen, not explained: there is no build 177.** The run for `2e2b040`
+(44024262737, still on the old workflow with `action-gh-release@v2`) built and
+tested, then failed at 23:30:01 in "Create the GitHub Release": 403 "Resource
+not accessible by integration" from create-a-release for the new tag
+`v0.1.0-b177`. Its token block read `Contents: write` at job start, as mine
+did. Mine had reached `main` less than two minutes earlier and edits
+`build.yml`; the release for the commit at `main`'s tip worked. Afterwards the
+repo showed default workflow permissions `read` (the workflow's own
+`permissions:` grants the write), no rulesets, no branch protection and an
+`updated_at` of 12 Nov, and githubstatus.com listed no incident from that
+afternoon on. A guess, untested: GitHub refuses a token-made tag whose commit
+has different workflow files from `main`'s tip, so a push that edits
+`.github/workflows/` would break the release run of any push still in flight
+just before it. Re-running that job would test it, but would also publish b177
+after b178, which is the owner's call.

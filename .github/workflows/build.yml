@@ -51,12 +51,14 @@ jobs:
       # fetch-depth: 0 is load-bearing. The default checkout is shallow, and the
       # build number below is a commit count; against a shallow clone that
       # counts 1, and every build would claim to be build 1.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      # v5 runs on Node 24 natively. checkout stays on v4, the version Ammy's
-      # workflows have released with.
+      # Every action in this file runs on Node 24 natively: this one, checkout@v7
+      # above, upload-artifact@v7 and action-gh-release@v3 below. On 16 Nov 2026
+      # GitHub warned that checkout@v4 and action-gh-release@v2, both Node 20,
+      # were being forced onto Node 24.
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 9.0.x
@@ -201,7 +203,7 @@ jobs:
       # badge shouldn't vouch for them. Bumping <VersionPrefix> to 1.0.0 ends it.
       - name: Create the GitHub Release
         if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.ver.outputs.version }}-b${{ steps.ver.outputs.build }}
           name: Issun ${{ steps.ver.outputs.version }} (${{ steps.ver.outputs.build }})

@@ -1956,3 +1956,14 @@ has different workflow files from `main`'s tip, so a push that edits
 `.github/workflows/` would break the release run of any push still in flight
 just before it. Re-running that job would test it, but would also publish b177
 after b178, which is the owner's call.
+
+
+## 17 Nov 2026: build 178 installed
+
+At the owner's "Install it". `tools/install-local.ps1`, run from a detached
+worktree at `a238ae6` (the release commit; `main` had moved on by two notes
+commits, and the script builds HEAD) so the local build is 178 as released:
+1196 of 1196 tests, SHA-256 3E404E3D…C8E76DC0, the receiver down 8.1 s at
+00:57, build 175 kept as `Issun.exe.b175.bak`. The settings loaded without a
+word from the new checks; `[rpc] connected to Discord` at 00:57:14 and the
+phone's first check-in at 00:57:28 (Ammy 184, `pushfail=0/31`).

@@ -48,18 +48,16 @@ PC awake with Discord desktop open.
 
 As of 16 Nov 2026: `main` is pushed through build 178 (a238ae6, the
 workflow's actions off Node 20, on top of 2e2b040, a mistyped setting no
-longer costs the key; build 177's release failed, HISTORY.md), and build 175
-is installed on the owner's PC.
+longer costs the key; build 177's release failed, HISTORY.md), and build 178
+is installed on the owner's PC (17 Nov 2026).
 The window still has `[text]`
 placeholders for the owner to write (the line under setup's progress bar
-while Tailscale installs, the new-key button, its errors, the Tailscale page's cards, and
-`PresenceWorker.InvalidIdDetail`), the owner said they'd write them "in
-another session". Before asking, check the wording page
+while Tailscale installs, the new-key errors, the Tailscale page's cards, and
+`PresenceWorker.InvalidIdDetail`). The wording page
 (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ, its `texts` collection) has a
-field for every `[text]` in `SetupView.xaml`, `SetupViewModel.cs` and
-`PresenceWorker.cs`, and add any missing. It also had fields for setup's
-Discord page (`discord.id.*`, `discord.open.*`, as of 14 Nov 2026): that page
-is gone, so take them and its picture off if they're still there.
+field for each of the 11, with build 175's pictures, and no Discord page,
+since 16 Nov 2026; it waits on the owner. "New key" is the owner's word, not
+a placeholder.
 
 **Not yet seen on the owner's PC or in a real window:**
 - setup opening on the Tailscale page on the owner's PC (the sandbox's first

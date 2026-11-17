@@ -1886,8 +1886,20 @@ settings tests failed, and a local-build check failed too. The four that
 passed are three new corrupt-file cases, which both versions set aside, and
 an unknown field holding undecodable text, which both ignore. Built into a
 scratch folder (`--artifacts-path`), because another session was building
-in the same checkout. Committed on `main`, not pushed: the commit
-message is the release notes, so it waits on the owner's OK.
+in the same checkout.
+
+**Pushed at the owner's "Yes, push it", at 23:27, but build 177 never
+released.** Run 44024262737 passed its tests and published the .exe, then
+"Create the GitHub Release" got a 403 at 23:30:01, so there's no
+`v0.1.0-b177` tag or release. The evidence is in the next section. Probable
+cause, not proven: the tag was to go on `2e2b040` after `a238ae6`, which
+edits `build.yml`, had become main's tip, and a workflow's token may not
+create a ref whose workflow files differ from the default branch's (the
+restriction that keeps it from pushing a workflow change). The fix first
+shipped in **b178** (`a238ae6`, the Node 20 commit on top of it, released at
+23:31), whose notes name only the workflow change. The job wasn't re-run:
+if it passed, it would publish b177 after b178. The owner was asked whether
+to add the approved notes to b178's release text.
 
 ## 16 Nov 2026: the workflow's actions move off Node 20
 

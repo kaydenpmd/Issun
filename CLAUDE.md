@@ -46,9 +46,10 @@ PC awake with Discord desktop open.
 
 ## Where things stand
 
-As of 16 Nov 2026: `main` is pushed through build 175 (58b0a94, no status
-dots; setup's not-installed Tailscale card offers Install), and build 175 is
-installed on the owner's PC.
+As of 16 Nov 2026: `main` is pushed through build 178 (a238ae6, the
+workflow's actions off Node 20, on top of 2e2b040, a mistyped setting no
+longer costs the key; build 177's release failed, HISTORY.md), and build 175
+is installed on the owner's PC.
 The window still has `[text]`
 placeholders for the owner to write (the line under setup's progress bar
 while Tailscale installs, the new-key button, its errors, the Tailscale page's cards, and
@@ -513,7 +514,11 @@ notes**, and never push text of your own that the owner hasn't confirmed.
 `workflow_dispatch` from another branch builds without releasing. 0.x releases
 are pre-releases; bumping `<VersionPrefix>` to 1.0.0 ends that. Read the run
 after a push (`gh run list -R kaydenpmd/Issun`). The repo is public, which
-keeps Windows runner minutes free.
+keeps Windows runner minutes free. **Don't push a change to
+`.github/workflows/` while an earlier push's run is still releasing**: on
+16 Nov 2026 build 177's release step got a 403 when such a change landed
+mid-run, probably because the token may not tag a commit whose workflow
+files differ from main's (HISTORY.md, same date).
 
 ## Updating the installed copy
 

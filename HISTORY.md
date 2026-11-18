@@ -1967,3 +1967,31 @@ commits, and the script builds HEAD) so the local build is 178 as released:
 00:57, build 175 kept as `Issun.exe.b175.bak`. The settings loaded without a
 word from the new checks; `[rpc] connected to Discord` at 00:57:14 and the
 phone's first check-in at 00:57:28 (Ammy 184, `pushfail=0/31`).
+
+## 18 Nov 2026: handoff
+
+Everything from 16 and 17 Nov is pushed (`main` at the commit carrying this
+note) and build 178 runs on the owner's PC. The session that started with
+"show me all versions of the tailscale screen from setup" did, in order: the
+eleven renders of the Tailscale page; the cleared-message fix (build 173); the
+command link replaced, then the dots removed and the not-installed card made
+(build 175); the Fluent command-button research and sandbox captures (design
+library, `microsoft/fluent-command-buttons/`); the demo list's growth to 227
+songs; and build 178's install. Three sessions it started finished their
+work: the wording page (rebuilt, waiting on the owner), the settings typo fix
+(build 178) and the CI actions off Node 20 (Issun and Ammy, each released).
+
+Open, for whoever comes next:
+- **The wording page** (claude.ai/artifact/BKtxXmKxc3ot9CSi7D2xRJ) waits on
+  the owner's words for the 11 `[text]` spots. When they finish, put the words
+  in word for word, render, show them, and release only with their OK on the
+  notes. The side session's hand-over note lists every field:
+  `%LOCALAPPDATA%\Claude-Data\claude_pzs8sxrjxfjjc\side-session-notes\local_89189c72-e63d-47f9-9dff-a26be4f2234f\wording-page-17-nov.md`.
+- Queued work item 2's remaining findings (UptimeLog verdicts, pinning the
+  .NET SDK), and the "Not yet seen" list.
+- The scratch tool that presses setup's buttons before a render is in
+  `local/screenshot-press/` (patch, the eleven-render script, NOTES.md); it
+  was only ever in a scratchpad before. The day's renders themselves weren't
+  kept: they come back from that tool.
+- Ammy's checkout was on branch `pip-lab` on 18 Nov 2026, switched by
+  another session, not this one; nothing here touched it.

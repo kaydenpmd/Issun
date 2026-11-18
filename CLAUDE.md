@@ -71,6 +71,8 @@ a placeholder.
 - explicitness by lookup: Apple's public Lookup returned only clean editions
   on 13 Nov 2026, so `trackExplicitness` may never say explicit
 - the live test's skip, pause and days of `uptime.log` (items 5, 6, 8 below)
+- build 175's look (status rows with no dots; setup's not-installed card,
+  "Tailscale isn't installed" with Install) outside `--screenshot` renders
 
 ## What Issun is, in anything a user reads
 
@@ -228,7 +230,9 @@ from the folder you just built**: the other one holds an older build.
   QR code), `--demo-tailscale 0..3`, `--press-next`, `--theme dark`. Each PNG
   gets a `.text.json` of every visible text and its position, for wording
   pages. Refuses from a disconnected Remote Desktop session; use the
-  sandbox's `shots` step then.
+  sandbox's `shots` step then. States that need a click (installing, Funnel
+  failing, Next refused) take `local/screenshot-press/` (private, never
+  committed; its NOTES.md says how), applied in a scratch copy only.
 - `--uninstall`: what Settings › Apps runs. Removes the Run entry, Start menu
   entry, Apps entry and install folder; settings, key, logs and history stay.
   Asks nothing (Windows asks first).
@@ -408,6 +412,8 @@ Community Toolkit's SettingsCard). What has no direct WinUI equivalent:
 - **No coloured status dots**, anywhere: the owner had them removed on
   16 Nov 2026 ("remove the colored dots gimmick from everywhere in the app").
   A status row is its name and its words (`StatusLine` is the words alone).
+  The success mark beside Connect your source's "Connected" is an icon, not
+  a dot, and stays ("keep the checkmark for now").
 - **The .pri must be named `resources.pri`** (`ProjectPriFileName` in
   `Issun.csproj`), or a renamed copy loads no XAML.
 - **Single file** needs `EnableMsixTooling` (no MSIX is made). Trimming isn't
